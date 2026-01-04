@@ -1,0 +1,227 @@
+{
+  "timestamp": 1767262093546,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with method DELETE, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `io.github.proxyprint.kitchen.controllers.consumer.PrintingSchemaController.deleteConsumerPrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `io.github.proxyprint.kitchen.controllers.consumer.PrintingSchemaController.editConsumerPrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n3. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `PrintingSchemaController#deletePrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n4. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `PrintingSchemaController#updatePrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n5. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `io.github.proxyprint.kitchen.controllers.consumer.PrintingSchemaController.deleteConsumerPrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n6. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `io.github.proxyprint.kitchen.controllers.consumer.PrintingSchemaController.editConsumerPrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n7. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `PrintingSchemaController#deletePrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\n8. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, `PrintingSchemaController#updatePrintingSchema` is implemented to process HTTP requests to `/consumer/{consumerID}/printingschemas/{printingSchemaID}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.consumer;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonObject;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.consumer.PrintingSchema;\nimport io.github.proxyprint.kitchen.models.repositories.ConsumerDAO;\nimport io.github.proxyprint.kitchen.models.repositories.PrintingSchemaDAO;\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport java.util.Set;\nimport org.springframework.transaction.annotation.Transactional;\nimport org.springframework.web.bind.annotation.RequestBody;\n\n/**\n * Created by daniel on 28-04-2016.\n */\n@RestController \n@Transactional\npublic class PrintingSchemaController {\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private PrintingSchemaDAO printingSchemas;\n    @Autowired\n    private Gson GSON;\n\n    /**\n     * Get all the consumer's PrintingSchemas.\n     * @param id, the id of the consumer.\n     * @return set of the printing schemas belonging to the consumer matched by the id.\n     */\n    @ApiOperation(value = \"Returns a set of the printing schemas.\", notes = \"This method allows consumers to get his PrintingSchemas.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas\", method = RequestMethod.GET)\n    public String getConsumerPrintingSchemas(@PathVariable(value = \"consumerID\") long id) {\n        Set<PrintingSchema> consumerSchemas = consumers.findOne(id).getPrintingSchemas();\n        JsonObject response = new JsonObject();\n        if(consumerSchemas!=null) {\n            response.addProperty(\"success\", true);\n            response.add(\"pschemas\",GSON.toJsonTree(consumerSchemas));\n            return GSON.toJson(response);\n        } else {\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    /**\n     * Add a new PrintingSchema to user's printing schemas collection.\n     * Test\n     * curl --data \"name=MyFancySchema&bindingSpecs=SPIRAL&coverSpecs=CRISTAL_ACETATE&paperSpecs=COLOR,A4,SIMPLEX\" -u joao:1234 localhost:8080/consumer/1001/printingschemas\n     * @param id, the id of the consumer.\n     * @param ps, the PrintingSchema created by the consumer.\n     * @return HttpStatus.OK if everything went well.\n     */\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to add a new printing schema to his printing schemas collection.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas\", method = RequestMethod.POST)\n    public String addNewConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long id, @RequestBody PrintingSchema ps) {\n        JsonObject obj = new JsonObject();\n        Consumer c = consumers.findOne(id);\n        PrintingSchema addedPS = printingSchemas.save(ps);\n        boolean res = c.addPrintingSchema(addedPS);\n        if(res) {\n            consumers.save(c);\n            obj.addProperty(\"success\", true);\n            obj.addProperty(\"id\", addedPS.getId());\n            return GSON.toJson(obj);\n        } else {\n            obj.addProperty(\"success\", false);\n            return GSON.toJson(obj);\n        }\n    }\n\n    /**\n     * Delete a PrintingSchema.\n     * Test\n     * curl -u joao:1234 -X DELETE localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\n     * @param cid, the id of the consumer.\n     * @param psid, the id of the printing schema to delete.\n     * @return HttpStatus.OK if everything went well.\n     */\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to delete a printing schema from his printing schemas collection.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.DELETE)\n    public String deleteConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid) {\n        JsonObject obj = new JsonObject();\n        PrintingSchema ps = printingSchemas.findOne(psid);\n        if(!ps.isDeleted()) {\n            ps.delete();\n            printingSchemas.save(ps);\n            obj.addProperty(\"success\", true);\n        } else {\n            obj.addProperty(\"false\", true);\n        }\n        return GSON.toJson(obj);\n    }\n\n    /**\n     * Edit an existing PrintingSchema.\n     * Test\n     * curl -X PUT --data \"name=MyFancyEditedSchema&bindingSpecs=STAPLING&paperSpecs=COLOR,A4,SIMPLEX\" -u joao:1234 localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\n     * @param cid, the id of the consumer.\n     * @param psid, the PrintingSchema id.\n     * @return HttpStatus.OK if everything went well.\n     */\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to edit a printing schema from his printing schemas collection.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.PUT)\n    public ResponseEntity<String> editConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid, @RequestBody PrintingSchema pschema) {\n        PrintingSchema ps = printingSchemas.findOne(psid);\n        ps.setBindingSpecs(pschema.getBindingSpecs());\n        ps.setCoverSpecs(pschema.getCoverSpecs());\n        ps.setName(pschema.getName());\n        ps.setPaperSpecs(pschema.getPaperSpecs());\n\n        JsonObject obj = new JsonObject();\n\n        PrintingSchema res = printingSchemas.save(ps);\n        if(res!=null) {\n            obj.addProperty(\"success\", true);\n             return new ResponseEntity<>(GSON.toJson(obj), HttpStatus.OK);\n        } else {\n            obj.addProperty(\"success\", false);\n             return new ResponseEntity<>(GSON.toJson(obj), HttpStatus.INTERNAL_SERVER_ERROR);\n        }\n    }\n\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the DELETE endpoint `/consumer/{consumerID}/printingschemas/{printingSchemaID}` in the `PrintingSchemaController.java` file to generate the appropriate OpenAPI response objects.\n\nLooking at the code, I can see there's a method `deleteConsumerPrintingSchema` that handles the DELETE request to this endpoint. Let me analyze what the method does:\n\n1. It takes two path variables: `consumerID` and `printingSchemaID`\n2. It retrieves the printing schema by ID\n3. If the schema is not already deleted, it marks it as deleted and returns a JSON response with `\"success\": true`\n4. If the schema is already deleted, it returns a JSON response with `\"false\": true` (which seems to be an error case)\n\nThe method returns a String (JSON response) with a success or error message.\n\nLet me check if there are any other relevant files or annotations that might provide more information about the expected responses.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_f51ce3315d77470cb859f3a0",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"DELETE\\\" src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '     * curl -u joao:1234 -X DELETE localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.DELETE)\\n', 'stderr': ''}",
+        "tool_call_id": "call_f51ce3315d77470cb859f3a0"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I'll check for any exception handling or other response scenarios in the controller:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_d8c09d33c6fd4945a94e3353",
+            "function": {
+              "arguments": "{\"command\": \"grep -A 20 -B 5 \\\"RequestMethod.DELETE\\\" src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '     * @param psid, the id of the printing schema to delete.\\n     * @return HttpStatus.OK if everything went well.\\n     */\\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to delete a printing schema from his printing schemas collection.\")\\n    @Secured({\"ROLE_USER\"})\\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.DELETE)\\n    public String deleteConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid) {\\n        JsonObject obj = new JsonObject();\\n        PrintingSchema ps = printingSchemas.findOne(psid);\\n        if(!ps.isDeleted()) {\\n            ps.delete();\\n            printingSchemas.save(ps);\\n            obj.addProperty(\"success\", true);\\n        } else {\\n            obj.addProperty(\"false\", true);\\n        }\\n        return GSON.toJson(obj);\\n    }\\n\\n    /**\\n     * Edit an existing PrintingSchema.\\n     * Test\\n     * curl -X PUT --data \"name=MyFancyEditedSchema&bindingSpecs=STAPLING&paperSpecs=COLOR,A4,SIMPLEX\" -u joao:1234 localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\\n     * @param cid, the id of the consumer.\\n     * @param psid, the PrintingSchema id.\\n     * @return HttpStatus.OK if everything went well.\\n', 'stderr': ''}",
+        "tool_call_id": "call_d8c09d33c6fd4945a94e3353"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check if there are any potential exceptions that could be thrown by looking at the method more closely and checking for any related exception handling:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_0104dac6d3264d9ab6969d38",
+            "function": {
+              "arguments": "{\"command\": \"grep -A 30 -B 10 \\\"printingSchemas.findOne(psid)\\\" src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '     * curl -u joao:1234 -X DELETE localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\\n     * @param cid, the id of the consumer.\\n     * @param psid, the id of the printing schema to delete.\\n     * @return HttpStatus.OK if everything went well.\\n     */\\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to delete a printing schema from his printing schemas collection.\")\\n    @Secured({\"ROLE_USER\"})\\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.DELETE)\\n    public String deleteConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid) {\\n        JsonObject obj = new JsonObject();\\n        PrintingSchema ps = printingSchemas.findOne(psid);\\n        if(!ps.isDeleted()) {\\n            ps.delete();\\n            printingSchemas.save(ps);\\n            obj.addProperty(\"success\", true);\\n        } else {\\n            obj.addProperty(\"false\", true);\\n        }\\n        return GSON.toJson(obj);\\n    }\\n\\n    /**\\n     * Edit an existing PrintingSchema.\\n     * Test\\n     * curl -X PUT --data \"name=MyFancyEditedSchema&bindingSpecs=STAPLING&paperSpecs=COLOR,A4,SIMPLEX\" -u joao:1234 localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\\n     * @param cid, the id of the consumer.\\n     * @param psid, the PrintingSchema id.\\n     * @return HttpStatus.OK if everything went well.\\n     */\\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to edit a printing schema from his printing schemas collection.\")\\n    @Secured({\"ROLE_USER\"})\\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.PUT)\\n    public ResponseEntity<String> editConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid, @RequestBody PrintingSchema pschema) {\\n        PrintingSchema ps = printingSchemas.findOne(psid);\\n        ps.setBindingSpecs(pschema.getBindingSpecs());\\n        ps.setCoverSpecs(pschema.getCoverSpecs());\\n        ps.setName(pschema.getName());\\n        ps.setPaperSpecs(pschema.getPaperSpecs());\\n\\n        JsonObject obj = new JsonObject();\\n\\n        PrintingSchema res = printingSchemas.save(ps);\\n        if(res!=null) {\\n            obj.addProperty(\"success\", true);\\n             return new ResponseEntity<>(GSON.toJson(obj), HttpStatus.OK);\\n        } else {\\n            obj.addProperty(\"success\", false);\\n             return new ResponseEntity<>(GSON.toJson(obj), HttpStatus.INTERNAL_SERVER_ERROR);\\n        }\\n    }\\n\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_0104dac6d3264d9ab6969d38"
+      },
+      {
+        "role": "assistant",
+        "content": "I notice that the method doesn't handle the case where `printingSchemas.findOne(psid)` might return null (i.e., when the printing schema ID doesn't exist). This could potentially cause a NullPointerException when trying to call `ps.isDeleted()` on a null object. Let me check if there are any global exception handlers or other related files that might handle this:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a612ab940fb24034880abd71",
+            "function": {
+              "arguments": "{\"command\": \"find src/main/java -name \\\"*Exception*\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_a612ab940fb24034880abd71"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check for any global exception handlers:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_5c699198ce41467fae77a27c",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"@ControllerAdvice\\\\|@ExceptionHandler\\\" src/main/java/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_5c699198ce41467fae77a27c"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check for any potential entity not found exceptions or similar:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_ecd27aa89aed45b4afa0e6af",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"findOne\\\\|getOne\\\" src/main/java/io/github/proxyprint/kitchen/models/repositories/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_ecd27aa89aed45b4afa0e6af"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the repository interfaces to understand the behavior of findOne:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_231ed649c3b947e3a32922f2",
+            "function": {
+              "arguments": "{\"command\": \"find src/main/java -name \\\"*DAO*\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/io/github/proxyprint/kitchen/models/repositories/DocumentSpecDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/DocumentDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/AdminDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/PrintingSchemaDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/PrintRequestDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/ConsumerDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/NotificationDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/RegisterRequestDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/ManagerDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/UserDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/EmployeeDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/ReviewDAO.java\\nsrc/main/java/io/github/proxyprint/kitchen/models/repositories/PrintShopDAO.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_231ed649c3b947e3a32922f2"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the PrintingSchemaDAO to understand the findOne method:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_af17ca7d614548c5bff8dc56",
+            "function": {
+              "arguments": "{\"command\": \"cat src/main/java/io/github/proxyprint/kitchen/models/repositories/PrintingSchemaDAO.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package io.github.proxyprint.kitchen.models.repositories;\\n\\nimport io.github.proxyprint.kitchen.models.consumer.PrintingSchema;\\nimport org.springframework.data.repository.CrudRepository;\\n\\n/**\\n * Created by daniel on 28-04-2016.\\n */\\npublic interface PrintingSchemaDAO extends CrudRepository<PrintingSchema,Long> {\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_af17ca7d614548c5bff8dc56"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-d951f399-0fb9-9edf-83b4-e4798644208d",
+    "choices": [
+      {
+        "message": {
+          "content": "Now I understand that `PrintingSchemaDAO` extends `CrudRepository`, which means `findOne()` is inherited from Spring Data JPA. When an entity is not found, `findOne()` returns null, which means there could be a NullPointerException in the delete method if a non-existent printing schema ID is provided.\n\nBased on my analysis of the DELETE endpoint, I can identify the following possible responses:\n\n1. **200 OK**: When the deletion is successful (returns JSON with `\"success\": true`)\n2. **200 OK**: When the printing schema is already deleted (returns JSON with `\"false\": true`)\n3. **401 Unauthorized**: Due to the `@Secured({\"ROLE_USER\"})` annotation\n4. **500 Internal Server Error**: Potential NullPointerException if the printing schema ID doesn't exist\n\nThe method returns a JSON string with different properties depending on the outcome.\n\nNow I'll generate the response objects for the OpenAPI specification.\n\nThe final generated result begins\n\n```json\n{\n  \"200\": {\n    \"description\": \"Success response for deleting a printing schema\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"success\": {\n          \"type\": \"boolean\",\n          \"example\": true\n        }\n      },\n      \"oneOf\": [\n        {\n          \"properties\": {\n            \"success\": {\n              \"type\": \"boolean\",\n              \"enum\": [true]\n            }\n          },\n          \"required\": [\"success\"]\n        },\n        {\n          \"properties\": {\n            \"false\": {\n              \"type\": \"boolean\",\n              \"enum\": [true]\n            }\n          },\n          \"required\": [\"false\"]\n        }\n      ]\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized - User not authenticated or lacking required ROLE_USER\"\n  },\n  \"500\": {\n    \"description\": \"Internal server error - Could occur if the printing schema ID does not exist causing a NullPointerException\"\n  }\n}\n```",
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "stop"
+      }
+    ],
+    "created": 1767262086,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 5059,
+      "completion_tokens": 412,
+      "prompt_tokens": 4647,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

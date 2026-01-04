@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766735012531,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript (Node.js) and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `controllers/invoices.js`, I found that `invoiceRoutes` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `index.js`:\n\n```\n//Copyright (c) 2022 Panshak Solomon\n\nimport express from 'express'\nimport cors from 'cors'\nimport mongoose from 'mongoose'\nimport dotenv from 'dotenv'\nimport nodemailer from 'nodemailer'\nimport pdf from 'html-pdf'\nimport { fileURLToPath } from 'url'\nimport { dirname } from 'path'\n\nconst __filename = fileURLToPath(import.meta.url)\nconst __dirname = dirname(__filename)\n\nimport invoiceRoutes from './routes/invoices.js'\nimport clientRoutes from './routes/clients.js'\nimport userRoutes from './routes/userRoutes.js'\n\nimport profile from './routes/profile.js'\nimport pdfTemplate from './documents/index.js'\n// import invoiceTemplate from './documents/invoice.js'\nimport emailTemplate from './documents/email.js'\n\nconst app = express()\ndotenv.config()\n\napp.use((express.json({ limit: \"30mb\", extended: true})))\napp.use((express.urlencoded({ limit: \"30mb\", extended: true})))\napp.use((cors()))\n\napp.use('/invoices', invoiceRoutes)\napp.use('/clients', clientRoutes)\napp.use('/users', userRoutes)\napp.use('/profiles', profile)\n\n// NODEMAILER TRANSPORT FOR SENDING INVOICE VIA EMAIL\nconst transporter = nodemailer.createTransport({\n    host: process.env.SMTP_HOST,\n    port : process.env.SMTP_PORT,\n    auth: {\n    user: process.env.SMTP_USER,\n    pass: process.env.SMTP_PASS\n    },\n    tls:{\n        rejectUnauthorized:false\n    }\n})\n\n\nvar options = { format: 'A4' };\n//SEND PDF INVOICE VIA EMAIL\napp.post('/send-pdf', (req, res) => {\n    const { email, company } = req.body\n\n    // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {\n    pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {\n       \n          // send mail with defined transport object\n        transporter.sendMail({\n            from: ` Accountill <hello@accountill.com>`, // sender address\n            to: `${email}`, // list of receivers\n            replyTo: `${company.email}`,\n            subject: `Invoice from ${company.businessName ? company.businessName : company.name}`, // Subject line\n            text: `Invoice from ${company.businessName ? company.businessName : company.name }`, // plain text body\n            html: emailTemplate(req.body), // html body\n            attachments: [{\n                filename: 'invoice.pdf',\n                path: `${__dirname}/invoice.pdf`\n            }]\n        });\n\n        if(err) {\n            res.send(Promise.reject());\n        }\n        res.send(Promise.resolve());\n    });\n});\n\n\n//Problems downloading and sending invoice\n// npm install html-pdf -g\n// npm link html-pdf\n// npm link phantomjs-prebuilt\n\n//CREATE AND SEND PDF INVOICE\napp.post('/create-pdf', (req, res) => {\n    pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {\n        if(err) {\n            res.send(Promise.reject());\n        }\n        res.send(Promise.resolve());\n    });\n});\n\n//SEND PDF INVOICE\napp.get('/fetch-pdf', (req, res) => {\n     res.sendFile(`${__dirname}/invoice.pdf`)\n})\n\n\napp.get('/', (req, res) => {\n    res.send('SERVER IS RUNNING')\n  })\n\nconst DB_URL = process.env.DB_URL\nconst PORT = process.env.PORT || 5000\n\nmongoose.connect(DB_URL, { useNewUrlParser: true, useUnifiedTopology: true})\n    .then(() => app.listen(PORT, () => console.log(`Server running on port: ${PORT}`)))\n    .catch((error) => console.log(error.message))\n\nmongoose.set('useFindAndModify', false)\nmongoose.set('useCreateIndex', true)\n```\n\nContents of file `routes/invoices.js`:\n\n```\nimport express from 'express'\nimport {createInvoice, updateInvoice, deleteInvoice, getInvoice, getInvoicesByUser, getTotalCount } from '../controllers/invoices.js'\n\nconst router = express.Router()\n\nrouter.get('/count', getTotalCount) //use to generate invoice serial number\nrouter.get('/:id', getInvoice)\nrouter.get('/', getInvoicesByUser)\nrouter.post('/', createInvoice)\nrouter.patch('/:id', updateInvoice)\nrouter.delete('/:id', deleteInvoice)\n\n\nexport default router\n```\n\nContents of file `controllers/invoices.js`:\n\n```\n//Copyright (c) 2022 Panshak Solomon\n\nimport express from 'express'\nimport mongoose from 'mongoose'\n\nimport InvoiceModel from '../models/InvoiceModel.js'\n\nexport const getInvoicesByUser = async (req, res) => {\n    const {searchQuery} = req.query;\n\n    try {\n        const invoices = await InvoiceModel.find({ creator: searchQuery });\n\n        res.status(200).json({ data: invoices });\n    } catch (error) {    \n        res.status(404).json({ message: error.message });\n    }\n}\n\n\nexport const getTotalCount = async (req, res) => {\n    const {searchQuery} = req.query;\n\n    try {\n        // const invoices = await InvoiceModel.find({ creator: searchQuery });\n        const totalCount = await InvoiceModel.countDocuments({ creator: searchQuery });\n\n        res.status(200).json(totalCount);\n    } catch (error) {    \n        res.status(404).json({ message: error.message });\n    }\n}\n\n\nexport const getInvoices = async (req, res) => {\n\n    try {\n        const allInvoices = await InvoiceModel.find({}).sort({_id:-1}) \n\n        res.status(200).json(allInvoices)\n\n    } catch (error) {\n        res.status(409).json(error.message)\n        \n    }\n    \n}\n\n\n\n\nexport const createInvoice = async (req, res) => {\n\n    const invoice = req.body\n\n    const newInvoice = new InvoiceModel(invoice)\n\n    try {\n        await newInvoice.save()\n        res.status(201).json(newInvoice)\n    } catch (error) {\n        res.status(409).json(error.message)\n    }\n\n}\n\nexport const getInvoice = async (req, res) => { \n    const { id } = req.params;\n\n    try {\n        const invoice = await InvoiceModel.findById(id);\n        \n        res.status(200).json(invoice);\n    } catch (error) {\n        res.status(409).json({ message: error.message });\n    }\n}\n\n\nexport const updateInvoice = async (req, res) => {\n    const { id: _id } = req.params\n    const invoice = req.body\n\n    if(!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send('No invoice with that id')\n\n    const updatedInvoice = await InvoiceModel.findByIdAndUpdate(_id, {...invoice, _id}, { new: true})\n\n    res.json(updatedInvoice)\n}\n\n\nexport const deleteInvoice = async (req, res) => {\n    const { id } = req.params\n\n    if(!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send('No invoice with that id')\n\n    await InvoiceModel.findByIdAndRemove(id)\n\n    res.json({message: 'Invoice deleted successfully'})\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Full path:\n- /invoices/{id}\n\nAll methods acceptable?\n- No\n\nMethods accepted by the code (true = acceptable, false = not acceptable):\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: true\n- PUT: false\n- DELETE: true\n- PATCH: true\n\nExplanation:\n- The router for invoices is mounted with the prefix \"/invoices\" in index.js via app.use('/invoices', invoiceRoutes).\n- In routes/invoices.js the route handlers that include a path parameter are declared on \"/:id\":\n  - router.get('/:id', getInvoice)     => GET /invoices/{id}\n  - router.patch('/:id', updateInvoice) => PATCH /invoices/{id}\n  - router.delete('/:id', deleteInvoice) => DELETE /invoices/{id}\n- There are other invoice-related routes defined as well (GET /invoices, POST /invoices, GET /invoices/count), but those are different paths (no path parameter).\n- I marked only the HTTP methods that are explicitly registered on the \"/:id\" route as acceptable. I did not infer support for HEAD, OPTIONS, or others based on typical Express behavior or middleware (e.g., automatic HEAD handling or CORS preflight). The decision is strictly based on the code shown.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766735000,
+    "id": "chatcmpl-CqwlkddqLrko68aRm6NadErOgZ5mh",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1183,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 896,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1830,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3013
+    }
+  }
+}

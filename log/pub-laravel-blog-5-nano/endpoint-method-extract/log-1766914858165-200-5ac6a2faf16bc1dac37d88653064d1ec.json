@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766914858165,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `app/Http/Controllers/PostLikeController.php`, I found that `App\\\\Http\\\\Controllers\\\\PostLikeController@destroy` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/auth.php`:\n\n```\n<?php\n\nuse App\\Http\\Controllers\\Auth\\AuthenticatedSessionController;\nuse App\\Http\\Controllers\\Auth\\EmailVerificationNotificationController;\nuse App\\Http\\Controllers\\Auth\\EmailVerificationPromptController;\nuse App\\Http\\Controllers\\Auth\\NewPasswordController;\nuse App\\Http\\Controllers\\Auth\\PasswordController;\nuse App\\Http\\Controllers\\Auth\\PasswordResetLinkController;\nuse App\\Http\\Controllers\\Auth\\RegisteredUserController;\nuse App\\Http\\Controllers\\Auth\\VerifyEmailController;\nuse App\\Http\\Controllers\\CommentController;\nuse App\\Http\\Controllers\\NewsletterSubscriptionController;\nuse App\\Http\\Controllers\\PostLikeController;\nuse App\\Http\\Controllers\\UserController;\nuse App\\Http\\Controllers\\UserPasswordController;\nuse Illuminate\\Support\\Facades\\Route;\n\nRoute::redirect('/.well-known/change-password', '/settings/password');\n\nRoute::middleware('guest')->group(function () {\n    Route::get('register', [RegisteredUserController::class, 'create'])->name('register');\n    Route::post('register', [RegisteredUserController::class, 'store']);\n    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');\n    Route::post('login', [AuthenticatedSessionController::class, 'store']);\n    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');\n    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');\n    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');\n    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');\n});\n\nRoute::middleware('auth')->group(function () {\n    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');\n    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)\n        ->middleware(['signed', 'throttle:6,1'])\n        ->name('verification.verify');\n\n    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])\n        ->middleware('throttle:6,1')\n        ->name('verification.send');\n\n    Route::put('password', [PasswordController::class, 'update'])->name('password.update');\n    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');\n});\n\nRoute::middleware(['auth', 'verified'])->group(function () {\n    Route::prefix('settings')->group(function () {\n        Route::get('account', [UserController::class, 'edit'])->name('users.edit');\n        Route::match(['put', 'patch'], 'account', [UserController::class, 'update'])->name('users.update');\n\n        Route::get('password', [UserPasswordController::class, 'edit'])->name('users.password');\n        Route::match(['put', 'patch'], 'password', [UserPasswordController::class, 'update'])->name('users.password.update');\n    });\n\n    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\n    Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\n    Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\n\n    Route::resource('newsletter-subscriptions', NewsletterSubscriptionController::class)->only('store');\n});\n```\n\nContents of file `app/Http/Controllers/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Str;\n\nuse function HotwiredLaravel\\TurboLaravel\\dom_id;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->like();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->dislike();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Here is the OpenAPI-detectable information for the endpoint tied to PostLikeController@destroy (the delete like action):\n\n- Full HTTP request path: /posts/{post}/likes\n  - Path parameter: {post} represents the Post model (usually the post ID)\n\n- Are all HTTP methods acceptable for this path? No\n  - There is more than one route for this path in routes/auth.php:\n    - POST /posts/{post}/likes -> PostLikeController@store\n    - DELETE /posts/{post}/likes -> PostLikeController@destroy\n\n- HEAD: false\n  - The route is defined for POST and DELETE. HEAD is not automatically provided for non-GET routes in this codebase.\n\n- POST: true\n  - Route::post('/posts/{post}/likes', [PostLikeController::class, 'store']) exists.\n\n- OPTIONS: false\n  - No OPTIONS route is defined for this path in the code.\n\n- TRACE: false\n  - No TRACE route is defined for this path.\n\n- GET: false\n  - There is no GET route for /posts/{post}/likes.\n\n- PUT: false\n  - There is no PUT route for /posts/{post}/likes.\n\n- DELETE: true\n  - Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy']) exists.\n\n- PATCH: false\n  - There is no PATCH route for /posts/{post}/likes.\n\nExplanation:\n- The endpoint for removing a like (destroy) is defined via DELETE at /posts/{post}/likes, and there is also a POST route at the same path for adding a like. No other HTTP methods are defined for this path in the provided routes file, so only POST and DELETE are supported. The endpoints are grouped under middleware requiring authentication and email verification, meaning only authenticated and verified users can invoke these actions. HEAD, OPTIONS, TRACE, GET, PUT, PATCH are not implemented for this path in the code.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766914841,
+    "id": "chatcmpl-CrhYPF8PbAsooWMUtkjYOaTtSWaoJ",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2913,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 2496,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1321,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4234
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766644232032,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, I found that `anonymous` is implemented to process HTTP requests to the path `/api/v1/ops/node/decommission`. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.oss.driver.api.core.cql.Row;\nimport com.datastax.oss.driver.api.core.type.reflect.GenericType;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\n\nimport javax.ws.rs.*;\nimport javax.ws.rs.client.Entity;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\n\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\n\n@Path(\"/api/v1/ops/node\")\npublic class NodeOpsResources {\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public NodeOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/decommission\")\n    @Operation(summary = \"Decommission the *node I am connecting to*. This invocation returns immediately and returns a job id.\", operationId = \"decommission_v1\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node decommission request\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(implementation = String.class),\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\n        )\n    )\n    public Response decommission(@QueryParam(value=\"force\")boolean force)\n    {\n        return handle(() ->\n                Response.accepted(\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\"CALL NodeOps.decommission(?, ?)\", force, true)\n                        ).build());\n    }\n\n    @POST\n    @Path(\"/rebuild\")\n    @Operation(summary = \"Rebuild data by streaming data from other nodes. This operation returns immediately with a job id.\", operationId = \"rebuild_v1\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node rebuild request\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(implementation = String.class),\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\n        )\n    )\n    public Response rebuild(@QueryParam(\"src_dc\") String srcDatacenter)\n    {\n        return handle(() ->\n                Response.accepted(\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.rebuild(?)\", srcDatacenter)\n                ).build());\n    }\n\n    @GET\n    @Path(\"/schema/versions\")\n    @Produces(MediaType.APPLICATION_JSON)\n    @ApiResponse(\n            responseCode = \"200\",\n            description = \"Gets the schema versions for each node. Useful for checking schema agreement\",\n            content = @Content(\n                    mediaType = MediaType.APPLICATION_JSON,\n                    examples = @ExampleObject(value = \"{2207c2a9-f598-3971-986b-2926e09e239d: [10.244.1.4, 10.244.2.3, 10.244.3.3]}\")))\n    @Operation(summary = \"Get schema versions.\", operationId = \"getSchemaVersions\")\n    public Response schemaVersions()\n    {\n        return handle(() ->\n        {\n            Row row = cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.getSchemaVersions()\").one();\n\n            Map<String, List> schemaVersions = Collections.emptyMap();\n            if (row != null)\n            {\n                schemaVersions = row.getMap(0, String.class, List.class);\n            }\n            return Response.ok(schemaVersions).build();\n        });\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "- Full HTTP request path:\n  /api/v1/ops/node/decommission\n\n- all HTTP methods acceptable: false\n\n- HEAD acceptable: false\n- POST acceptable: true\n- OPTIONS acceptable: false\n- TRACE acceptable: false\n- GET acceptable: false\n- PUT acceptable: false\n- DELETE acceptable: false\n- PATCH acceptable: false\n\nExplanation:\n- The class has @Path(\"/api/v1/ops/node\") and the method has @Path(\"/decommission\"), so the full path is /api/v1/ops/node/decommission.\n- The decommission(...) method is annotated with @POST, so POST is explicitly accepted.\n- There are no other HTTP method annotations (@GET, @PUT, @DELETE, @PATCH, @OPTIONS, @HEAD, @TRACE) on this method, so those methods are not accepted based on the source code.\n- The method accepts a query parameter (force) via @QueryParam, but that does not create any path parameters, so the path contains no placeholders.\n- Per your instruction to base conclusions on the code (not runtime/container behavior), automatic container-provided behaviors (e.g., implicit HEAD/OPTIONS handling) are not assumed; therefore HEAD and OPTIONS are reported false.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766644225,
+    "id": "chatcmpl-CqZ9dd2JUIAUe0yRneMlLMUUP6zFt",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 837,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 576,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1288,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2125
+    }
+  }
+}

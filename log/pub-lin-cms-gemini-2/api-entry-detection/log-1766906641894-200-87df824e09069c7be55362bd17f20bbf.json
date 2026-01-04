@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766906641894,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/extension/notify/sse.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/extension/notify/sse.py`:\n\n```\n\"\"\"\nsse of Lin\n~~~~~~~~~\n\nsse 实现类\n\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nimport json\nfrom collections import deque\n\n\nclass Sse(object):\n    messages = deque()\n    _retry = None\n\n    def __init__(self, default_retry=2000):\n        self._buffer = []\n        self._default_id = 1\n        self.set_retry(default_retry)\n\n    def set_retry(self, num):\n        self._retry = num\n        self._buffer.append(\"retry: {0}\\n\".format(self._retry))\n\n    def set_event_id(self, event_id=None):\n        if event_id:\n            self._default_id = event_id\n            self._buffer.append(\"id: {0}\\n\".format(event_id))\n        else:\n            self._buffer.append(\"id: {0}\\n\".format(self._default_id))\n\n    def reset_event_id(self):\n        self.set_event_id(1)\n\n    def increase_id(self):\n        self._default_id += 1\n\n    def add_message(self, event, obj, flush=True):\n        self.set_event_id()\n        self._buffer.append(\"event: {0}\\n\".format(event))\n        line = json.dumps(obj, ensure_ascii=False)\n        self._buffer.append(\"data: {0}\\n\".format(line))\n        self._buffer.append(\"\\n\")\n        if flush:\n            self.flush()\n\n    def flush(self):\n        self.messages.append(self.join_buffer())\n        self._buffer.clear()\n        self.increase_id()\n\n    def pop(self):\n        return self.messages.popleft()\n\n    def heartbeat(self, comment=None):\n        # 发送注释 : this is a test stream\\n\\n 告诉客户端，服务器还活着\n        if comment and type(comment) == \"str\":\n            self._buffer.append(comment)\n        else:\n            self._buffer.append(\": sse sever is still alive \\n\\n\")\n        tmp = self.join_buffer()\n        self._buffer.clear()\n        return tmp\n\n    def join_buffer(self):\n        string = \"\"\n        for it in self._buffer:\n            string += it\n        return string\n\n    def exit_message(self):\n        return len(self.messages) > 0\n\n\nsser = Sse()\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251228152618763263724vR00PNHv",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766906780,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Here's the analysis of the provided code, `app/extension/notify/sse.py`, for API entries:\n\nBased on the provided code, there are no API entries. The code defines a class `Sse` and an instance `sser` of that class, which implements Server-Sent Events (SSE) functionality. However, there are no indications of any API endpoints or routing logic within this file. The code focuses on managing SSE messages and their formatting, but it does not define any routes or handlers for HTTP requests.\n\nTherefore, the output is an empty list.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1061,
+      "completion_tokens": 120,
+      "total_tokens": 1181,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1061,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

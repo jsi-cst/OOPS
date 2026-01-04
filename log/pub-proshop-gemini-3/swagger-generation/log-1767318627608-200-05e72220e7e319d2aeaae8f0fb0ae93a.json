@@ -1,0 +1,138 @@
+{
+  "timestamp": 1767318627608,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/orders/{id}/pay` with method PUT, and here is the relevant information I found:\n\n1. In `controllers/orderController.js`, `updateOrderToPaid` is implemented to process HTTP requests to `/api/orders/{id}/pay` with HTTP method PUT.\n\n2. In `controllers/orderController.js`, `updateOrderToPaid` is implemented to process HTTP requests to `/api/orders/{id}/pay` with HTTP method PUT.\n\n3. In `controllers/orderController.js`, `updateOrderToPaid` is implemented to process HTTP requests to `/api/orders/{id}/pay` with HTTP method PUT.\n\n4. In `controllers/orderController.js`, `updateOrderToPaid` is implemented to process HTTP requests to `/api/orders/{id}/pay` with HTTP method PUT.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/orderController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Order from '../models/orderModel.js';\nimport Product from '../models/productModel.js';\nimport { calcPrices } from '../utils/calcPrices.js';\nimport { verifyPayPalPayment, checkIfNewTransaction } from '../utils/paypal.js';\n\n// @desc    Create new order\n// @route   POST /api/orders\n// @access  Private\nconst addOrderItems = asyncHandler(async (req, res) => {\n  const { orderItems, shippingAddress, paymentMethod } = req.body;\n\n  if (orderItems && orderItems.length === 0) {\n    res.status(400);\n    throw new Error('No order items');\n  } else {\n    // NOTE: here we must assume that the prices from our client are incorrect.\n    // We must only trust the price of the item as it exists in\n    // our DB. This prevents a user paying whatever they want by hacking our client\n    // side code - https://gist.github.com/bushblade/725780e6043eaf59415fbaf6ca7376ff\n\n    // get the ordered items from our database\n    const itemsFromDB = await Product.find({\n      _id: { $in: orderItems.map((x) => x._id) },\n    });\n\n    // map over the order items and use the price from our items from database\n    const dbOrderItems = orderItems.map((itemFromClient) => {\n      const matchingItemFromDB = itemsFromDB.find(\n        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id\n      );\n      return {\n        ...itemFromClient,\n        product: itemFromClient._id,\n        price: matchingItemFromDB.price,\n        _id: undefined,\n      };\n    });\n\n    // calculate prices\n    const { itemsPrice, taxPrice, shippingPrice, totalPrice } =\n      calcPrices(dbOrderItems);\n\n    const order = new Order({\n      orderItems: dbOrderItems,\n      user: req.user._id,\n      shippingAddress,\n      paymentMethod,\n      itemsPrice,\n      taxPrice,\n      shippingPrice,\n      totalPrice,\n    });\n\n    const createdOrder = await order.save();\n\n    res.status(201).json(createdOrder);\n  }\n});\n\n// @desc    Get logged in user orders\n// @route   GET /api/orders/myorders\n// @access  Private\nconst getMyOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({ user: req.user._id });\n  res.json(orders);\n});\n\n// @desc    Get order by ID\n// @route   GET /api/orders/:id\n// @access  Private\nconst getOrderById = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id).populate(\n    'user',\n    'name email'\n  );\n\n  if (order) {\n    res.json(order);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to paid\n// @route   PUT /api/orders/:id/pay\n// @access  Private\nconst updateOrderToPaid = asyncHandler(async (req, res) => {\n  // NOTE: here we need to verify the payment was made to PayPal before marking\n  // the order as paid\n  const { verified, value } = await verifyPayPalPayment(req.body.id);\n  if (!verified) throw new Error('Payment not verified');\n\n  // check if this transaction has been used before\n  const isNewTransaction = await checkIfNewTransaction(Order, req.body.id);\n  if (!isNewTransaction) throw new Error('Transaction has been used before');\n\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    // check the correct amount was paid\n    const paidCorrectAmount = order.totalPrice.toString() === value;\n    if (!paidCorrectAmount) throw new Error('Incorrect amount paid');\n\n    order.isPaid = true;\n    order.paidAt = Date.now();\n    order.paymentResult = {\n      id: req.body.id,\n      status: req.body.status,\n      update_time: req.body.update_time,\n      email_address: req.body.payer.email_address,\n    };\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to delivered\n// @route   GET /api/orders/:id/deliver\n// @access  Private/Admin\nconst updateOrderToDelivered = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    order.isDelivered = true;\n    order.deliveredAt = Date.now();\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Get all orders\n// @route   GET /api/orders\n// @access  Private/Admin\nconst getOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({}).populate('user', 'id name');\n  res.json(orders);\n});\n\nexport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n};\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_758ce907d8c24bce8f407a88aba9f459",
+            "function": {
+              "arguments": "{\"command\":\"ls utils/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'calcPrices.js\\ngenerateToken.js\\npaypal.js\\n', 'stderr': ''}",
+        "tool_call_id": "call_758ce907d8c24bce8f407a88aba9f459"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_4fb8136e3fe444708a9d7352aac86af2",
+            "function": {
+              "arguments": "{\"command\":\"cat models/orderModel.js\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import mongoose from 'mongoose';\\n\\nconst orderSchema = mongoose.Schema(\\n  {\\n    user: {\\n      type: mongoose.Schema.Types.ObjectId,\\n      required: true,\\n      ref: 'User',\\n    },\\n    orderItems: [\\n      {\\n        name: { type: String, required: true },\\n        qty: { type: Number, required: true },\\n        image: { type: String, required: true },\\n        price: { type: Number, required: true },\\n        product: {\\n          type: mongoose.Schema.Types.ObjectId,\\n          required: true,\\n          ref: 'Product',\\n        },\\n      },\\n    ],\\n    shippingAddress: {\\n      address: { type: String, required: true },\\n      city: { type: String, required: true },\\n      postalCode: { type: String, required: true },\\n      country: { type: String, required: true },\\n    },\\n    paymentMethod: {\\n      type: String,\\n      required: true,\\n    },\\n    paymentResult: {\\n      id: { type: String },\\n      status: { type: String },\\n      update_time: { type: String },\\n      email_address: { type: String },\\n    },\\n    itemsPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    taxPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    shippingPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    totalPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    isPaid: {\\n      type: Boolean,\\n      required: true,\\n      default: false,\\n    },\\n    paidAt: {\\n      type: Date,\\n    },\\n    isDelivered: {\\n      type: Boolean,\\n      required: true,\\n      default: false,\\n    },\\n    deliveredAt: {\\n      type: Date,\\n    },\\n  },\\n  {\\n    timestamps: true,\\n  }\\n);\\n\\nconst Order = mongoose.model('Order', orderSchema);\\n\\nexport default Order;\\n\", 'stderr': ''}",
+        "tool_call_id": "call_4fb8136e3fe444708a9d7352aac86af2"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_eac5021172ed48b6bc989c6017058d85",
+            "function": {
+              "arguments": "{\"command\":\"cat utils/paypal.js\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import dotenv from 'dotenv';\\ndotenv.config();\\nconst { PAYPAL_CLIENT_ID, PAYPAL_APP_SECRET, PAYPAL_API_URL } = process.env;\\n\\n/**\\n * Fetches an access token from the PayPal API.\\n * @see {@link https://developer.paypal.com/reference/get-an-access-token/#link-getanaccesstoken}\\n *\\n * @returns {Promise<string>} The access token if the request is successful.\\n * @throws {Error} If the request is not successful.\\n *\\n */\\nasync function getPayPalAccessToken() {\\n  // Authorization header requires base64 encoding\\n  const auth = Buffer.from(PAYPAL_CLIENT_ID + ':' + PAYPAL_APP_SECRET).toString(\\n    'base64'\\n  );\\n\\n  const url = `${PAYPAL_API_URL}/v1/oauth2/token`;\\n\\n  const headers = {\\n    Accept: 'application/json',\\n    'Accept-Language': 'en_US',\\n    Authorization: `Basic ${auth}`,\\n  };\\n\\n  const body = 'grant_type=client_credentials';\\n  const response = await fetch(url, {\\n    method: 'POST',\\n    headers,\\n    body,\\n  });\\n\\n  if (!response.ok) throw new Error('Failed to get access token');\\n\\n  const paypalData = await response.json();\\n\\n  return paypalData.access_token;\\n}\\n\\n/**\\n * Checks if a PayPal transaction is new by comparing the transaction ID with existing orders in the database.\\n *\\n * @param {Mongoose.Model} orderModel - The Mongoose model for the orders in the database.\\n * @param {string} paypalTransactionId - The PayPal transaction ID to be checked.\\n * @returns {Promise<boolean>} Returns true if it is a new transaction (i.e., the transaction ID does not exist in the database), false otherwise.\\n * @throws {Error} If there's an error in querying the database.\\n *\\n */\\nexport async function checkIfNewTransaction(orderModel, paypalTransactionId) {\\n  try {\\n    // Find all documents where Order.paymentResult.id is the same as the id passed paypalTransactionId\\n    const orders = await orderModel.find({\\n      'paymentResult.id': paypalTransactionId,\\n    });\\n\\n    // If there are no such orders, then it's a new transaction.\\n    return orders.length === 0;\\n  } catch (err) {\\n    console.error(err);\\n  }\\n}\\n\\n/**\\n * Verifies a PayPal payment by making a request to the PayPal API.\\n * @see {@link https://developer.paypal.com/docs/api/orders/v2/#orders_get}\\n *\\n * @param {string} paypalTransactionId - The PayPal transaction ID to be verified.\\n * @returns {Promise<Object>} An object with properties 'verified' indicating if the payment is completed and 'value' indicating the payment amount.\\n * @throws {Error} If the request is not successful.\\n *\\n */\\nexport async function verifyPayPalPayment(paypalTransactionId) {\\n  const accessToken = await getPayPalAccessToken();\\n  const paypalResponse = await fetch(\\n    `${PAYPAL_API_URL}/v2/checkout/orders/${paypalTransactionId}`,\\n    {\\n      headers: {\\n        'Content-Type': 'application/json',\\n        Authorization: `Bearer ${accessToken}`,\\n      },\\n    }\\n  );\\n  if (!paypalResponse.ok) throw new Error('Failed to verify payment');\\n\\n  const paypalData = await paypalResponse.json();\\n  return {\\n    verified: paypalData.status === 'COMPLETED',\\n    value: paypalData.purchase_units[0].amount.value,\\n  };\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_eac5021172ed48b6bc989c6017058d85"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-ee6a16d703154889899308cca5cba99c",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767318627,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_a6d4556fc7bc4e6c859b4adfbdf7fe39",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"ls routes/\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3385,
+      "completion_tokens": 2223,
+      "total_tokens": 5608,
+      "completion_tokens_details": {
+        "reasoning_tokens": 2205
+      }
+    }
+  }
+}

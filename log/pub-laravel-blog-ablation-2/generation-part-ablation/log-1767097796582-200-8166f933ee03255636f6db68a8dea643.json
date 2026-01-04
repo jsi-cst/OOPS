@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097796582,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/users/{user}/posts` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/UserPostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController@index` is implemented to process HTTP requests to `/v1/users/{user}/posts` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/UserPostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Resources\\Post as PostResource;\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\n\nclass UserPostController extends Controller\n{\n    /**\n     * Return the user's posts.\n     */\n    public function index(Request $request, User $user): ResourceCollection\n    {\n        return PostResource::collection(\n            $user->posts()->latest()->paginate($request->input('limit', 20))\n        );\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The controller method is App\\Http\\Controllers\\Api\\V1\\UserPostController@index which handles GET requests to /v1/users/{user}/posts.\n- The method signature (Request $request, User $user) indicates a path parameter named \"user\" that is route-model-bound to App\\Models\\User. By Laravel defaults this is an identifier (integer id) used to resolve the User.\n- The method calls $user->posts()->latest()->paginate($request->input('limit', 20)), so the endpoint returns a paginated collection of Post resources and accepts an optional \"limit\" query parameter (default 20) controlling items per page.\n- The response is the JSON representation of a ResourceCollection (PostResource::collection), which in Laravel pagination produces an object with at least \"data\" (array of resource objects) and pagination wrapper fields (\"links\", \"meta\"). The exact Post resource fields are not available from the provided file, so the items are represented as generic objects.\n\nthe final generated result begins\n{\n  \"summary\": \"Return the user's posts (paginated)\",\n  \"description\": \"Returns a paginated collection of the specified user's posts. Uses route model binding for the {user} path parameter and accepts an optional 'limit' query parameter (default: 20) to control items per page.\",\n  \"operationId\": \"App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController@index\",\n  \"parameters\": [\n    {\n      \"name\": \"user\",\n      \"in\": \"path\",\n      \"required\": true,\n      \"description\": \"User identifier used for route model binding (resolves to App\\\\Models\\\\User).\",\n      \"schema\": {\n        \"type\": \"integer\",\n        \"format\": \"int64\"\n      }\n    },\n    {\n      \"name\": \"limit\",\n      \"in\": \"query\",\n      \"required\": false,\n      \"description\": \"Number of posts per page for pagination. Defaults to 20.\",\n      \"schema\": {\n        \"type\": \"integer\",\n        \"minimum\": 1,\n        \"default\": 20\n      }\n    }\n  ],\n  \"responses\": {\n    \"200\": {\n      \"description\": \"A paginated list of post resources for the user.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"data\": {\n                \"type\": \"array\",\n                \"description\": \"Array of post resource objects.\",\n                \"items\": {\n                  \"type\": \"object\",\n                  \"description\": \"Post resource object (fields not specified in controller).\",\n                  \"additionalProperties\": true\n                }\n              },\n              \"links\": {\n                \"type\": \"object\",\n                \"description\": \"Pagination links (first, last, prev, next, etc.).\",\n                \"additionalProperties\": {\n                  \"type\": \"string\"\n                }\n              },\n              \"meta\": {\n                \"type\": \"object\",\n                \"description\": \"Pagination meta (current_page, last_page, per_page, total, etc.).\",\n                \"additionalProperties\": true\n              }\n            },\n            \"required\": [\n              \"data\"\n            ],\n            \"additionalProperties\": false\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097772,
+    "id": "chatcmpl-CsT8uk06yXLjj1eb00EACYhRQM0QO",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2028,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1344,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 536,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2564
+    }
+  }
+}

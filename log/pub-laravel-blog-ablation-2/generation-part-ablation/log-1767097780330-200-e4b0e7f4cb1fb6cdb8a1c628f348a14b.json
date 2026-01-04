@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097780330,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/media` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@index` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/MediaController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\MediaLibraryRequest;\nuse App\\Http\\Resources\\Media as MediaResource;\nuse App\\Models\\Media;\nuse App\\Models\\MediaLibrary;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass MediaController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return MediaResource::collection(\n            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(MediaLibraryRequest $request): MediaResource\n    {\n        $this->authorize('store', Media::class);\n\n        $image = $request->file('image');\n        $name = $image->getClientOriginalName();\n\n        if ($request->filled('name')) {\n            $name = $request->input('name');\n        }\n\n        return new MediaResource(\n            MediaLibrary::first()\n                ->addMedia($image)\n                ->usingName($name)\n                ->toMediaCollection()\n        );\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Media $medium): Response\n    {\n        $this->authorize('delete', $medium);\n\n        $medium->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsT8iXyEAzB5Okn5hFjlOt5YJTbgv",
+    "object": "chat.completion",
+    "created": 1767097760,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n- Endpoint: POST /v1/media handled by App\\Http\\Controllers\\Api\\V1\\MediaController@store (file provided).\n- Inspecting the method:\n  - It expects an uploaded file via $request->file('image') — so a multipart/form-data file field named \"image\" is required.\n  - It optionally reads $request->input('name') — so an optional string field \"name\".\n  - It returns a MediaResource instance (a JSON resource representing the stored media). The controller does an authorization check, but no explicit status code is set, so the response is the serialized resource (200 OK by default).\n- Based on only the provided code, the operation object includes:\n  - summary and operationId to identify the operation.\n  - requestBody describing multipart/form-data with required \"image\" (binary) and optional \"name\" (string).\n  - responses with 200 and application/json content described as a MediaResource object (generic object schema with a description, without inventing its internal properties).\n\nthe final generated result begins\n{\n  \"summary\": \"Store a newly created media resource\",\n  \"operationId\": \"App\\\\\\\\Http\\\\\\\\Controllers\\\\\\\\Api\\\\\\\\V1\\\\\\\\MediaController@store\",\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"multipart/form-data\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"image\": {\n              \"type\": \"string\",\n              \"format\": \"binary\",\n              \"description\": \"Image file to upload\"\n            },\n            \"name\": {\n              \"type\": \"string\",\n              \"description\": \"Optional name to assign to the uploaded media\"\n            }\n          },\n          \"required\": [\n            \"image\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"A MediaResource representing the stored media\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"description\": \"MediaResource\"\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 771,
+      "completion_tokens": 1726,
+      "total_tokens": 2497,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1280,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767318590135,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/orders/mine` with method GET, and here is the relevant information I found:\n\n1. In `controllers/orderController.js`, `getMyOrders` is implemented to process HTTP requests to `/api/orders/mine` with HTTP method GET.\n\n2. In `controllers/orderController.js`, `getMyOrders` is implemented to process HTTP requests to `/api/orders/mine` with HTTP method GET.\n\n3. In `controllers/orderController.js`, `getMyOrders` is implemented to process HTTP requests to `/api/orders/mine` with HTTP method GET.\n\n4. In `controllers/orderController.js`, `getMyOrders` is implemented to process HTTP requests to `/api/orders/mine` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/orderController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Order from '../models/orderModel.js';\nimport Product from '../models/productModel.js';\nimport { calcPrices } from '../utils/calcPrices.js';\nimport { verifyPayPalPayment, checkIfNewTransaction } from '../utils/paypal.js';\n\n// @desc    Create new order\n// @route   POST /api/orders\n// @access  Private\nconst addOrderItems = asyncHandler(async (req, res) => {\n  const { orderItems, shippingAddress, paymentMethod } = req.body;\n\n  if (orderItems && orderItems.length === 0) {\n    res.status(400);\n    throw new Error('No order items');\n  } else {\n    // NOTE: here we must assume that the prices from our client are incorrect.\n    // We must only trust the price of the item as it exists in\n    // our DB. This prevents a user paying whatever they want by hacking our client\n    // side code - https://gist.github.com/bushblade/725780e6043eaf59415fbaf6ca7376ff\n\n    // get the ordered items from our database\n    const itemsFromDB = await Product.find({\n      _id: { $in: orderItems.map((x) => x._id) },\n    });\n\n    // map over the order items and use the price from our items from database\n    const dbOrderItems = orderItems.map((itemFromClient) => {\n      const matchingItemFromDB = itemsFromDB.find(\n        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id\n      );\n      return {\n        ...itemFromClient,\n        product: itemFromClient._id,\n        price: matchingItemFromDB.price,\n        _id: undefined,\n      };\n    });\n\n    // calculate prices\n    const { itemsPrice, taxPrice, shippingPrice, totalPrice } =\n      calcPrices(dbOrderItems);\n\n    const order = new Order({\n      orderItems: dbOrderItems,\n      user: req.user._id,\n      shippingAddress,\n      paymentMethod,\n      itemsPrice,\n      taxPrice,\n      shippingPrice,\n      totalPrice,\n    });\n\n    const createdOrder = await order.save();\n\n    res.status(201).json(createdOrder);\n  }\n});\n\n// @desc    Get logged in user orders\n// @route   GET /api/orders/myorders\n// @access  Private\nconst getMyOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({ user: req.user._id });\n  res.json(orders);\n});\n\n// @desc    Get order by ID\n// @route   GET /api/orders/:id\n// @access  Private\nconst getOrderById = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id).populate(\n    'user',\n    'name email'\n  );\n\n  if (order) {\n    res.json(order);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to paid\n// @route   PUT /api/orders/:id/pay\n// @access  Private\nconst updateOrderToPaid = asyncHandler(async (req, res) => {\n  // NOTE: here we need to verify the payment was made to PayPal before marking\n  // the order as paid\n  const { verified, value } = await verifyPayPalPayment(req.body.id);\n  if (!verified) throw new Error('Payment not verified');\n\n  // check if this transaction has been used before\n  const isNewTransaction = await checkIfNewTransaction(Order, req.body.id);\n  if (!isNewTransaction) throw new Error('Transaction has been used before');\n\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    // check the correct amount was paid\n    const paidCorrectAmount = order.totalPrice.toString() === value;\n    if (!paidCorrectAmount) throw new Error('Incorrect amount paid');\n\n    order.isPaid = true;\n    order.paidAt = Date.now();\n    order.paymentResult = {\n      id: req.body.id,\n      status: req.body.status,\n      update_time: req.body.update_time,\n      email_address: req.body.payer.email_address,\n    };\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to delivered\n// @route   GET /api/orders/:id/deliver\n// @access  Private/Admin\nconst updateOrderToDelivered = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    order.isDelivered = true;\n    order.deliveredAt = Date.now();\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Get all orders\n// @route   GET /api/orders\n// @access  Private/Admin\nconst getOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({}).populate('user', 'id name');\n  res.json(orders);\n});\n\nexport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n};\n```"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-edf276868fb2476a99b7f07294fd6c58",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767318589,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_ef45003f1a92496da20dd3656aaf0236",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"find . -name \\\"*orderRoutes.js\\\"\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1788,
+      "completion_tokens": 183,
+      "total_tokens": 1971,
+      "completion_tokens_details": {
+        "reasoning_tokens": 158
+      }
+    }
+  }
+}

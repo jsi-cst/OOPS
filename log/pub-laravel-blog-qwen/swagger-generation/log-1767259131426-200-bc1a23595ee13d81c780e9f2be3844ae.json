@@ -1,0 +1,138 @@
+{
+  "timestamp": 1767259131426,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@index` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\n3. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\n4. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@index` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Http\\Resources\\Post as PostResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass PostController extends Controller\n{\n    /**\n     * Return the posts.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return PostResource::collection(\n            Post::search($request->input('q'))->withCount('comments')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): PostResource\n    {\n        $this->authorize('update', $post);\n\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return new PostResource($post);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): PostResource\n    {\n        $this->authorize('store', Post::class);\n\n        return new PostResource(\n            Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(Post $post): PostResource\n    {\n        return new PostResource($post);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): Response\n    {\n        $this->authorize('delete', $post);\n\n        $post->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the POST endpoint `/v1/posts` which is handled by the `store` method in the `PostController`. Let me first check the request validation class to understand what input is expected.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_927783d9dac94857a7d2a633",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"PostsRequest.php\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Http/Requests/Admin/PostsRequest.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_927783d9dac94857a7d2a633"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the PostsRequest.php file to understand the validation rules and expected input fields:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_d0a1bab8453b4967876e4cdc",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Http/Requests/Admin/PostsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Admin;\\n\\nuse App\\\\Rules\\\\CanBeAuthor;\\nuse Carbon\\\\Carbon;\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass PostsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Prepare the data for validation.\\n     */\\n    protected function prepareForValidation(): void\\n    {\\n        $this->merge([\\n            'slug' => Str::slug($this->input('title'))\\n        ]);\\n\\n        $this->merge([\\n            'posted_at' => Carbon::parse($this->input('posted_at'))\\n        ]);\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'title' => 'required',\\n            'content' => 'required',\\n            'posted_at' => 'required|date',\\n            'thumbnail_id' => 'nullable|exists:media,id',\\n            'author_id' => ['required', 'exists:users,id', new CanBeAuthor],\\n            'slug' => 'unique:posts,slug,' . (optional($this->post)->id ?: 'NULL'),\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_d0a1bab8453b4967876e4cdc"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the Post model to understand the structure of the Post resource:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_cf100ffa901249af81c3cfa6",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Post.php\\\" -type f | grep -E \\\"Models?|Post\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Http/Resources/Post.php\\n./app/Models/Post.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_cf100ffa901249af81c3cfa6"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-424ffd33-9550-95a9-aa03-752d97eae0fd",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me check the Post model to understand the structure:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_b19b0216e99046cba024d56b",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"cat ./app/Models/Post.php\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259130,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 1757,
+      "completion_tokens": 40,
+      "prompt_tokens": 1717,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766645058937,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the RESTEasy/JAX-RS on Netty (resteasy-netty4) for a Java-based REST API framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java`, I found that `previous_entry_handler` is implemented to process HTTP requests to the path `/api/v1/ops/keyspace/cleanup`. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.NodeOpsResources;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.mgmtapi.resources.models.KeyspaceRequest;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\nimport org.apache.commons.collections4.CollectionUtils;\nimport org.apache.commons.lang3.StringUtils;\n\nimport javax.ws.rs.Consumes;\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.Produces;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\nimport java.util.ArrayList;\nimport java.util.List;\n\n@Path(\"/api/v1/ops/keyspace\")\npublic class KeyspaceOpsResources {\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public KeyspaceOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/cleanup\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Cleanup not needed for tables 'system' or 'system_schema'\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace cleanup process\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n            )\n        )\n    )\n    @Operation(summary = \"Triggers the immediate cleanup of keys no longer belonging to a node. By default, clean all keyspaces. This operation is asynchronous and returns immediately\",\n            operationId = \"cleanup_v1\")\n    public Response cleanup(KeyspaceRequest keyspaceRequest)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            List<String> tables = keyspaceRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = keyspaceRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"NON_LOCAL_STRATEGY\";\n            }\n\n            if (StringUtils.equalsAnyIgnoreCase(keyspaceName, \"system\", \"system_schema\"))\n            {\n                return Response.ok(\"OK\").build();\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.forceKeyspaceCleanup(?, ?, ?, ?)\",\n                    keyspaceRequest.jobs, keyspaceName, tables, true)).build();\n        });\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CqZMvabaB6TMHsZ5C6V2YKOGyIEd1",
+    "object": "chat.completion",
+    "created": 1766645049,
+    "model": "gpt-5-nano-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "- Full HTTP request path: /api/v1/ops/keyspace/cleanup\n  - Rationale: Class-level path is /api/v1/ops/keyspace and the method adds /cleanup with @POST, resulting in /api/v1/ops/keyspace/cleanup. There are no path parameters in this endpoint.\n\n- All HTTP methods acceptable: No\n  - Rationale: Only a method annotated with @POST is defined for this path. There are no other methods (@GET, @PUT, etc.) implemented for this path in the provided code.\n\n- HEAD acceptable: No\n  - Rationale: There is no @HEAD method defined for this path, and the codebase snippet shows only a @POST method for this endpoint.\n\n- POST acceptable: Yes\n  - Rationale: The method is explicitly annotated with @POST, handling POST requests to /api/v1/ops/keyspace/cleanup.\n\n- OPTIONS acceptable: No\n  - Rationale: There is no explicit @OPTIONS handler defined for this path in the code.\n\n- TRACE acceptable: No\n  - Rationale: There is no @TRACE handler defined for this path in the code.\n\n- GET acceptable: No\n  - Rationale: There is no @GET method defined for this path; only POST is implemented.\n\n- PUT acceptable: No\n  - Rationale: There is no @PUT method defined for this path.\n\n- DELETE acceptable: No\n  - Rationale: There is no @DELETE method defined for this path.\n\n- PATCH acceptable: No\n  - Rationale: There is no @PATCH method defined for this path.\n\nExplanation:\nThe endpoint is defined as part of KeyspaceOpsResources with a class-level path of /api/v1/ops/keyspace and a method-level path of /cleanup using the POST HTTP method. Therefore, the only supported HTTP method for /api/v1/ops/keyspace/cleanup is POST. No other HTTP methods (GET, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE) are implemented for this path in the provided code, so they are not considered acceptable based on the code.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1080,
+      "completion_tokens": 1786,
+      "total_tokens": 2866,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1344,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

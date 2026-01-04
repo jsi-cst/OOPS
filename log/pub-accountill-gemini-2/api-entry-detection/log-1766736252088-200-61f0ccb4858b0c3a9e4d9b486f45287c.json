@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766736252088,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript (Node.js runtime) and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `index.js`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `index.js`:\n\n```\n//Copyright (c) 2022 Panshak Solomon\n\nimport express from 'express'\nimport cors from 'cors'\nimport mongoose from 'mongoose'\nimport dotenv from 'dotenv'\nimport nodemailer from 'nodemailer'\nimport pdf from 'html-pdf'\nimport { fileURLToPath } from 'url'\nimport { dirname } from 'path'\n\nconst __filename = fileURLToPath(import.meta.url)\nconst __dirname = dirname(__filename)\n\nimport invoiceRoutes from './routes/invoices.js'\nimport clientRoutes from './routes/clients.js'\nimport userRoutes from './routes/userRoutes.js'\n\nimport profile from './routes/profile.js'\nimport pdfTemplate from './documents/index.js'\n// import invoiceTemplate from './documents/invoice.js'\nimport emailTemplate from './documents/email.js'\n\nconst app = express()\ndotenv.config()\n\napp.use((express.json({ limit: \"30mb\", extended: true})))\napp.use((express.urlencoded({ limit: \"30mb\", extended: true})))\napp.use((cors()))\n\napp.use('/invoices', invoiceRoutes)\napp.use('/clients', clientRoutes)\napp.use('/users', userRoutes)\napp.use('/profiles', profile)\n\n// NODEMAILER TRANSPORT FOR SENDING INVOICE VIA EMAIL\nconst transporter = nodemailer.createTransport({\n    host: process.env.SMTP_HOST,\n    port : process.env.SMTP_PORT,\n    auth: {\n    user: process.env.SMTP_USER,\n    pass: process.env.SMTP_PASS\n    },\n    tls:{\n        rejectUnauthorized:false\n    }\n})\n\n\nvar options = { format: 'A4' };\n//SEND PDF INVOICE VIA EMAIL\napp.post('/send-pdf', (req, res) => {\n    const { email, company } = req.body\n\n    // pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {\n    pdf.create(pdfTemplate(req.body), options).toFile('invoice.pdf', (err) => {\n       \n          // send mail with defined transport object\n        transporter.sendMail({\n            from: ` Accountill <hello@accountill.com>`, // sender address\n            to: `${email}`, // list of receivers\n            replyTo: `${company.email}`,\n            subject: `Invoice from ${company.businessName ? company.businessName : company.name}`, // Subject line\n            text: `Invoice from ${company.businessName ? company.businessName : company.name }`, // plain text body\n            html: emailTemplate(req.body), // html body\n            attachments: [{\n                filename: 'invoice.pdf',\n                path: `${__dirname}/invoice.pdf`\n            }]\n        });\n\n        if(err) {\n            res.send(Promise.reject());\n        }\n        res.send(Promise.resolve());\n    });\n});\n\n\n//Problems downloading and sending invoice\n// npm install html-pdf -g\n// npm link html-pdf\n// npm link phantomjs-prebuilt\n\n//CREATE AND SEND PDF INVOICE\napp.post('/create-pdf', (req, res) => {\n    pdf.create(pdfTemplate(req.body), {}).toFile('invoice.pdf', (err) => {\n        if(err) {\n            res.send(Promise.reject());\n        }\n        res.send(Promise.resolve());\n    });\n});\n\n//SEND PDF INVOICE\napp.get('/fetch-pdf', (req, res) => {\n     res.sendFile(`${__dirname}/invoice.pdf`)\n})\n\n\napp.get('/', (req, res) => {\n    res.send('SERVER IS RUNNING')\n  })\n\nconst DB_URL = process.env.DB_URL\nconst PORT = process.env.PORT || 5000\n\nmongoose.connect(DB_URL, { useNewUrlParser: true, useUnifiedTopology: true})\n    .then(() => app.listen(PORT, () => console.log(`Server running on port: ${PORT}`)))\n    .catch((error) => console.log(error.message))\n\nmongoose.set('useFindAndModify', false)\nmongoose.set('useCreateIndex', true)\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251226160237706246363wz5Xfab5",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766736165,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": \"/\",\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"pathIsPrefix\": false,\n    \"pathIsLiteral\": true,\n    \"pathFromConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/send-pdf\",\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"pathIsPrefix\": false,\n    \"pathIsLiteral\": true,\n    \"pathFromConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/create-pdf\",\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"pathIsPrefix\": false,\n    \"pathIsLiteral\": true,\n    \"pathFromConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/fetch-pdf\",\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"pathIsPrefix\": false,\n    \"pathIsLiteral\": true,\n    \"pathFromConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  }\n]\n```\n\n**Explanation:**\n\nThe code defines several API endpoints using the `app.get()` and `app.post()` methods of the Express.js application.  Each entry in the JSON array represents one of these endpoints.\n\n*   **`/`**: This is a GET request handler that responds with \"SERVER IS RUNNING\".\n*   **`/send-pdf`**: This is a POST request handler that generates and sends a PDF invoice via email.\n*   **`/create-pdf`**: This is a POST request handler that creates a PDF invoice.\n*   **`/fetch-pdf`**: This is a GET request handler that sends the generated PDF invoice as a file.\n\nFor each entry:\n\n*   `path`: The exact path string as defined in the `app.get()` or `app.post()` calls.\n*   `handler`:  \"anonymous\" because the request handlers are defined as anonymous functions directly within the `index.js` file.\n*   `implementationPresent`: `true` because the handler's implementation is present in `index.js`.\n*   `pathIsPrefix`: `false` because the paths are complete paths, not prefixes.\n*   `pathIsLiteral`: `true` because the paths are defined as literal strings.\n*   `pathFromConvention`: `false` because the paths are not derived from any naming conventions.\n*   `isRestful`: `true` because these are standard HTTP methods (GET and POST) used in a RESTful API.\n*   `isTest`: `false` because these endpoints appear to be part of the application's core functionality, not specifically for testing.\n\nThe routes defined in the imported modules (`./routes/invoices.js`, `./routes/clients.js`, `./routes/userRoutes.js`, and `./routes/profile.js`) are not included because their implementations are not present in the provided `index.js` file.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1432,
+      "completion_tokens": 712,
+      "total_tokens": 2144,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1432,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

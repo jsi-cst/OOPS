@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766903161910,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/api/cms/file.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/api/cms/file.py`:\n\n```\n\"\"\"\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nfrom flask import Blueprint, request\n\nfrom app.api import AuthorizationBearerSecurity, api\nfrom app.extension.file.local_uploader import LocalUploader\nfrom app.lin import login_required\n\nfile_api = Blueprint(\"file\", __name__)\n\n\n@file_api.route(\"\", methods=[\"POST\"])\n@login_required\n@api.validate(\n    tags=[\"文件\"],\n    security=[AuthorizationBearerSecurity],\n)\ndef post_file():\n    \"\"\"\n    上传文件\n    \"\"\"\n    files = request.files\n    uploader = LocalUploader(files)\n    ret = uploader.upload()\n    return ret\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": null,\n    \"handler\": \"post_file\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"from_literal\": true,\n    \"from_convention\": false,\n    \"is_rest\": true,\n    \"is_testing\": false\n  }\n]\n\nExplanation:\n\n- The file defines a Flask Blueprint named file and a route decorator: @file_api.route(\"\", methods=[\"POST\"]). The route path argument is the empty string literal (\"\") in this file, so \"from_literal\" is true.\n- Because the route is registered on a blueprint and the blueprint's URL prefix (if any) is not defined in this file, the full HTTP request path (which must begin with a \"/\") cannot be determined from this source alone. Per instructions, the \"path\" field is therefore set to null rather than guessing (e.g., \"/\" or a blueprint prefix).\n- The handler is the named function post_file, which is implemented in the same source file, so \"implementation_present\" is true and \"handler\" is \"post_file\" (not \"anonymous\").\n- The route string provided (\"\") is a concrete literal for this route and is not derived from any naming convention, so \"from_convention\" is false.\n- The route string is a concrete route (not intended as a prefix pattern here), so \"is_prefix\" is false.\n- The endpoint accepts POST for uploading a file and is a standard RESTful resource operation, so \"is_rest\" is true.\n- There is no indication this endpoint is for testing, so \"is_testing\" is false.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766903153,
+    "id": "chatcmpl-CreVtgK4EXTvco9lej3YqN5157raN",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1040,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 704,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 589,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1629
+    }
+  }
+}

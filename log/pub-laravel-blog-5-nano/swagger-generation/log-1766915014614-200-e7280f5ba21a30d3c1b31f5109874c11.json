@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766915014614,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/PostCommentController.php`, `PostCommentController::class, 'index'` is implemented to process HTTP requests to `/posts/{post}/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse Illuminate\\View\\View;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Show the post's comments.\n     */\n    public function index(Post $post): View\n    {\n        return view('comments.index', [\n            'comments' => $post->comments()->with('author')->latest()->get()\n        ]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "To determine the OpenAPI Response Object for the GET /posts/{post}/comments endpoint, I examined the provided controller code. The PostCommentController@index method returns a Laravel view (HTML) named comments.index and passes a collection of comments to that view. Because the method returns a View, the HTTP response will be an HTML document (not JSON). Therefore, in Swagger 2.0 terms, the 200 response should describe an HTML response, typically represented as a string payload with a corresponding content type of text/html (produces metadata not shown here since you asked for the responses object only).\n\nThe 200 response is the primary outcome for this endpoint, representing the successful rendering of the post comments page as HTML. No explicit error responses are defined in the provided code path, and route-model binding will automatically trigger a 404 if the post is not found, but that behavior is outside the explicit 200 response object for this method.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"Rendered HTML content for the post's comments page.\",\n    \"schema\": {\n      \"type\": \"string\"\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766914998,
+    "id": "chatcmpl-Crhawqrwg3MyKc8veVH6Mo8BWLLfW",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2163,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1920,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 522,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2685
+    }
+  }
+}

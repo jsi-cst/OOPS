@@ -1,0 +1,146 @@
+{
+  "timestamp": 1766646052184,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "[\n  {\n    \"path\": \"/\",\n    \"handler\": \"UsersRegistration\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/login\",\n    \"handler\": \"UsersLogin\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/\",\n    \"handler\": \"UserRetrieve\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/\",\n    \"handler\": \"UserUpdate\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/{username}\",\n    \"handler\": \"ProfileRetrieve\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/{username}/follow\",\n    \"handler\": \"ProfileFollow\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/{username}/follow\",\n    \"handler\": \"ProfileUnfollow\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  }\n]\n\nExplanation of results:\n- I scanned users/routers.go and extracted every explicit router.<METHOD> call that binds a literal path string to a handler: router.POST/GET/PUT/DELETE calls inside UsersRegister, UserRegister and ProfileRegister.\n- Each entry's \"path\" comes directly from the string literal used in the router call. Gin uses \":param\" syntax for path parameters; I converted those to the OpenAPI-style \"{param}\" form (e.g., \"/:username\" -> \"/{username}\").\n- \"handler\" names are the function identifiers passed to the router call. All of those handler functions (UsersRegistration, UsersLogin, UserRetrieve, UserUpdate, ProfileRetrieve, ProfileFollow, ProfileUnfollow) are implemented in the same file, so implementation_present is true for all.\n- None of the path strings in this file are prefix patterns (no wildcard \"/*\" or other prefix-only registration), so path_is_prefix is false for all. Note: these paths are relative to whatever RouterGroup prefix is used when the register functions are invoked elsewhere, but that prefix is not defined in this file and was not assumed.\n- path_from_literal is true because each path was given as a literal string in this file. path_from_convention is false because no framework naming convention (automatic mapping from function names to paths) was used here.\n- These routes are standard REST HTTP endpoints (user/profile creation, retrieval, modification, follow/unfollow), so is_rest is true. None are test routes, so is_test is false.\n\nI did not include any routes whose path was not a literal string in this file or derived via a convention; I did not attempt to expand RouterGroup prefixes that are defined elsewhere."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "APIEntryDetectionResultList",
+        "schema": {
+          "$defs": {
+            "APIEntryDetectionResult": {
+              "properties": {
+                "path": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.",
+                  "title": "Path"
+                },
+                "handler": {
+                  "description": "The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.",
+                  "title": "Handler",
+                  "type": "string"
+                },
+                "handler_in_same_file": {
+                  "description": "Whether the handler's implementation is present in the same source code file, rather than being imported.",
+                  "title": "Handler In Same File",
+                  "type": "boolean"
+                },
+                "path_is_prefix": {
+                  "description": "Whether the path string is a prefix rather than a full path.",
+                  "title": "Path Is Prefix",
+                  "type": "boolean"
+                },
+                "path_from_string_literal": {
+                  "description": "Whether the path string is extracted from a literal string defined in the source code.",
+                  "title": "Path From String Literal",
+                  "type": "boolean"
+                },
+                "path_from_naming_convention": {
+                  "description": "Whether the path string is derived from a naming convention supported by the framework.",
+                  "title": "Path From Naming Convention",
+                  "type": "boolean"
+                },
+                "is_restful_api": {
+                  "description": "Whether the API entry is for a RESTful API, rather than other types of APIs.",
+                  "title": "Is Restful Api",
+                  "type": "boolean"
+                },
+                "is_testing_purposes": {
+                  "description": "Whether the API entry is intended for testing purposes, such as unit tests or functional tests.",
+                  "title": "Is Testing Purposes",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "path",
+                "handler",
+                "handler_in_same_file",
+                "path_is_prefix",
+                "path_from_string_literal",
+                "path_from_naming_convention",
+                "is_restful_api",
+                "is_testing_purposes"
+              ],
+              "title": "APIEntryDetectionResult",
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "properties": {
+            "entry": {
+              "description": "List of API entries you found.",
+              "items": {
+                "$ref": "#/$defs/APIEntryDetectionResult"
+              },
+              "title": "Entry",
+              "type": "array"
+            }
+          },
+          "required": [
+            "entry"
+          ],
+          "title": "APIEntryDetectionResultList",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"entry\":[{\"handler\":\"UsersRegistration\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false},{\"handler\":\"UsersLogin\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/login\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false},{\"handler\":\"UserRetrieve\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false},{\"handler\":\"UserUpdate\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false},{\"handler\":\"ProfileRetrieve\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/{username}\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false},{\"handler\":\"ProfileFollow\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/{username}/follow\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false},{\"handler\":\"ProfileUnfollow\",\"handler_in_same_file\":true,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/{username}/follow\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false}]}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766646040,
+    "id": "chatcmpl-CqZcuuK4KIK1Yv2IdcKPNrOweAIqg",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1814,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1408,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1229,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3043
+    }
+  }
+}

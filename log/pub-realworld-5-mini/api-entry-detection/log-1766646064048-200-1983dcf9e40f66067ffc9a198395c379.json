@@ -1,0 +1,146 @@
+{
+  "timestamp": 1766646064048,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "[\n  {\n    \"path\": \"/api/users\",\n    \"handler\": \"users.UsersRegister\",\n    \"implementation_present_in_file\": false,\n    \"path_is_prefix\": true,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/api/articles\",\n    \"handler\": \"articles.ArticlesAnonymousRegister\",\n    \"implementation_present_in_file\": false,\n    \"path_is_prefix\": true,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/api/tags\",\n    \"handler\": \"articles.TagsAnonymousRegister\",\n    \"implementation_present_in_file\": false,\n    \"path_is_prefix\": true,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/api/user\",\n    \"handler\": \"users.UserRegister\",\n    \"implementation_present_in_file\": false,\n    \"path_is_prefix\": true,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/api/profiles\",\n    \"handler\": \"users.ProfileRegister\",\n    \"implementation_present_in_file\": false,\n    \"path_is_prefix\": true,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/api/articles\",\n    \"handler\": \"articles.ArticlesRegister\",\n    \"implementation_present_in_file\": false,\n    \"path_is_prefix\": true,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/api/ping/\",\n    \"handler\": \"anonymous\",\n    \"implementation_present_in_file\": true,\n    \"path_is_prefix\": false,\n    \"path_is_literal\": true,\n    \"uses_framework_convention\": false,\n    \"is_rest\": false,\n    \"is_test\": false\n  }\n]\n\nExplanation:\n\n- I scanned hello.go for Gin routing calls that bind literal path strings to route groups or handlers.\n- The file creates a top-level group v1 := r.Group(\"/api\") (literal \"/api\") and then calls registration functions with groups derived from v1 (for example users.UsersRegister(v1.Group(\"/users\"))). Where a literal path string appears in this file (e.g., \"/api\", \"/users\", \"/articles\", \"/tags\", \"/user\", \"/profiles\", \"/api/ping\", \"/\") I formed the effective route path by joining group prefixes with the literal passed to the method in this file. For example v1.Group(\"/users\") under v1 := r.Group(\"/api\") becomes \"/api/users\".\n- I included entries for each place in this file where a literal path is passed together with a call that registers handlers:\n  - Calls that pass a group into a register function (users.UsersRegister, articles.*Register, etc.) are represented as API entries with path_is_prefix = true because Group establishes a route prefix and those register functions (in other packages) add the actual handlers beneath that prefix. Those handler implementations are not in this file, so implementation_present_in_file = false.\n  - The test ping route is defined inline: r.Group(\"/api/ping\") followed by testAuth.GET(\"/\", func(...)) — this yields a concrete endpoint at \"/api/ping/\" with an anonymous handler implemented in this file (implementation_present_in_file = true, handler = \"anonymous\"). path_is_prefix = false because this is a complete route registration (GET on \"/\").\n- I did not include:\n  - r.Group(\"/api\") by itself as an API entry since it only creates a group prefix and does not itself bind request-processing handlers in this file.\n  - middleware uses (v1.Use(...)) because those are middleware applications, not route handlers that directly process requests to a specific path.\n  - any routes or handlers that exist only in other source files and whose path literal is not present in this file — the output only lists API entries where the path literal is explicitly present in hello.go or where the file passes a literal group prefix used to register handlers (as described above).\n- On flags:\n  - path_is_literal is true for all entries because every path component used here comes from a string literal in this file.\n  - uses_framework_convention is false for all entries because no path was derived from a Gin naming convention (all are explicit literals).\n  - is_rest is true for the resource registration entries (users/articles/tags/profiles) because they belong to the RESTful API implemented by the project; the simple ping endpoint is not marked as a REST resource (is_rest = false).\n  - is_test is false for all entries; while the ping handler is named/used for quick checks it is not clearly restricted to testing-only in the provided file.\n- If you want, I can now expand these entries into a more detailed OpenAPI skeleton (methods, request/response schemas) by reading the source files where the handlers are implemented (users, articles packages)."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "APIEntryDetectionResultList",
+        "schema": {
+          "$defs": {
+            "APIEntryDetectionResult": {
+              "properties": {
+                "path": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.",
+                  "title": "Path"
+                },
+                "handler": {
+                  "description": "The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.",
+                  "title": "Handler",
+                  "type": "string"
+                },
+                "handler_in_same_file": {
+                  "description": "Whether the handler's implementation is present in the same source code file, rather than being imported.",
+                  "title": "Handler In Same File",
+                  "type": "boolean"
+                },
+                "path_is_prefix": {
+                  "description": "Whether the path string is a prefix rather than a full path.",
+                  "title": "Path Is Prefix",
+                  "type": "boolean"
+                },
+                "path_from_string_literal": {
+                  "description": "Whether the path string is extracted from a literal string defined in the source code.",
+                  "title": "Path From String Literal",
+                  "type": "boolean"
+                },
+                "path_from_naming_convention": {
+                  "description": "Whether the path string is derived from a naming convention supported by the framework.",
+                  "title": "Path From Naming Convention",
+                  "type": "boolean"
+                },
+                "is_restful_api": {
+                  "description": "Whether the API entry is for a RESTful API, rather than other types of APIs.",
+                  "title": "Is Restful Api",
+                  "type": "boolean"
+                },
+                "is_testing_purposes": {
+                  "description": "Whether the API entry is intended for testing purposes, such as unit tests or functional tests.",
+                  "title": "Is Testing Purposes",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "path",
+                "handler",
+                "handler_in_same_file",
+                "path_is_prefix",
+                "path_from_string_literal",
+                "path_from_naming_convention",
+                "is_restful_api",
+                "is_testing_purposes"
+              ],
+              "title": "APIEntryDetectionResult",
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "properties": {
+            "entry": {
+              "description": "List of API entries you found.",
+              "items": {
+                "$ref": "#/$defs/APIEntryDetectionResult"
+              },
+              "title": "Entry",
+              "type": "array"
+            }
+          },
+          "required": [
+            "entry"
+          ],
+          "title": "APIEntryDetectionResultList",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"entry\":[{\"handler\":\"users.UsersRegister\",\"handler_in_same_file\":false,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/api/users\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":true},{\"handler\":\"articles.ArticlesAnonymousRegister\",\"handler_in_same_file\":false,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/api/articles\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":true},{\"handler\":\"articles.TagsAnonymousRegister\",\"handler_in_same_file\":false,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/api/tags\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":true},{\"handler\":\"users.UserRegister\",\"handler_in_same_file\":false,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/api/user\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":true},{\"handler\":\"users.ProfileRegister\",\"handler_in_same_file\":false,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/api/profiles\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":true},{\"handler\":\"articles.ArticlesRegister\",\"handler_in_same_file\":false,\"is_restful_api\":true,\"is_testing_purposes\":false,\"path\":\"/api/articles\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":true},{\"handler\":\"anonymous\",\"handler_in_same_file\":true,\"is_restful_api\":false,\"is_testing_purposes\":false,\"path\":\"/api/ping/\",\"path_from_naming_convention\":false,\"path_from_string_literal\":true,\"path_is_prefix\":false}]}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766646049,
+    "id": "chatcmpl-CqZd3Ion7pLIhIDSG9mRJfmA4tBt5",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2533,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 2112,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1536,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4069
+    }
+  }
+}

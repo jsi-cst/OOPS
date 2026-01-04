@@ -1,0 +1,176 @@
+{
+  "timestamp": 1767086519938,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, you need to output a list of REST API endpoint methods included in this REST API implementation, each containing the full HTTP request path (with path parameters enclosed in curly braces {}) and one of the supported HTTP methods (GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS/TRACE). I'll provide you the output of the `ls` command, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project."
+      },
+      {
+        "role": "user",
+        "content": "```\nDockerfile\nLICENSE\npom.xml\nREADME.md\nsrc\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_f0y18KItx40t6cEU6dLMisyz",
+            "function": {
+              "arguments": "{\"command\":\"ls -R\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '.:\\nDockerfile\\nLICENSE\\npom.xml\\nREADME.md\\nsrc\\n\\n./src:\\nmain\\ntest\\n\\n./src/main:\\njava\\nresources\\n\\n./src/main/java:\\ncom\\n\\n./src/main/java/com:\\nurcodebin\\n\\n./src/main/java/com/urcodebin:\\napi\\n\\n./src/main/java/com/urcodebin/api:\\ncontrollers\\ndto\\nentities\\nenums\\nerror\\nrepository\\nsecurity\\nservices\\nUrCodebinApiApplication.java\\n\\n./src/main/java/com/urcodebin/api/controllers:\\nCodePasteController.java\\nrequestbody\\nUserAccountController.java\\n\\n./src/main/java/com/urcodebin/api/controllers/requestbody:\\nSignupRequestBody.java\\nUploadPasteRequestBody.java\\n\\n./src/main/java/com/urcodebin/api/dto:\\nCodePasteDTO.java\\nLoginDTO.java\\nUserAccountDTO.java\\n\\n./src/main/java/com/urcodebin/api/entities:\\nCodePaste.java\\nUserAccount.java\\n\\n./src/main/java/com/urcodebin/api/enums:\\nPasteExpiration.java\\nPasteSyntax.java\\nPasteVisibility.java\\n\\n./src/main/java/com/urcodebin/api/error:\\nexception\\nhandler\\n\\n./src/main/java/com/urcodebin/api/error/exception:\\nAccountInformationTakenException.java\\nAuthorizationHeaderNotFoundException.java\\nInvalidLoginFormatException.java\\nMissingRequiredSourceCodeException.java\\nPasteNotFoundException.java\\nUserAccountNotFoundException.java\\n\\n./src/main/java/com/urcodebin/api/error/handler:\\nErrorResponse.java\\nResponseExceptionHandler.java\\n\\n./src/main/java/com/urcodebin/api/repository:\\nCodePasteRepository.java\\nUserAccountRepository.java\\n\\n./src/main/java/com/urcodebin/api/security:\\nApplicationSecurityConfiguration.java\\nfilter\\nhandler\\nSecurityConstants.java\\n\\n./src/main/java/com/urcodebin/api/security/filter:\\nJWTAuthenticationFilter.java\\nJWTAuthorizationFilter.java\\n\\n./src/main/java/com/urcodebin/api/security/handler:\\nFailedAuthenticationHandler.java\\n\\n./src/main/java/com/urcodebin/api/services:\\nCodePasteServiceImpl.java\\ninterfaces\\nUserAccountServiceImpl.java\\nUserDetailsServiceImpl.java\\n\\n./src/main/java/com/urcodebin/api/services/interfaces:\\nCodePasteService.java\\nUserAccountService.java\\n\\n./src/main/resources:\\napplication-prod.properties\\napplication.properties\\napplication-tests.properties\\ntests\\n\\n./src/main/resources/tests:\\ntestData\\n\\n./src/test:\\njava\\n\\n./src/test/java:\\ncom\\n\\n./src/test/java/com:\\nurcodebin\\n\\n./src/test/java/com/urcodebin:\\napi\\n\\n./src/test/java/com/urcodebin/api:\\ncontrollers\\nrepository\\nservices\\n\\n./src/test/java/com/urcodebin/api/controllers:\\nCodePasteControllerTests.java\\nUserAccountControllerTests.java\\n\\n./src/test/java/com/urcodebin/api/repository:\\nCodePasteRepositoryTests.java\\n\\n./src/test/java/com/urcodebin/api/services:\\nCodePasteServiceTests.java\\nUserAccountServiceTests.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_f0y18KItx40t6cEU6dLMisyz"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_tS32qa5H3ES0LRmXvez6yf1d",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' src/main/java/com/urcodebin/api/controllers/CodePasteController.java\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.controllers;\\n\\nimport com.urcodebin.api.controllers.requestbody.UploadPasteRequestBody;\\nimport com.urcodebin.api.dto.CodePasteDTO;\\nimport com.urcodebin.api.entities.CodePaste;\\nimport com.urcodebin.api.enums.PasteSyntax;\\nimport com.urcodebin.api.error.exception.MissingRequiredSourceCodeException;\\nimport com.urcodebin.api.error.exception.PasteNotFoundException;\\nimport com.urcodebin.api.services.interfaces.CodePasteService;\\nimport org.modelmapper.ModelMapper;\\nimport org.springframework.beans.factory.annotation.Autowired;\\nimport org.springframework.beans.factory.annotation.Qualifier;\\nimport org.springframework.web.bind.annotation.*;\\n\\nimport java.util.List;\\nimport java.util.Optional;\\nimport java.util.UUID;\\nimport java.util.stream.Collectors;\\n\\n@RestController\\n@RequestMapping(\"/api/paste\")\\npublic class CodePasteController {\\n\\n    private final CodePasteService codePasteService;\\n\\n    private final ModelMapper modelMapper;\\n\\n    private static final int MAX_TITLE_LENGTH = 50;\\n    private static final int MIN_TITLE_LENGTH = 1;\\n    private static final int MAX_SEARCH_LIMIT = 20;\\n    private static final int MIN_SEARCH_LIMIT = 1;\\n\\n    @Autowired\\n    public CodePasteController(@Qualifier(\"PasteService\") CodePasteService codePasteService,\\n                               ModelMapper modelMapper) {\\n        this.codePasteService = codePasteService;\\n        this.modelMapper = modelMapper;\\n    }\\n\\n    @GetMapping(path = \"/{paste_id}\")\\n    public CodePasteDTO getCodePasteFromId(@PathVariable(\"paste_id\") String pasteId) {\\n        UUID pasteUUID = createUUIDFromString(pasteId);\\n        Optional<CodePaste> foundPasteId = codePasteService.findByCodePasteId(pasteUUID);\\n        final CodePaste codePaste = foundPasteId.orElseThrow(() ->\\n                            new PasteNotFoundException(\"No CodePaste has been found with the given id.\"));\\n        return convertToDTO(codePaste);\\n    }\\n\\n    @DeleteMapping(path = \"/{paste_id}\")\\n    public void deleteCodePasteWithId(@PathVariable(\"paste_id\") String pasteId) {\\n        UUID pasteUUID = createUUIDFromString(pasteId);\\n        if(!codePasteService.doesCodePasteWithIdExist(pasteUUID))\\n            throw new PasteNotFoundException(\"No CodePaste has been found with the given id.\");\\n\\n        codePasteService.deleteCodePasteById(pasteUUID);\\n    }\\n\\n    @GetMapping(path = \"/public\")\\n    public List<CodePasteDTO> getListOfPublicPastesWith(\\n                @RequestParam(value = \"paste_title\", defaultValue = \"\") String pasteTitle,\\n                @RequestParam(value = \"paste_syntax\", required = false) String pasteSyntax,\\n                @RequestParam(value = \"limit\", defaultValue = \"5\") int limit) {\\n        if(limit > MAX_SEARCH_LIMIT || limit < MIN_SEARCH_LIMIT)\\n            throw new IllegalArgumentException(\"limit number must be between 1 and 20.\");\\n\\n        List<CodePaste> listOfPastes;\\n        if(pasteSyntax == null) {\\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, limit);\\n        } else {\\n            PasteSyntax pasteSyntaxToSearch = createPasteSyntaxFromString(pasteSyntax);\\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, pasteSyntaxToSearch, limit);\\n        }\\n        return listOfPastes.stream()\\n                .map(this::convertToDTO)\\n                .collect(Collectors.toList());\\n    }\\n\\n    @PostMapping\\n    public CodePasteDTO postNewCodePasteWith(@RequestBody UploadPasteRequestBody pasteRequestBody) {\\n        if(pasteRequestBody.getSourceCode().isEmpty())\\n            throw new MissingRequiredSourceCodeException(\"Required field (source_code) is missing.\");\\n\\n        int titleLength = pasteRequestBody.getPasteTitle().length();\\n        if(titleLength > MAX_TITLE_LENGTH || titleLength < MIN_TITLE_LENGTH) {\\n            String errorMsg = String.format(\"Paste Title field length must be within %s and %s\",\\n                                                MIN_TITLE_LENGTH, MAX_TITLE_LENGTH);\\n            throw new IllegalArgumentException(errorMsg);\\n        }\\n\\n        final CodePaste newCodePaste = codePasteService.createNewCodePaste(pasteRequestBody);\\n        return convertToDTO(newCodePaste);\\n    }\\n\\n    private CodePasteDTO convertToDTO(CodePaste codePaste) {\\n        return modelMapper.map(codePaste, CodePasteDTO.class);\\n    }\\n\\n    private UUID createUUIDFromString(String stringId) {\\n        try {\\n            return UUID.fromString(stringId);\\n        } catch (IllegalArgumentException e) {\\n            throw new IllegalArgumentException(\"Invalid UUID format, please format properly!\");\\n        }\\n    }\\n\\n    private PasteSyntax createPasteSyntaxFromString(String pasteSyntax) {\\n        try {\\n            return PasteSyntax.valueOf(pasteSyntax);\\n        } catch (IllegalArgumentException e) {\\n            throw new IllegalArgumentException(\"paste_syntax parameter is not any of the given options.\");\\n        }\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_tS32qa5H3ES0LRmXvez6yf1d"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "EndpointMethodExtractResultList",
+        "schema": {
+          "$defs": {
+            "EndpointMethodExtractResult": {
+              "properties": {
+                "path": {
+                  "description": "The full HTTP request path for the endpoint.",
+                  "title": "Path",
+                  "type": "string"
+                },
+                "method": {
+                  "description": "The supported HTTP method for the endpoint.",
+                  "title": "Method",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "method"
+              ],
+              "title": "EndpointMethodExtractResult",
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "properties": {
+            "items": {
+              "description": "List of endpoint methods you found.",
+              "items": {
+                "$ref": "#/$defs/EndpointMethodExtractResult"
+              },
+              "title": "Items",
+              "type": "array"
+            }
+          },
+          "required": [
+            "items"
+          ],
+          "title": "EndpointMethodExtractResultList",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "command"
+            ]
+          },
+          "strict": true,
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsQDOyDzuItwV8lIf4BAkawfWGKZG",
+    "object": "chat.completion",
+    "created": 1767086518,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,200p' src/main/java/com/urcodebin/api/controllers/UserAccountController.java\"}",
+                "name": "run_command"
+              },
+              "id": "call_fnfPvMaYShG1IujUWYswVauj",
+              "type": "function"
+            }
+          ],
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2353,
+      "completion_tokens": 40,
+      "total_tokens": 2393,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

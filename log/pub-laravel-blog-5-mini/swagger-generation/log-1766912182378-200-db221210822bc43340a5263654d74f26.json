@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766912182378,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/posts/{post}` with method PATCH, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/PostController.php`, `App\\\\Http\\\\Controllers\\\\Admin\\\\PostController` is implemented to process HTTP requests to `/admin/posts/{post}` with HTTP method PATCH.\n\n2. In `app/Http/Controllers/Admin/PostController.php`, `PostController` is implemented to process HTTP requests to `/admin/posts/{post}` with HTTP method PATCH.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Models\\MediaLibrary;\nuse App\\Models\\Post;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\View\\View;\n\nclass PostController extends Controller\n{\n    /**\n     * Show the application posts index.\n     */\n    public function index(): View\n    {\n        return view('admin.posts.index', [\n            'posts' => Post::withCount('comments', 'likes')->with('author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Post $post): View\n    {\n        return view('admin.posts.edit', [\n            'post' => $post,\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Show the form for creating a new resource.\n     */\n    public function create(Request $request): View\n    {\n        return view('admin.posts.create', [\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): RedirectResponse\n    {\n        $post = Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.created'));\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): RedirectResponse\n    {\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post)\n    {\n        $post->delete();\n\n        return redirect()->route('admin.posts.index')->withSuccess(__('posts.deleted'));\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\nI inspected the Admin\\PostController::update method. It takes a PostsRequest (a form request that performs validation) and a Post model (route-model binding). On success it performs $post->update(...) and returns a RedirectResponse redirecting to the admin.posts.edit route for the updated post (with a flashed success message). From typical Laravel behavior and the code, the possible responses for the PATCH /admin/posts/{post} endpoint are:\n\n- 302 Redirect (successful update): Redirects to the post edit page (Location header points to the edit route). This is the explicit return type in the controller.\n- 422 Unprocessable Entity (validation failed for JSON/AJAX requests): If the PostsRequest validation fails and the client expects JSON, Laravel yields a 422 JSON response with a \"message\" and an \"errors\" object mapping field names to arrays of messages.\n- 302 Redirect (validation failed for standard web form): For non-AJAX web requests validation failures often redirect back with errors in the session, but since a redirect-based response is already included for success, I include the 422 response to represent structured validation feedback.\n- 403 Forbidden: Authorization could fail (if policies/gates are used) resulting in a 403 response.\n- 404 Not Found: If the {post} route-model binding fails, Laravel returns a 404.\n- 500 Internal Server Error: Generic server error.\n\nI encoded these as Swagger 2.0 Response Objects. For the 302 response I included a \"Location\" header entry. For JSON responses (422, 403, 404, 500) I included simple JSON schemas describing typical Laravel JSON error payloads (message and, where appropriate, errors). No $ref references are used.\n\nthe final generated result begins\n{\n  \"302\": {\n    \"description\": \"Redirect to the post edit page after successful update.\",\n    \"headers\": {\n      \"Location\": {\n        \"description\": \"URL of the edit page for the updated post.\",\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"422\": {\n    \"description\": \"Validation failed. When the client expects JSON (AJAX/API) Laravel returns a 422 with details.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"The given data was invalid.\"\n        },\n        \"errors\": {\n          \"type\": \"object\",\n          \"description\": \"Validation errors keyed by field name, each containing an array of error messages.\",\n          \"additionalProperties\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      },\n      \"required\": [\n        \"message\",\n        \"errors\"\n      ]\n    }\n  },\n  \"403\": {\n    \"description\": \"Forbidden. The authenticated user does not have permission to update this resource.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"This action is unauthorized.\"\n        }\n      },\n      \"required\": [\n        \"message\"\n      ]\n    }\n  },\n  \"404\": {\n    \"description\": \"Not Found. The specified post was not found (route model binding failure).\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"No query results for model [App\\\\\\\\Models\\\\\\\\Post] 123\"\n        }\n      },\n      \"required\": [\n        \"message\"\n      ]\n    }\n  },\n  \"500\": {\n    \"description\": \"Internal Server Error. An unexpected error occurred on the server.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Server error.\"\n        }\n      },\n      \"required\": [\n        \"message\"\n      ]\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912169,
+    "id": "chatcmpl-CrgrJTATkt3nJFpcrQQ8KgTs5MjmG",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1676,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 832,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 958,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2634
+    }
+  }
+}

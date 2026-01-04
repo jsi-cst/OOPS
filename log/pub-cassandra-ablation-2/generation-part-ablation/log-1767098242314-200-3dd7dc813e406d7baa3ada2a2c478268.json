@@ -1,0 +1,97 @@
+{
+  "timestamp": 1767098242314,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v1/ops/tables/compact` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java`, `TableOpsResources.compact` is implemented to process HTTP requests to `/api/v1/ops/tables/compact` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.mgmtapi.resources.models.CompactRequest;\nimport com.datastax.mgmtapi.resources.models.KeyspaceRequest;\nimport com.datastax.mgmtapi.resources.models.ScrubRequest;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\nimport org.apache.commons.collections4.CollectionUtils;\nimport org.apache.commons.lang3.StringUtils;\nimport org.apache.http.HttpStatus;\n\nimport javax.ws.rs.Consumes;\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.Produces;\nimport javax.ws.rs.QueryParam;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\n\n@Path(\"/api/v1/ops/tables\")\npublic class TableOpsResources {\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public TableOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/scrub\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for table scrub process\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    schema = @Schema(\n                            implementation = String.class\n                    ),\n                    examples = @ExampleObject(\n                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n                    )\n            )\n    )\n    @Operation(summary = \"Scrub (rebuild sstables for) one or more tables. This operation is asynchronous and returns immediately.\", operationId = \"scrub\")\n    public Response scrub(ScrubRequest scrubRequest)\n    {\n        return handle(() ->\n        {\n            List<String> tables = scrubRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = scrubRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"ALL\";\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                    \"CALL NodeOps.scrub(?, ?, ?, ?, ?, ?, ?, ?)\", scrubRequest.disableSnapshot, scrubRequest.skipCorrupted,\n                    scrubRequest.checkData, scrubRequest.reinsertOverflowedTTL, scrubRequest.jobs, keyspaceName, tables, true)).build();\n        });\n    }\n\n    @POST\n    @Path(\"/sstables/upgrade\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace SSTable upgrade process\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    schema = @Schema(\n                            implementation = String.class\n                    ),\n                    examples = @ExampleObject(\n                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n                    )\n            )\n    )\n    @Operation(summary = \"Rewrite sstables (for the requested tables) that are not on the current version (thus upgrading them to said current version). This operation is asynchronous and returns immediately.\",\n            operationId = \"upgradeSSTables\")\n    public Response upgradeSSTables(@QueryParam(value=\"excludeCurrentVersion\")boolean excludeCurrentVersion, KeyspaceRequest keyspaceRequest)\n    {\n        return handle(() ->\n        {\n            List<String> tables = keyspaceRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = keyspaceRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"ALL\";\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                    \"CALL NodeOps.upgradeSSTables(?, ?, ?, ?, ?)\", keyspaceName, !excludeCurrentVersion, keyspaceRequest.jobs, tables, true)).build();\n        });\n    }\n\n    @POST\n    @Path(\"/compact\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace compaction process\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    schema = @Schema(\n                            implementation = String.class\n                    ),\n                    examples = @ExampleObject(\n                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n                    )\n            )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Invalid table compaction request\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    examples = @ExampleObject(\n                            value = \"Invalid option combination: Can not use split-output here\"\n                    )\n            )\n    )\n    @Operation(summary = \"Force a (major) compaction on one or more tables or user-defined compaction on given SSTables\",\n            operationId = \"compact\")\n    public Response compact(CompactRequest compactRequest)\n    {\n        return handle(() ->\n        {\n            // Retaining logic from org.apache.cassandra.tools.nodetool.Compact\n            boolean tokenProvided = !(StringUtils.isBlank(compactRequest.startToken) && StringUtils.isBlank(compactRequest.endToken));\n            if (compactRequest.splitOutput && (compactRequest.userDefined || tokenProvided)) {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Invalid option combination: Can not use split-output here\").build();\n            }\n            if (compactRequest.userDefined && tokenProvided) {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Invalid option combination: Can not provide tokens when using user-defined\").build();\n            }\n\n            if (compactRequest.userDefined)\n            {\n                try\n                {\n                    if (CollectionUtils.isEmpty(compactRequest.userDefinedFiles))\n                    {\n                        return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Must provide a file if setting userDefined to true\").build();\n                    }\n\n                    String userDefinedFiles = String.join(\",\", compactRequest.userDefinedFiles);\n                    return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                            \"CALL NodeOps.forceUserDefinedCompaction(?, ?)\", userDefinedFiles, true)).build();\n                } catch (Exception e) {\n                    throw new RuntimeException(\"Error occurred during user defined compaction\", e);\n                }\n            }\n\n            List<String> tables = compactRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = compactRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"ALL\";\n            }\n\n            if (tokenProvided) {\n                return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                        \"CALL NodeOps.forceKeyspaceCompactionForTokenRange(?, ?, ?, ?, ?)\", keyspaceName,\n                        compactRequest.startToken, compactRequest.endToken, tables, true)).build();\n            }\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                    \"CALL NodeOps.forceKeyspaceCompaction(?, ?, ?, ?)\", compactRequest.splitOutput, keyspaceName,\n                    compactRequest.tables, true)).build();\n        });\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_PPLeYSde4hhKLjCjU8X3TUnc",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' src/main/java/com/datastax/mgmtapi/resources/models/CompactRequest.java\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/**\\n * Copyright DataStax, Inc.\\n *\\n * Please see the included license file for details.\\n */\\npackage com.datastax.mgmtapi.resources.models;\\n\\nimport java.io.Serializable;\\nimport java.util.List;\\nimport java.util.Objects;\\n\\nimport com.fasterxml.jackson.annotation.JsonCreator;\\nimport com.fasterxml.jackson.annotation.JsonProperty;\\n\\npublic class CompactRequest implements Serializable\\n{\\n    @JsonProperty(value = \"split_output\", required = true)\\n    public final boolean splitOutput;\\n\\n    @JsonProperty(value = \"user_defined\", required = true)\\n    public final boolean userDefined;\\n\\n    @JsonProperty(value = \"start_token\")\\n    public final String startToken;\\n\\n    @JsonProperty(value = \"end_token\")\\n    public final String endToken;\\n\\n    @JsonProperty(value = \"keyspace_name\", required = true)\\n    public final String keyspaceName;\\n\\n    @JsonProperty(value = \"user_defined_files\")\\n    public final List<String> userDefinedFiles;\\n\\n    @JsonProperty(value = \"tables\")\\n    public final List<String> tables;\\n\\n    @JsonCreator\\n    public CompactRequest(@JsonProperty(\"split_output\") boolean splitOutput, @JsonProperty(\"user_defined\") boolean userDefined,\\n                          @JsonProperty(\"start_token\") String startToken, @JsonProperty(\"end_token\") String endToken,\\n                          @JsonProperty(\"keyspace_name\") String keyspaceName, @JsonProperty(\"user_defined_files\") List<String> userDefinedFiles,\\n                          @JsonProperty(\"tables\") List<String> tables)\\n    {\\n\\n        this.splitOutput = splitOutput;\\n        this.userDefined = userDefined;\\n        this.startToken = startToken;\\n        this.endToken = endToken;\\n        this.keyspaceName = keyspaceName;\\n        this.userDefinedFiles = userDefinedFiles;\\n        this.tables = tables;\\n    }\\n\\n    @Override\\n    public boolean equals(Object o)\\n    {\\n        if (this == o)\\n        {\\n            return true;\\n        }\\n        if (o == null || getClass() != o.getClass())\\n        {\\n            return false;\\n        }\\n        CompactRequest that = (CompactRequest) o;\\n        return splitOutput == that.splitOutput &&\\n                userDefined == that.userDefined &&\\n                Objects.equals(startToken, that.startToken) &&\\n                Objects.equals(endToken, that.endToken) &&\\n                Objects.equals(keyspaceName, that.keyspaceName) &&\\n                Objects.equals(userDefinedFiles, that.userDefinedFiles) &&\\n                Objects.equals(tables, that.tables);\\n    }\\n\\n    @Override\\n    public int hashCode()\\n    {\\n        return Objects.hash(splitOutput, userDefined, startToken, endToken, keyspaceName, userDefinedFiles, tables);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_PPLeYSde4hhKLjCjU8X3TUnc"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsTGB9m3ci530rka3VkFv5GzCwjl3",
+    "object": "chat.completion",
+    "created": 1767098223,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\nI examined TableOpsResources.compact and the CompactRequest model to capture the API operation semantics and request/response schemas:\n\n- The POST /api/v1/ops/tables/compact operation has @Operation(summary=..., operationId=\"compact\"), so the Operation object includes summary and operationId.\n- The method consumes application/json and the request body type is CompactRequest. The CompactRequest class defines JSON properties (via @JsonProperty) with names and types:\n  - split_output (boolean) — required\n  - user_defined (boolean) — required\n  - start_token (string) — optional (nullable)\n  - end_token (string) — optional (nullable)\n  - keyspace_name (string) — required\n  - user_defined_files (array of strings) — optional\n  - tables (array of strings) — optional\n  These become the requestBody content/application/json/schema.\n- The method produces text/plain and declares two @ApiResponse annotations:\n  - 202: description \"Job ID for keyspace compaction process\", content text/plain, schema string, example \"d69d1d95-9348-4460-95d2-ae342870fade\".\n  - 400: description \"Invalid table compaction request\", content text/plain, example \"Invalid option combination: Can not use split-output here\".\n- The method also enforces validation logic (e.g., returning 400 for invalid option combinations) but those are reflected via the 400 response documented above.\n\nI included only the Operation fields needed to represent the request body and the documented responses (summary, operationId, requestBody, responses) and expressed the CompactRequest schema inline using the JSON property names as they are serialized. No additional top-level fields were added.\n\nthe final generated result begins\n{\n  \"summary\": \"Force a (major) compaction on one or more tables or user-defined compaction on given SSTables\",\n  \"operationId\": \"compact\",\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"application/json\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"split_output\": {\n              \"type\": \"boolean\"\n            },\n            \"user_defined\": {\n              \"type\": \"boolean\"\n            },\n            \"start_token\": {\n              \"type\": \"string\",\n              \"nullable\": true\n            },\n            \"end_token\": {\n              \"type\": \"string\",\n              \"nullable\": true\n            },\n            \"keyspace_name\": {\n              \"type\": \"string\"\n            },\n            \"user_defined_files\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"string\"\n              }\n            },\n            \"tables\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"string\"\n              }\n            }\n          },\n          \"required\": [\n            \"split_output\",\n            \"user_defined\",\n            \"keyspace_name\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"202\": {\n      \"description\": \"Job ID for keyspace compaction process\",\n      \"content\": {\n        \"text/plain\": {\n          \"schema\": {\n            \"type\": \"string\"\n          },\n          \"examples\": {\n            \"jobId\": {\n              \"value\": \"d69d1d95-9348-4460-95d2-ae342870fade\"\n            }\n          }\n        }\n      }\n    },\n    \"400\": {\n      \"description\": \"Invalid table compaction request\",\n      \"content\": {\n        \"text/plain\": {\n          \"schema\": {\n            \"type\": \"string\"\n          },\n          \"examples\": {\n            \"invalidOption\": {\n              \"value\": \"Invalid option combination: Can not use split-output here\"\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2798,
+      "completion_tokens": 1960,
+      "total_tokens": 4758,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1152,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

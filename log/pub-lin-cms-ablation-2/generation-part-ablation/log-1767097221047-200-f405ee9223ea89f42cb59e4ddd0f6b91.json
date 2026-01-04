@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097221047,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/cms/file` with method POST, and here is the relevant information I found:\n\n1. In `app/api/cms/file.py`, `app.api.cms.create_cms` is implemented to process HTTP requests to `/cms/file` with HTTP method POST.\n\n2. In `app/api/cms/file.py`, `file_api` is implemented to process HTTP requests to `/cms/file` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/api/cms/file.py`:\n\n```\n\"\"\"\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nfrom flask import Blueprint, request\n\nfrom app.api import AuthorizationBearerSecurity, api\nfrom app.extension.file.local_uploader import LocalUploader\nfrom app.lin import login_required\n\nfile_api = Blueprint(\"file\", __name__)\n\n\n@file_api.route(\"\", methods=[\"POST\"])\n@login_required\n@api.validate(\n    tags=[\"文件\"],\n    security=[AuthorizationBearerSecurity],\n)\ndef post_file():\n    \"\"\"\n    上传文件\n    \"\"\"\n    files = request.files\n    uploader = LocalUploader(files)\n    ret = uploader.upload()\n    return ret\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The Flask view is registered at the blueprint route \"\" for POST; this corresponds to the endpoint /cms/file with the POST method.\n- The @api.validate decorator sets tags=[\"文件\"] and security=[AuthorizationBearerSecurity]. I include the \"tags\" array and a \"security\" requirement using the identifier AuthorizationBearerSecurity.\n- The view's docstring is \"上传文件\", used as the operation summary/description.\n- The view reads uploaded content from Flask's request.files, which implies the request body is multipart/form-data containing file parts. I represent this in requestBody with content \"multipart/form-data\" and a schema that allows file parts (binary).\n- The function returns uploader.upload() with no explicit HTTP status; I provide a 200 response with application/json content and a generic object schema because the exact response shape isn't specified in the source.\n- I only included fields directly indicated by the source (tags, security, file upload via request.files, and description) plus the minimal required OpenAPI fields (requestBody and responses) to form a valid Operation Object.\n\nthe final generated result begins\n{\n  \"tags\": [\n    \"文件\"\n  ],\n  \"summary\": \"上传文件\",\n  \"description\": \"上传文件\",\n  \"security\": [\n    {\n      \"AuthorizationBearerSecurity\": []\n    }\n  ],\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"multipart/form-data\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"description\": \"Uploaded file(s) as multipart/form-data accessible via Flask's request.files\",\n          \"additionalProperties\": {\n            \"type\": \"string\",\n            \"format\": \"binary\"\n          }\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Successful upload\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\"\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097201,
+    "id": "chatcmpl-CsSzhuWgi3wRakbE1SCfs0iJKBs4M",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1505,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1088,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 542,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2047
+    }
+  }
+}

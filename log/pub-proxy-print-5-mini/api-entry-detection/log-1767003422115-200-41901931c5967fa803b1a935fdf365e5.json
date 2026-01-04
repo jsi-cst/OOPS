@@ -1,0 +1,55 @@
+{
+  "timestamp": 1767003422115,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.printshops;\n\nimport com.google.gson.Gson;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.Document;\nimport io.github.proxyprint.kitchen.models.printshops.Employee;\nimport io.github.proxyprint.kitchen.models.repositories.DocumentDAO;\nimport io.github.proxyprint.kitchen.models.repositories.EmployeeDAO;\nimport java.io.File;\n\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.core.io.FileSystemResource;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport java.security.Principal;\nimport javax.annotation.Resource;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 14-05-2016.\n */\n@RestController \n@Transactional\npublic class EmployeeController {\n\n    @Resource(name = \"documentsPath\")\n    private String documentsPath;\n    @Autowired\n    private EmployeeDAO employees;\n    @Autowired\n    private DocumentDAO documents;\n    @Autowired\n    private Gson GSON;\n\n    @ApiOperation(value = \"Returns a document\", notes = \"This method allows employees to get a document by a given id.\")\n    @Secured(\"ROLE_EMPLOYEE\")\n    @RequestMapping(value = \"/documents/{id}\", method = RequestMethod.GET)\n    public ResponseEntity<FileSystemResource> getEmployees(@PathVariable(value = \"id\") long id, Principal principal) {\n        HttpHeaders headers = new HttpHeaders();\n\n        Employee emp = this.employees.findByUsername(principal.getName());\n        Document doc = this.documents.findOne(id);\n\n        if (doc == null) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.NOT_FOUND);\n        } else if (emp.getPrintShop().getId() != doc.getPrintRequest().getPrintshop().getId()) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.UNAUTHORIZED);\n        } else {\n            headers.setContentType(MediaType.parseMediaType(\"application/pdf\"));\n            headers.add(\"Content-Disposition\", \"inline;filename=\" + doc.getName() + \".pdf\");\n            headers.setCacheControl(\"must-revalidate, post-check=0, pre-check=0\");\n\n            return new ResponseEntity(new FileSystemResource(new File(this.documentsPath+doc.getFile().getName())), headers, HttpStatus.OK);\n        }\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": \"/documents/{id}\",\n    \"handler\": \"io.github.proxyprint.kitchen.controllers.printshops.EmployeeController.getEmployees\",\n    \"handlerPresentInFile\": true,\n    \"pathIsPrefix\": false,\n    \"pathIsLiteral\": true,\n    \"pathIsDerivedFromConvention\": false,\n    \"isRestApi\": true,\n    \"isTestApi\": false\n  }\n]\n\nExplanation:\n- The file declares a Spring @RestController class io.github.proxyprint.kitchen.controllers.printshops.EmployeeController and contains a single request mapping on the method getEmployees.\n- The mapping is defined with @RequestMapping(value = \"/documents/{id}\", method = RequestMethod.GET) on the method, so the path literal \"/documents/{id}\" is extracted directly from the source file and the path parameter is already in curly braces.\n- There is no class-level @RequestMapping in this file, so the effective path is exactly \"/documents/{id}\" (not a prefix).\n- The handler implementation (the method body) is present in the same source file.\n- The mapping is an explicit literal string, not derived from any naming convention supported by Spring MVC.\n- The controller is a REST controller (annotated with @RestController), so this entry is marked as a RESTful API and it is not a testing endpoint.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767003414,
+    "id": "chatcmpl-Cs4b05QaBQFosjxPBiMwWcxfKN8VM",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 793,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 512,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1029,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1822
+    }
+  }
+}

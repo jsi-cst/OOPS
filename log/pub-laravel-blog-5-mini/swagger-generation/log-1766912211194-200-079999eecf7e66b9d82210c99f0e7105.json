@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766912211194,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::store` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-Crgrkwl6Wu6MUc0pwjHVNki4ZtqJ8",
+    "object": "chat.completion",
+    "created": 1766912196,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\n- The store method in CommentController returns response()->turboStream([...]) and its declared return type is MultiplePendingTurboStreamResponse. That indicates a successful response is an HTTP 200 with Turbo Stream payload (MIME type used by Turbo Streams is typically text/vnd.turbo-stream.html) containing multiple <turbo-stream> fragments (prepend, replace, update).\n- Validation is handled by CommentsRequest (a FormRequest). If validation fails, Laravel returns a 422 Unprocessable Entity with a JSON payload describing validation errors.\n- Authentication is required (the code uses Auth::user()). If the caller is not authenticated the typical responses are an authentication failure — in many Laravel apps this is a 401 (API) or a redirect (web). For an API-style spec include 401 Unauthorized.\n- No explicit 201 or other success codes are returned by this controller, so the success response is modeled as 200 OK with Turbo Stream content.\n- I will provide three response objects: 200 (Turbo Stream), 422 (validation errors), and 401 (unauthenticated). Each response object contains a description and an example payload (examples keyed by MIME type), and no $ref.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"OK. Turbo Stream response containing multiple turbo-stream actions (prepend, replace, update).\",\n    \"examples\": {\n      \"text/vnd.turbo-stream.html\": \"<turbo-stream action=\\\"prepend\\\" target=\\\"comments\\\"><template><div class=\\\"comment\\\" id=\\\"comment_123\\\"><p>Example comment body</p></div></template></turbo-stream>\\n<turbo-stream action=\\\"replace\\\" target=\\\"comments_form\\\"><template><!-- updated comments form HTML --></template></turbo-stream>\\n<turbo-stream action=\\\"update\\\" target=\\\"comments_count\\\"><template>1 comment</template></turbo-stream>\"\n    }\n  },\n  \"422\": {\n    \"description\": \"Unprocessable Entity. Validation failed for the request (CommentsRequest).\",\n    \"examples\": {\n      \"application/json\": {\n        \"message\": \"The given data was invalid.\",\n        \"errors\": {\n          \"body\": [\n            \"The body field is required.\"\n          ]\n        }\n      }\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized. Authentication is required to create a comment.\",\n    \"examples\": {\n      \"application/json\": {\n        \"message\": \"Unauthenticated.\"\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 741,
+      "completion_tokens": 1799,
+      "total_tokens": 2540,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1280,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

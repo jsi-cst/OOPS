@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766736251596,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript (Node.js runtime) and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `controllers/user.js`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/user.js`:\n\n```\nimport jwt from \"jsonwebtoken\"\nimport nodemailer from 'nodemailer'\nimport crypto from 'crypto'\nimport bcrypt from 'bcryptjs'\nimport dotenv from 'dotenv'\n\ndotenv.config()\nconst SECRET = process.env.SECRET;\nconst HOST =  process.env.SMTP_HOST\nconst PORT =  process.env.SMTP_PORT\nconst USER =  process.env.SMTP_USER\nconst PASS =  process.env.SMTP_PASS\n\nimport User from '../models/userModel.js'\nimport ProfileModel from '../models/ProfileModel.js';\n\n\nexport const signin = async (req, res)=> {\n    const { email, password } = req.body //Coming from formData\n\n    try {\n        const existingUser = await User.findOne({ email })\n        \n        //get userprofile and append to login auth detail\n        const userProfile = await ProfileModel.findOne({ userId: existingUser?._id })\n\n        if(!existingUser) return res.status(404).json({ message: \"User doesn't exist\" })\n\n        const isPasswordCorrect  = await bcrypt.compare(password, existingUser.password)\n\n        if(!isPasswordCorrect) return res.status(400).json({message: \"Invalid credentials\"})\n\n        //If crednetials are valid, create a token for the user\n        const token = jwt.sign({ email: existingUser.email, id: existingUser._id }, SECRET, { expiresIn: \"1h\" })\n        \n        //Then send the token to the client/frontend\n        res.status(200).json({ result: existingUser, userProfile, token })\n\n    } catch (error) {\n        res.status(500).json({ message: \"Something went wrong\"})\n    }\n}\n\n\n\nexport const signup = async (req, res)=> {\n    const { email, password, confirmPassword, firstName, lastName, bio } = req.body\n\n    try {\n        const existingUser = await User.findOne({ email })\n        const userProfile = await ProfileModel.findOne({ userId: existingUser?._id })\n\n        if(existingUser) return res.status(400).json({ message: \"User already exist\" })\n\n        if(password !== confirmPassword) return res.status(400).json({ message: \"Password don't match\" })\n        \n        const hashedPassword = await bcrypt.hash(password, 12)\n\n        const result = await User.create({ email, password: hashedPassword, name: `${firstName} ${lastName}`, bio })\n\n        const token = jwt.sign({ email: result.email, id: result._id }, SECRET, { expiresIn: \"1h\" })\n        \n        res.status(200).json({ result, userProfile, token })\n\n    } catch (error) {\n        res.status(500).json({ message: \"Something went wrong\"}) \n    }\n}\n\n\n// export const updateProfile = async (req, res) => {\n//     const formData = req.body\n//     const { id: _id } = req.params\n//     console.log(formData)\n\n//     if(!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send('No user with this id found')\n\n//     const updatedUser = await User.findByIdAndUpdate(_id, formData, {new: true})\n//     res.json(updatedUser)\n// }\n\n\n\n\nexport const forgotPassword = (req,res)=>{\n\n    const { email } = req.body\n  \n       // NODEMAILER TRANSPORT FOR SENDING POST NOTIFICATION VIA EMAIL\n        const transporter = nodemailer.createTransport({\n            host: HOST,\n            port : PORT,\n            auth: {\n            user: USER,\n            pass: PASS\n            },\n            tls:{\n                rejectUnauthorized:false\n            }\n        })\n  \n  \n    crypto.randomBytes(32,(err,buffer)=>{\n        if(err){\n            console.log(err)\n        }\n        const token = buffer.toString(\"hex\")\n        User.findOne({email : email})\n        .then(user=>{\n            if(!user){\n                return res.status(422).json({error:\"User does not exist in our database\"})\n            }\n            user.resetToken = token\n            user.expireToken = Date.now() + 3600000\n            user.save().then((result)=>{\n                transporter.sendMail({\n                    to:user.email,\n                    from:\"Accountill <hello@accountill.com>\",\n                    subject:\"Password reset request\",\n                    html:`\n                    <p>You requested for password reset from Arc Invoicing application</p>\n                    <h5>Please click this <a href=\"https://accountill.com/reset/${token}\">link</a> to reset your password</h5>\n                    <p>Link not clickable?, copy and paste the following url in your address bar.</p>\n                    <p>https://accountill.com/reset/${token}</p>\n                    <P>If this was a mistake, just ignore this email and nothing will happen.</P>\n                    `\n                })\n                res.json({message:\"check your email\"})\n            }).catch((err) => console.log(err))\n  \n        })\n    })\n  }\n  \n  \n  \n  export const resetPassword = (req,res)=>{\n    const newPassword = req.body.password\n    const sentToken = req.body.token\n    User.findOne({resetToken:sentToken,expireToken:{$gt:Date.now()}})\n    .then(user=>{\n        if(!user){\n            return res.status(422).json({error:\"Try again session expired\"})\n        }\n        bcrypt.hash(newPassword,12).then(hashedpassword=>{\n           user.password = hashedpassword\n           user.resetToken = undefined\n           user.expireToken = undefined\n           user.save().then((saveduser)=>{\n               res.json({message:\"password updated success\"})\n           })\n        })\n    }).catch(err=>{\n        console.log(err)\n    })\n  }\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251226160240601468772Vi1aJPM",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766736164,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": null,\n    \"handler\": \"signin\",\n    \"implementationPresent\": true,\n    \"isPrefix\": false,\n    \"isLiteral\": false,\n    \"isConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"signup\",\n    \"implementationPresent\": true,\n    \"isPrefix\": false,\n    \"isLiteral\": false,\n    \"isConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"forgotPassword\",\n    \"implementationPresent\": true,\n    \"isPrefix\": false,\n    \"isLiteral\": false,\n    \"isConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"resetPassword\",\n    \"implementationPresent\": true,\n    \"isPrefix\": false,\n    \"isLiteral\": false,\n    \"isConvention\": false,\n    \"isRestful\": true,\n    \"isTest\": false\n  }\n]\n```\n\n**Explanation:**\n\nThe provided code defines several functions (`signin`, `signup`, `forgotPassword`, and `resetPassword`) that likely handle user authentication and password reset functionalities. However, the code does not contain any explicit route definitions using the Express.js framework (e.g., `app.post('/signin', signin)`). Therefore, I cannot determine the HTTP request paths associated with these functions based on the provided code.  The `path` is set to `null` for all entries because the routes are not defined in this file. All other fields are set based on the nature of the code.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1840,
+      "completion_tokens": 412,
+      "total_tokens": 2252,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1840,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

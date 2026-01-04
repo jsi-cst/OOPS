@@ -1,0 +1,187 @@
+{
+  "timestamp": 1767333856195,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/media` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method GET.\n\n2. In `app/Http/Requests/Admin/MediaLibraryRequest.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method GET.\n\n3. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@index` is implemented to process HTTP requests to `/v1/media` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/MediaController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\MediaLibraryRequest;\nuse App\\Http\\Resources\\Media as MediaResource;\nuse App\\Models\\Media;\nuse App\\Models\\MediaLibrary;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass MediaController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return MediaResource::collection(\n            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(MediaLibraryRequest $request): MediaResource\n    {\n        $this->authorize('store', Media::class);\n\n        $image = $request->file('image');\n        $name = $image->getClientOriginalName();\n\n        if ($request->filled('name')) {\n            $name = $request->input('name');\n        }\n\n        return new MediaResource(\n            MediaLibrary::first()\n                ->addMedia($image)\n                ->usingName($name)\n                ->toMediaCollection()\n        );\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Media $medium): Response\n    {\n        $this->authorize('delete', $medium);\n\n        $medium->delete();\n\n        return response()->noContent();\n    }\n}\n```\n\nContents of file `app/Http/Requests/Admin/MediaLibraryRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse Illuminate\\Foundation\\Http\\FormRequest;\n\nclass MediaLibraryRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'image' => 'required|image',\n            'name' => 'nullable|string|max:255'\n        ];\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_413bb3e240b94f58894d4ce8fa1da09e",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Http/Resources/Media.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\n\\nclass Media extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        return [\\n            'id' => $this->id,\\n            'name' => $this->name,\\n            'url' => url($this->getUrl()),\\n            'thumb_url' => url($this->getUrl('thumb')),\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_413bb3e240b94f58894d4ce8fa1da09e"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_8d5db5da989841649678a1318277bd81",
+            "function": {
+              "arguments": "{\"command\":\"grep -r \\\"/v1/media\\\" routes/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_8d5db5da989841649678a1318277bd81"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_4dff2c263e674b47abb8a66a591a2306",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Models/Media.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse Spatie\\\\MediaLibrary\\\\MediaCollections\\\\Models\\\\Media as BaseMedia;\\n\\nclass Media extends BaseMedia\\n{\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime',\\n        'manipulations' => 'array',\\n        'custom_properties' => 'array',\\n        'generated_conversions' => 'array',\\n        'responsive_images' => 'array',\\n    ];\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_4dff2c263e674b47abb8a66a591a2306"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_ab62901305e342109ae14606b2658ca8",
+            "function": {
+              "arguments": "{\"command\":\"cat composer.json\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '{\\n    \"name\": \"guillaumebriday/laravel-blog\",\\n    \"description\": \"Laravel 10.x blog.\",\\n    \"keywords\": [\"framework\", \"laravel\", \"blog\", \"example\"],\\n    \"license\": \"MIT\",\\n    \"type\": \"project\",\\n    \"require\": {\\n        \"php\": \"^8.3\",\\n        \"barryvdh/laravel-debugbar\": \"3.14.6\",\\n        \"doctrine/dbal\": \"4.2.1\",\\n        \"hotwired-laravel/turbo-laravel\": \"^2.1\",\\n        \"laravel/breeze\": \"^2.2.2\",\\n        \"laravel/framework\": \"^11.28\",\\n        \"laravel/horizon\": \"5.29.1\",\\n        \"laravel/sanctum\": \"^4.0.3\",\\n        \"laravel/telescope\": \"^5.2\",\\n        \"laravel/tinker\": \"2.10.0\",\\n        \"nunomaduro/collision\": \"8.5.0\",\\n        \"predis/predis\": \"2.2.2\",\\n        \"pusher/pusher-php-server\": \"7.2.6\",\\n        \"spatie/laravel-backup\": \"9.1.2\",\\n        \"spatie/laravel-medialibrary\": \"11.9.2\"\\n    },\\n    \"require-dev\": {\\n        \"filp/whoops\": \"2.16.0\",\\n        \"fzaninotto/faker\": \"dev-master\",\\n        \"laravel/pint\": \"1.18.1\",\\n        \"mockery/mockery\": \"1.6.12\",\\n        \"phpunit/phpunit\": \"11.4.1\"\\n    },\\n    \"autoload\": {\\n        \"psr-4\": {\\n            \"App\\\\\\\\\": \"app/\",\\n            \"Database\\\\\\\\Factories\\\\\\\\\": \"database/factories/\",\\n            \"Database\\\\\\\\Seeders\\\\\\\\\": \"database/seeders/\"\\n        },\\n        \"files\": [\\n            \"app/Helpers/date.php\"\\n        ]\\n    },\\n    \"autoload-dev\": {\\n        \"psr-4\": {\\n            \"Tests\\\\\\\\\": \"tests/\"\\n        }\\n    },\\n    \"extra\": {\\n        \"laravel\": {\\n            \"dont-discover\": [\\n            ]\\n        }\\n    },\\n    \"scripts\": {\\n        \"post-root-package-install\": [\\n            \"@php -r \\\\\"file_exists(\\'.env\\') || copy(\\'.env.example\\', \\'.env\\');\\\\\"\"\\n        ],\\n        \"post-create-project-cmd\": [\\n            \"@php artisan key:generate\"\\n        ],\\n        \"post-autoload-dump\": [\\n            \"Illuminate\\\\\\\\Foundation\\\\\\\\ComposerScripts::postAutoloadDump\",\\n            \"@php artisan package:discover\",\\n            \"@php artisan vendor:publish --tag=laravel-assets --ansi --force\"\\n        ]\\n    },\\n    \"config\": {\\n        \"preferred-install\": \"dist\",\\n        \"sort-packages\": true,\\n        \"optimize-autoloader\": true\\n    },\\n    \"minimum-stability\": \"dev\",\\n    \"prefer-stable\": true\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_ab62901305e342109ae14606b2658ca8"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_05c0640106f64175a946c54ebc84e041",
+            "function": {
+              "arguments": "{\"command\":\"ls routes/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'admin.php\\napi.php\\nauth.php\\nchannels.php\\nconsole.php\\nweb.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_05c0640106f64175a946c54ebc84e041"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_d349805d9a9f4341b2d563cf5026eb49",
+            "function": {
+              "arguments": "{\"command\":\"cat routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_d349805d9a9f4341b2d563cf5026eb49"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-9e09f9cff5294c5895a933df226b770c",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333856,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The `GET /v1/media` endpoint is handled by `App\\Http\\Controllers\\Api\\V1\\MediaController@index`. This method returns a collection of `MediaResource` objects, which are paginated using Laravel's built-in paginator (defaulting to 20 items per page).\n\nWhen a Laravel `JsonResource` collection wraps a paginated result, the response includes a `data` key containing the array of resources, along with `links` and `meta` keys for pagination information.\n\nThe `MediaResource` transforms each media item into an object with the following fields:\n- `id`: The unique identifier of the media item.\n- `name`: The name of the media.\n- `url`: The full URL to the media file.\n- `thumb_url`: The full URL to the thumbnail version of the media.\n\nThe response object for a successful `200 OK` request follows the standard Laravel paginated resource structure.\n\nthe final generated result begins\n{\n    \"200\": {\n        \"description\": \"A paginated list of media items.\",\n        \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n                \"data\": {\n                    \"type\": \"array\",\n                    \"items\": {\n                        \"type\": \"object\",\n                        \"properties\": {\n                            \"id\": {\n                                \"type\": \"integer\"\n                            },\n                            \"name\": {\n                                \"type\": \"string\"\n                            },\n                            \"url\": {\n                                \"type\": \"string\",\n                                \"format\": \"uri\"\n                            },\n                            \"thumb_url\": {\n                                \"type\": \"string\",\n                                \"format\": \"uri\"\n                            }\n                        }\n                    }\n                },\n                \"links\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"first\": {\n                            \"type\": \"string\",\n                            \"format\": \"uri\",\n                            \"example\": \"http://localhost/v1/media?page=1\"\n                        },\n                        \"last\": {\n                            \"type\": \"string\",\n                            \"format\": \"uri\",\n                            \"example\": \"http://localhost/v1/media?page=1\"\n                        },\n                        \"prev\": {\n                            \"type\": \"string\",\n                            \"format\": \"uri\",\n                            \"nullable\": true\n                        },\n                        \"next\": {\n                            \"type\": \"string\",\n                            \"format\": \"uri\",\n                            \"nullable\": true\n                        }\n                    }\n                },\n                \"meta\": {\n                    \"type\": \"object\",\n                    \"properties\": {\n                        \"current_page\": {\n                            \"type\": \"integer\"\n                        },\n                        \"from\": {\n                            \"type\": \"integer\",\n                            \"nullable\": true\n                        },\n                        \"last_page\": {\n                            \"type\": \"integer\"\n                        },\n                        \"path\": {\n                            \"type\": \"string\",\n                            \"format\": \"uri\"\n                        },\n                        \"per_page\": {\n                            \"type\": \"integer\"\n                        },\n                        \"to\": {\n                            \"type\": \"integer\",\n                            \"nullable\": true\n                        },\n                        \"total\": {\n                            \"type\": \"integer\"\n                        }\n                    }\n                }\n            }\n        }\n    }\n}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3118,
+      "completion_tokens": 2070,
+      "total_tokens": 5188,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1328
+      }
+    }
+  }
+}

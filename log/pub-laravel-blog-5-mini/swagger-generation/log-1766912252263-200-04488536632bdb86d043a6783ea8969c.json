@@ -1,0 +1,116 @@
+{
+  "timestamp": 1766912252263,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/media` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@index` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/MediaController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\MediaLibraryRequest;\nuse App\\Http\\Resources\\Media as MediaResource;\nuse App\\Models\\Media;\nuse App\\Models\\MediaLibrary;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass MediaController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return MediaResource::collection(\n            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(MediaLibraryRequest $request): MediaResource\n    {\n        $this->authorize('store', Media::class);\n\n        $image = $request->file('image');\n        $name = $image->getClientOriginalName();\n\n        if ($request->filled('name')) {\n            $name = $request->input('name');\n        }\n\n        return new MediaResource(\n            MediaLibrary::first()\n                ->addMedia($image)\n                ->usingName($name)\n                ->toMediaCollection()\n        );\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Media $medium): Response\n    {\n        $this->authorize('delete', $medium);\n\n        $medium->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_FCihcdd7X9EfmyBSOvef7DF4",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Resources/Media.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\n\\nclass Media extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        return [\\n            'id' => $this->id,\\n            'name' => $this->name,\\n            'url' => url($this->getUrl()),\\n            'thumb_url' => url($this->getUrl('thumb')),\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_FCihcdd7X9EfmyBSOvef7DF4"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_EQAFFWWY1OYTOj2kTTooOQnU",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Requests/Admin/MediaLibraryRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Admin;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass MediaLibraryRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'image' => 'required|image',\\n            'name' => 'nullable|string|max:255'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_EQAFFWWY1OYTOj2kTTooOQnU"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CrgsOTPXny7hfm1IOTPGF7CDA5qAD",
+    "object": "chat.completion",
+    "created": 1766912236,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\n- I inspected app/Http/Controllers/Api/V1/MediaController@store. It:\n  - Authorizes the request via $this->authorize('store', Media::class) — this implies a possible 403 Forbidden response when authorization fails.\n  - Uses MediaLibraryRequest which validates the request. From app/Http/Requests/Admin/MediaLibraryRequest.php the rules are: image required|image, name nullable|string|max:255. Validation failures in Laravel produce a 422 Unprocessable Entity JSON response with a \"message\" and \"errors\" object mapping field names to arrays of error messages.\n  - On success the controller returns a MediaResource (app/Http/Resources/Media.php). That resource's toArray returns an object with keys id, name, url, thumb_url. When a JsonResource is returned from a controller, Laravel wraps the resource inside a top-level \"data\" key for single resources (i.e. { \"data\": { ... } }).\n  - The controller does not explicitly set an HTTP status code, so the standard successful response is 200 OK.\n\n- Based on the code, I include three response objects for POST /v1/media:\n  - 200: success, JSON object with \"data\" containing media fields id, name, url, thumb_url.\n  - 403: authorization failure, JSON with \"message\" string.\n  - 422: validation failure, JSON with \"message\" string and \"errors\" object describing per-field error arrays (keys for \"image\" and \"name\" derived from the validation rules file).\n\n- I avoided adding response types not evidenced in the provided files (e.g., 401) and did not use $ref.\n\nthe final generated result begins\n{\"200\":{\"description\":\"Successful request — returns the created media resource\",\"schema\":{\"type\":\"object\",\"properties\":{\"data\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"integer\"},\"name\":{\"type\":\"string\"},\"url\":{\"type\":\"string\"},\"thumb_url\":{\"type\":\"string\"}},\"required\":[\"id\",\"name\",\"url\",\"thumb_url\"]}}}},\"403\":{\"description\":\"Forbidden — user is not authorized to store media\",\"schema\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"}}}},\"422\":{\"description\":\"Validation error — invalid or missing input data\",\"schema\":{\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"},\"errors\":{\"type\":\"object\",\"properties\":{\"image\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"name\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}}}}}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1187,
+      "completion_tokens": 1940,
+      "total_tokens": 3127,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1408,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

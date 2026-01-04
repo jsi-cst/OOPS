@@ -1,0 +1,178 @@
+{
+  "timestamp": 1767326169432,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/consumer/register` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/ConsumerController.java`, `io.github.proxyprint.kitchen.controllers.consumer.ConsumerController.addUser` is implemented to process HTTP requests to `/consumer/register` with HTTP method POST.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/ConsumerController.java`, `io.github.proxyprint.kitchen.controllers.consumer.ConsumerController.addUser` is implemented to process HTTP requests to `/consumer/register` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/ConsumerController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.consumer;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonArray;\nimport com.google.gson.JsonObject;\nimport com.google.gson.reflect.TypeToken;\nimport io.github.proxyprint.kitchen.models.Admin;\nimport io.github.proxyprint.kitchen.models.Money;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.Document;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.DocumentSpec;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.PrintRequest;\nimport io.github.proxyprint.kitchen.models.printshops.PrintShop;\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.BudgetCalculator;\nimport io.github.proxyprint.kitchen.models.repositories.*;\nimport io.swagger.annotations.ApiOperation;\nimport org.apache.commons.io.FilenameUtils;\nimport org.apache.commons.io.IOUtils;\nimport org.apache.pdfbox.pdmodel.PDDocument;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\nimport org.springframework.web.context.request.WebRequest;\nimport org.springframework.web.multipart.MultipartFile;\n\nimport javax.annotation.Resource;\nimport javax.servlet.http.HttpServletRequest;\nimport java.io.File;\nimport java.io.FileOutputStream;\nimport java.io.IOException;\nimport java.lang.reflect.Type;\nimport java.security.Principal;\nimport java.util.*;\nimport java.util.logging.Level;\nimport java.util.logging.Logger;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 04-04-2016.\n */\n@RestController \n@Transactional\npublic class ConsumerController {\n\n    @Resource(name = \"documentsPath\")\n    private String documentsPath;\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private AdminDAO admin;\n    @Autowired\n    private PrintingSchemaDAO printingSchemas;\n    @Autowired\n    private DocumentDAO documents;\n    @Autowired\n    private PrintShopDAO printShops;\n    @Autowired\n    private PrintRequestDAO printrequests;\n    @Autowired\n    private Gson GSON;\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"This method allows consumer registration.\")\n    @RequestMapping(value = \"/consumer/register\", method = RequestMethod.POST)\n    public String addUser(WebRequest request) {\n        boolean success = false;\n\n        JsonObject response = new JsonObject();\n        String username = request.getParameter(\"username\");\n        Consumer c = consumers.findByUsername(username);\n\n        if (c == null) {\n            String password = request.getParameter(\"password\");\n            String email = request.getParameter(\"email\");\n            String name = request.getParameter(\"name\");\n            String lat = request.getParameter(\"latitude\");\n            String lon = request.getParameter(\"longitude\");\n            c = new Consumer(name, username, password, email, lat, lon);\n            consumers.save(c);\n            response.add(\"consumer\", GSON.toJsonTree(c));\n            success = true;\n        } else {\n            response.addProperty(\"error\", \"O username já se encontra em uso.\");\n            success = false;\n        }\n\n        response.addProperty(\"success\", success);\n        return GSON.toJson(response);\n    }\n\n    @ApiOperation(value = \"Returns all the user information\", notes = \"This method allows consumers to get their personal information.\")\n    @Secured(\"ROLE_USER\")\n    @RequestMapping(value = \"/consumer/info\", method = RequestMethod.GET)\n    public String getConsumerInfo(Principal principal) {\n        boolean success = false;\n\n        JsonObject response = new JsonObject();\n\n        if(principal.getName()!=null) {\n            Consumer c = consumers.findByUsername(principal.getName());\n            if(c!=null) {\n                response.add(\"consumer\", GSON.toJsonTree(c));\n                success = true;\n            }\n        }\n        response.addProperty(\"success\", success);\n        return GSON.toJson(response);\n    }\n\n    @ApiOperation(value = \"Updates the consumer information\", notes = \"This method allows consumers to update their personal information.\")\n    @Secured(\"ROLE_USER\")\n    @RequestMapping(value = \"/consumer/info/update\", method = RequestMethod.PUT)\n    public String updateConsumerInfo(Principal principal, HttpServletRequest request) {\n        boolean success = false;\n\n        JsonObject response = new JsonObject();\n\n        String requestJSON = null;\n        Consumer editedConsumer= null;\n        try {\n            requestJSON = IOUtils.toString(request.getInputStream());\n            editedConsumer = GSON.fromJson(requestJSON, Consumer.class);\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n\n        if(principal.getName()!=null) {\n            Consumer c = consumers.findByUsername(principal.getName());\n            if(c!=null) {\n                if(!c.getName().equals(editedConsumer.getName())) {\n                    c.setName(editedConsumer.getName());\n                }\n                if(!c.getUsername().equals(editedConsumer.getUsername())) {\n                    c.setUsername(editedConsumer.getUsername());\n                }\n                if(!c.getPassword().equals(editedConsumer.getPassword())) {\n                    c.setPassword(editedConsumer.getPassword());\n                }\n                if(!c.getEmail().equals(editedConsumer.getEmail())) {\n                    c.setEmail(editedConsumer.getEmail());\n                }\n                consumers.save(c);\n                success = true;\n            }\n        }\n        response.addProperty(\"success\", success);\n        return GSON.toJson(response);\n    }\n\n    private void singleFileHandle(MultipartFile file, PrintRequest printRequest, Map<String, Long> documentsIds) {\n        String filetype = FilenameUtils.getExtension(file.getOriginalFilename());\n        if (!filetype.equals(\"pdf\")) {\n            return;\n        }\n        String name = FilenameUtils.removeExtension(file.getOriginalFilename());\n\n        if (!file.isEmpty()) {\n            try {\n                PDDocument pdf = PDDocument.load(file.getInputStream());\n                int count = pdf.getNumberOfPages();\n                pdf.close();\n\n                Document doc = new Document(name, count, printRequest);\n                doc = this.documents.save(doc);\n                printRequest.addDocument(doc);\n                documentsIds.put(doc.getName() + \".pdf\", doc.getId());\n\n                System.out.println();\n                FileOutputStream fos = new FileOutputStream(new File(this.documentsPath+doc.getFile().getName()));\n                IOUtils.copy(file.getInputStream(), fos);\n                fos.close();\n            } catch (IOException ex) {\n                Logger.getLogger(ConsumerController.class.getName()).log(Level.SEVERE, null, ex);\n            }\n        } else {\n\n        }\n    }\n\n    private Map<Long, String> calcBudgetsForPrintShops(List<Long> pshopIDs, PrintRequest printRequest) {\n        Map<Long, String> budgets = new HashMap<>();\n\n        Set<Document> prDocs = printRequest.getDocuments();\n        for (long pshopID : pshopIDs) {\n            PrintShop printShop = printShops.findOne(pshopID);\n            BudgetCalculator budgetCalculator = new BudgetCalculator(printShop);\n            float totalCost = 0; // In the future we may specifie the budget by file its easy!\n            for (Document document : prDocs) {\n                for (DocumentSpec documentSpec : document.getSpecs()) {\n                    float specCost = 0;\n                    if (documentSpec.getFirstPage() != 0 && documentSpec.getLastPage() != 0) {\n                        // Partial calculation\n                        specCost = budgetCalculator.calculatePrice(documentSpec.getFirstPage(), documentSpec.getLastPage(), documentSpec.getPrintingSchema());\n                    } else {\n                        // Total calculation\n                        specCost = budgetCalculator.calculatePrice(1, document.getTotalPages(), documentSpec.getPrintingSchema());\n                    }\n                    if (specCost != -1) totalCost += specCost;\n                    else {\n                        budgets.put(pshopID, \"Esta reprografia não pode satisfazer o pedido\");\n                    }\n                }\n            }\n            if (totalCost > 0) budgets.put(pshopID, String.valueOf(totalCost)); // add to budgets\n        }\n\n        return budgets;\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to remove all notifications.\")\n    @Secured(\"ROLE_USER\")\n    @RequestMapping(value = \"/consumer/{username}/notifications\", method = RequestMethod.DELETE)\n    public ResponseEntity<String> deleteAllNotifications (@PathVariable(value = \"username\") String username) {\n        JsonObject response = new JsonObject();\n        Consumer c = consumers.findByUsername(username);\n        c.removeAllNotifications();\n        consumers.save(c);\n\n        response.addProperty(\"success\", true);\n        return new ResponseEntity<>(GSON.toJson(response), HttpStatus.OK);\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to mark as read all notifications.\")\n    @Secured(\"ROLE_USER\")\n    @RequestMapping(value =\"/consumer/{username}/notifications\", method = RequestMethod.PUT)\n    public ResponseEntity<String> readAllNotifications (@PathVariable(value = \"username\") String username) {\n\n        JsonObject response = new JsonObject();\n        Consumer c = consumers.findByUsername(username);\n        c.readAllNotifications();\n        consumers.save(c);\n\n        response.addProperty(\"success\", true);\n        return new ResponseEntity<>(GSON.toJson(response), HttpStatus.OK);\n    }\n\n    @ApiOperation(value = \"Returns pending requests.\", notes = \"This method retrieves to the consumer his pending requests.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/requests\", method = RequestMethod.GET)\n    public String getRequests(Principal principal) {\n\n        JsonObject response = new JsonObject();\n        Consumer consumer = consumers.findByUsername(principal.getName());\n\n        if (consumer == null) {\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n\n\n        List<PrintRequest.Status> status = new ArrayList<>();\n        status.add(PrintRequest.Status.PENDING);\n\n        List<PrintRequest> printRequestsList = printrequests.findByStatusInAndConsumer(status, consumer);\n        Type listOfPRequests = new TypeToken<List<PrintShop>>(){}.getType();\n\n        response.add(\"printrequests\", GSON.toJsonTree(printRequestsList,listOfPRequests));\n        response.addProperty(\"success\", true);\n        return GSON.toJson(response);\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to cancel a pending request.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/requests/cancel/{id}\", method = RequestMethod.DELETE)\n    public String cancelRequests(@PathVariable(value = \"id\") long id, Principal principal) {\n\n        JsonObject response = new JsonObject();\n        Consumer consumer = consumers.findByUsername(principal.getName());\n\n        if (consumer == null) {\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n\n        PrintRequest printRequest = printrequests.findByIdInAndConsumer(id,consumer);\n\n        if (printRequest == null) {\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n\n        if(printRequest.getStatus() == PrintRequest.Status.PENDING){\n\n            PrintShop p = printRequest.getPrintshop();\n            p.getPrintRequests().remove(printRequest);\n            printShops.save(p);\n\n            consumer.getPrintRequests().remove(printRequest);\n\n            // Refund consumer with proxyprint money :D\n            Admin master = admin.findAll().iterator().next();\n            double returnQuantity = printRequest.getCost();\n            master.getBalance().subtractDoubleQuantity(returnQuantity);\n            admin.save(master);\n            consumer.getBalance().addDoubleQuantity(returnQuantity);\n            consumers.save(consumer);\n\n            response.addProperty(\"success\", true);\n        } else{\n            response.addProperty(\"success\", false);\n        }\n\n        return GSON.toJson(response);\n    }\n\n    @ApiOperation(value = \"Returns satisfied requests.\", notes = \"This method retrieves the history of satisfied requests from a consumer.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/satisfied\", method = RequestMethod.GET)\n    public String getPrintShopSatisfiedRequests(Principal principal) {\n        JsonObject response = new JsonObject();\n\n        Consumer consumer = consumers.findByUsername(principal.getName());\n\n        if (consumer == null) {\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n\n        List<PrintRequest.Status> status = new ArrayList<>();\n        status.add(PrintRequest.Status.FINISHED);\n        status.add(PrintRequest.Status.LIFTED);\n\n        List<PrintRequest> printRequestsList = printrequests.findByStatusInAndConsumer(status, consumer);\n\n        JsonArray jsonArray = new JsonArray();\n        for (PrintRequest satisfiedRequest : printRequestsList){\n            JsonObject aux = new JsonObject();\n            aux.add(\"printrequest\", GSON.toJsonTree(satisfiedRequest));\n            aux.addProperty(\"printshop\", satisfiedRequest.getPrintshop().getName());\n            jsonArray.add(aux);\n        }\n\n        response.add(\"satisfiedrequests\", jsonArray);\n        response.addProperty(\"success\", true);\n        return GSON.toJson(response);\n    }\n\n\n    @ApiOperation(value = \"Returns a certain consumer's balance.\", notes = \"Returns the consumer's balance, normaly used for update purposes.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/balance\", method = RequestMethod.GET)\n    public String getConsumerBalance(Principal principal) {\n        JsonObject response = new JsonObject();\n        Consumer consumer = consumers.findByUsername(principal.getName());\n        if (consumer != null) {\n            Money balance = consumer.getBalance();\n            response.add(\"balance\", GSON.toJsonTree(balance));\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        response.addProperty(\"success\", false);\n        return GSON.toJson(response);\n    }\n\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_2f3c200faca64b09ba7b1ea746a0f586",
+            "function": {
+              "arguments": "{\"command\":\"find src -name \\\"Consumer.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/io/github/proxyprint/kitchen/models/consumer/Consumer.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_2f3c200faca64b09ba7b1ea746a0f586"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_5ed7ee30ee77410899d85e73cd6356ff",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/io/github/proxyprint/kitchen/models/consumer/Consumer.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package io.github.proxyprint.kitchen.models.consumer;\\n\\nimport io.github.proxyprint.kitchen.models.Money;\\nimport io.github.proxyprint.kitchen.models.User;\\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.PrintRequest;\\nimport io.github.proxyprint.kitchen.models.notifications.Notification;\\nimport io.github.proxyprint.kitchen.utils.gson.Exclude;\\n\\nimport javax.persistence.*;\\nimport java.util.*;\\n\\n/**\\n * Created by daniel on 04-04-2016.\\n */\\n@Entity\\n@Inheritance(strategy=InheritanceType.SINGLE_TABLE)\\n@Table(name = \"consumers\")\\npublic class Consumer extends User {\\n\\n    @Column(name = \"name\", nullable = false)\\n    private String name;\\n    @Column(name = \"email\", nullable = true) // all true because null constraint block adition of employees\\n    private String email;\\n    @Column(name = \"latitude\", nullable = true)\\n    private String latitude;\\n    @Column(name = \"longitude\", nullable = true)\\n    private String longitude;\\n\\n    @JoinColumn(name = \"consumer_id\")\\n    @OneToMany(cascade = CascadeType.ALL)\\n    private Set<PrintingSchema> printingSchemas;\\n\\n    @OneToMany(cascade = CascadeType.ALL)\\n    @JoinColumn(name = \"consumer\")\\n    @Exclude\\n    private Set<PrintRequest> printrequests;\\n\\n    @OneToMany(cascade = CascadeType.ALL)\\n    @JoinColumn(name = \"consumer\")\\n    @Exclude\\n    private List<Notification> notifications;\\n\\n    @Column(unique = true)\\n    private Money balance;\\n\\n    public Consumer() {\\n        this.printingSchemas = new HashSet<>();\\n        this.notifications = new ArrayList<>();\\n        super.addRole(User.Roles.ROLE_USER.name());\\n        this.balance = new Money();\\n    }\\n\\n    public Consumer(String name, String username, String password, String email, String latitude, String longitude) {\\n        super(username, password);\\n        super.addRole(User.Roles.ROLE_USER.toString());\\n        this.name = name;\\n        this.email = email;\\n        this.latitude = latitude;\\n        this.longitude = longitude;\\n        this.printingSchemas = new HashSet<>();\\n        this.notifications = new ArrayList<>();\\n        this.balance = new Money();\\n    }\\n\\n    public Consumer(String username, String password, String name, String email, String latitude, String longitude, Set<PrintingSchema> printingSchemas) {\\n        super(username, password);\\n        this.name = name;\\n        this.email = email;\\n        this.latitude = latitude;\\n        this.longitude = longitude;\\n        this.printingSchemas = printingSchemas;\\n        this.balance = new Money();\\n    }\\n\\n    public String getName() {\\n        return name;\\n    }\\n\\n    public void setName(String name) {\\n        this.name = name;\\n    }\\n\\n    public String getEmail() {\\n        return email;\\n    }\\n\\n    public void setEmail(String email) {\\n        this.email = email;\\n    }\\n\\n    public String getLatitude() {\\n        return latitude;\\n    }\\n\\n    public void setLatitude(String latitude) {\\n        this.latitude = latitude;\\n    }\\n\\n    public String getLongitude() {\\n        return longitude;\\n    }\\n\\n    public void setLongitude(String longitude) {\\n        this.longitude = longitude;\\n    }\\n\\n    public Set<PrintingSchema> getPrintingSchemas() {\\n        return printingSchemas;\\n    }\\n\\n    public void setPrintingSchemas(Set<PrintingSchema> printingSchemas) {\\n        this.printingSchemas = printingSchemas;\\n    }\\n\\n    public boolean addPrintingSchema(PrintingSchema ps) {\\n        return this.printingSchemas.add(ps);\\n    }\\n\\n    public boolean deletePrintingSchema(long psID) {\\n        Iterator it = this.printingSchemas.iterator();\\n        while (it.hasNext()) {\\n            PrintingSchema ps = (PrintingSchema) it.next();\\n            if (ps.getId() == psID) {\\n                it.remove();\\n                return true;\\n            }\\n        }\\n        return false;\\n    }\\n\\n    public Set<PrintRequest> getPrintRequests() {\\n        return printrequests;\\n    }\\n\\n    public void addPrintRequest(PrintRequest printrequest) {\\n        this.printrequests.add(printrequest);\\n    }\\n\\n    public void addNotifications(Notification notification) {\\n        this.notifications.add(notification);\\n    }\\n\\n    public List<Notification> getNotifications() {\\n        return new ArrayList<>(notifications);\\n    }\\n    \\n    public void removeAllNotifications () {\\n        this.notifications.clear();\\n    }\\n    \\n    public void readAllNotifications() {\\n       for (Notification n : notifications)\\n           n.setReadStatus(true);\\n    }\\n\\n    public Money getBalance() { return balance; }\\n\\n    public void setBalance(Money balance) { this.balance = balance; }\\n\\n    @Override\\n    public String toString() {\\n        return \"Consumer{\" + super.toString()\\n                + \"name=\\'\" + name + \\'\\\\\\'\\'\\n                + \", email=\\'\" + email + \\'\\\\\\'\\'\\n                + \", latitude=\\'\" + latitude + \\'\\\\\\'\\'\\n                + \", longitude=\\'\" + longitude + \\'\\\\\\'\\'\\n                + \\'}\\';\\n    }\\n\\n    \\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_5ed7ee30ee77410899d85e73cd6356ff"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_84f1f7b40bdf4fd59e56c85d26fd1f30",
+            "function": {
+              "arguments": "{\"command\":\"find src -name \\\"User.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/io/github/proxyprint/kitchen/models/User.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_84f1f7b40bdf4fd59e56c85d26fd1f30"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_79ee893840e5480eb5acb1cde4a1934b",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/io/github/proxyprint/kitchen/models/User.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/*\\n * Copyright 2016 Jorge Caldas, José Cortez\\n * José Francisco, Marcelo Gonçalves\\n *\\n * Licensed under the Apache License, Version 2.0 (the \"License\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *      http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \"AS IS\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\npackage io.github.proxyprint.kitchen.models;\\n\\nimport com.fasterxml.jackson.annotation.JsonIgnore;\\nimport org.hibernate.annotations.Cascade;\\nimport org.hibernate.annotations.CascadeType;\\nimport org.springframework.security.core.GrantedAuthority;\\nimport org.springframework.security.core.authority.SimpleGrantedAuthority;\\n\\nimport javax.persistence.*;\\nimport java.io.Serializable;\\nimport java.util.*;\\n\\n/**\\n *\\n * @author josesousa\\n */\\n@Entity\\n@Table(name = \"users\")\\n@Inheritance(strategy = InheritanceType.JOINED)\\npublic abstract class User implements Serializable {\\n\\n    public static enum Roles {\\n        ROLE_USER, ROLE_EMPLOYEE, ROLE_MANAGER, ROLE_ADMIN\\n    }\\n\\n    @Id\\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\\n    protected long id;\\n    @Column(name = \"username\", nullable = false, unique = true)\\n    protected String username;\\n    @JsonIgnore\\n    @Column(name = \"password\", nullable = false)\\n    protected String password;\\n    @ElementCollection(fetch = FetchType.EAGER)\\n    @CollectionTable(\\n            name = \"roles\",\\n            joinColumns = @JoinColumn(name = \"user_id\")\\n    )\\n    @Cascade(CascadeType.ALL)\\n    protected Set<String> roles;\\n\\n    public User() {\\n        this.roles = new HashSet<>();\\n    }\\n\\n    public User(String username, String password) {\\n        this.username = username;\\n        this.password = password;\\n        this.roles = new HashSet<>();\\n    }\\n\\n    public String getUsername() {\\n        return username;\\n    }\\n\\n    public void setUsername(String username) {\\n        this.username = username;\\n    }\\n\\n    public String getPassword() {\\n        return password;\\n    }\\n\\n    public void setPassword(String password) {\\n        this.password = password;\\n    }\\n\\n    public long getId() {\\n        return id;\\n    }\\n\\n    public void setId(long id) {\\n        this.id = id;\\n    }\\n\\n    public Collection<GrantedAuthority> getRoles() {\\n        List<GrantedAuthority> authorities = new LinkedList<>();\\n        for (String a : roles) {\\n            authorities.add(new SimpleGrantedAuthority(a));\\n        }\\n        return authorities;\\n    }\\n\\n    public Set<String> getRolesSet() { return this.roles; }\\n\\n    protected void addRole(String role) {\\n        this.roles.add(role);\\n    }\\n\\n    @Override\\n    public String toString() {\\n        return \"User{\" + \"id=\" + id + \", username=\" + username + \", password=\" + password + \", roles=\" + roles + \\'}\\';\\n    }\\n\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_79ee893840e5480eb5acb1cde4a1934b"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1d3c9069060a4b61ba3c2807a020109e",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/io/github/proxyprint/kitchen/models/Money.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package io.github.proxyprint.kitchen.models;\\n\\nimport javax.persistence.*;\\n\\n/**\\n * Created by daniel on 03-06-2016.\\n */\\n@Embeddable\\npublic class Money {\\n    private static int MONEY_CEIL = 100;\\n\\n    @Column(name = \"balance_currency\", nullable = false)\\n    private String currency;\\n\\n    @Column(name = \"balance_integer_part\", nullable = false)\\n    private int integerPart;\\n\\n    @Column(name = \"balance_fractional_part\", nullable = false)\\n    private int fractionalPart;\\n\\n    public Money() {\\n        this.currency=\"EUR\";\\n        this.integerPart=0;\\n        this.fractionalPart=0;\\n    }\\n\\n    public Money(int integerPart, int fractionalPart) {\\n        this.currency=\"EUR\";\\n        this.integerPart = integerPart;\\n        this.fractionalPart = fractionalPart;\\n    }\\n\\n    public Money(String currency, int integerPart, int fractionalPart) {\\n        this.currency = currency;\\n        this.integerPart = integerPart;\\n        this.fractionalPart = fractionalPart;\\n    }\\n\\n    public String getCurrency() { return currency; }\\n\\n    public void setCurrency(String currency) { this.currency = currency; }\\n\\n    public int getIntegerPart() { return integerPart; }\\n\\n    public void setIntegerPart(int integerPart) { this.integerPart = integerPart; }\\n\\n    public int getFractionalPart() { return fractionalPart; }\\n\\n    public void setFractionalPart(int fractionalPart) { this.fractionalPart = fractionalPart; }\\n\\n    public void addMoney(Money m) {\\n        this.integerPart += m.getIntegerPart();\\n        int tmp = this.fractionalPart + m.getFractionalPart();\\n\\n        if(tmp >= MONEY_CEIL) {\\n            while(tmp >= MONEY_CEIL) {\\n                this.integerPart++;\\n                this.fractionalPart = tmp - MONEY_CEIL;\\n                tmp -= MONEY_CEIL;\\n            }\\n        } else {\\n            this.fractionalPart = tmp;\\n        }\\n    }\\n\\n    public void subtractMoney(Money m) {\\n        this.integerPart -= m.getIntegerPart();\\n        int tmp = this.fractionalPart - m.getFractionalPart();\\n\\n        if(tmp <= 0) {\\n            while(tmp <= 0) {\\n                this.integerPart--;\\n                this.fractionalPart = tmp + MONEY_CEIL;\\n                tmp += MONEY_CEIL;\\n            }\\n        } else {\\n            this.fractionalPart = tmp;\\n        }\\n    }\\n\\n    public void addQuantity(int ip, int fp) {\\n        this.addMoney(new Money(ip,fp));\\n    }\\n\\n    public void subtractQuantity(int ip, int fp) {\\n        this.subtractMoney(new Money(ip,fp));\\n    }\\n\\n    public void addDoubleQuantity(double value) {\\n        value = round(value,2);\\n        String tmp[] = String.valueOf(value).split(\"\\\\\\\\.\");\\n        this.addMoney(new Money(Integer.parseInt(tmp[0]), Integer.parseInt(tmp[1])));\\n    }\\n\\n    public void subtractDoubleQuantity(double value) {\\n        value = round(value,2);\\n        String tmp[] = String.valueOf(value).split(\"\\\\\\\\.\");\\n        this.subtractMoney(new Money(Integer.parseInt(tmp[0]), Integer.parseInt(tmp[1])));\\n    }\\n\\n    private double round(double value, int places) {\\n        if (places < 0) throw new IllegalArgumentException();\\n\\n        long factor = (long) Math.pow(10, places);\\n        value = value * factor;\\n        long tmp = Math.round(value);\\n        return (double) tmp / factor;\\n    }\\n\\n    public String getMoneyAsString(String separator) {\\n        if(separator!=null) {\\n            return (this.integerPart+separator.trim()+this.fractionalPart);\\n        } else {\\n            return \"\";\\n        }\\n    }\\n\\n    public double getMoneyAsDouble() {\\n        return Double.parseDouble(String.valueOf(this.integerPart)+\".\"+String.valueOf(this.getFractionalPart()));\\n    }\\n\\n    public boolean isValid() {\\n        return (this.fractionalPart < MONEY_CEIL);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_1d3c9069060a4b61ba3c2807a020109e"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-49d7749c6b4a4af2801e4fcfa2509036",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767326169,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_3ace7e28614f440aa747ebd7597e3d4f",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"find src -name \\\"PrintingSchema.java\\\"\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 7492,
+      "completion_tokens": 907,
+      "total_tokens": 8399,
+      "completion_tokens_details": {
+        "reasoning_tokens": 882
+      }
+    }
+  }
+}

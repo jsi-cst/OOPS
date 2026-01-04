@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766737882979,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `server.js`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":\"/api/products\",\"handler\":\"productRoutes\",\"handler_in_same_file\":false,\"path_is_prefix\":true,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 2: `{\"path\":\"/api/users\",\"handler\":\"userRoutes\",\"handler_in_same_file\":false,\"path_is_prefix\":true,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 3: `{\"path\":\"/api/orders\",\"handler\":\"orderRoutes\",\"handler_in_same_file\":false,\"path_is_prefix\":true,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 4: `{\"path\":\"/api/upload\",\"handler\":\"uploadRoutes\",\"handler_in_same_file\":false,\"path_is_prefix\":true,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 5: `{\"path\":\"/api/config/paypal\",\"handler\":\"anonymous\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 6: `{\"path\":\"/\",\"handler\":\"anonymous\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 7: `{\"path\":\"/uploads (production static)\",\"handler\":\"anonymous\",\"handler_in_same_file\":false,\"path_is_prefix\":true,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":false,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[]\n\nExplanation:\n- The server.js file defines the following API-related entries that match the criteria: \n  - RESTful routes mounted via routers: /api/products, /api/users, /api/orders, /api/upload\n  - A direct RESTful GET route: /api/config/paypal\n  - A root path entry: /\n  - Static/mount points for uploads: /uploads (production static) and /uploads (non-production)\n- All of these entries have already been listed in the previously provided entries (Entries 1–7). There are no additional API entries defined in server.js that meet the criteria beyond those, so there are no new entries to output.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766737871,
+    "id": "chatcmpl-CqxW3sEIIUc59nGb9GSKbKB1Ni9cK",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1683,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1536,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1281,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2964
+    }
+  }
+}

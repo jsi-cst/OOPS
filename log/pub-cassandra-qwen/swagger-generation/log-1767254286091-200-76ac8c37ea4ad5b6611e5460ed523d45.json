@@ -1,0 +1,138 @@
+{
+  "timestamp": 1767254286091,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v0/ops/keyspace/cleanup` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/datastax/mgmtapi/resources/KeyspaceOpsResources.java`, `KeyspaceOpsResources.cleanup` is implemented to process HTTP requests to `/api/v0/ops/keyspace/cleanup` with HTTP method POST.\n\n2. In `src/main/java/com/datastax/mgmtapi/resources/KeyspaceOpsResources.java`, `KeyspaceOpsResources.cleanup` is implemented to process HTTP requests to `/api/v0/ops/keyspace/cleanup` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/KeyspaceOpsResources.java`:\n\n```\n/**\n * Copyright DataStax, Inc.\n *\n * Please see the included license file for details.\n */\npackage com.datastax.mgmtapi.resources;\n\nimport java.util.ArrayList;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.stream.Collectors;\n\nimport javax.ws.rs.Consumes;\nimport javax.ws.rs.GET;\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.Produces;\nimport javax.ws.rs.QueryParam;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\n\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport org.apache.commons.collections4.CollectionUtils;\nimport org.apache.commons.lang3.StringUtils;\nimport org.apache.http.HttpStatus;\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.models.CreateOrAlterKeyspaceRequest;\nimport com.datastax.mgmtapi.resources.models.KeyspaceRequest;\nimport com.datastax.oss.driver.api.core.cql.ResultSet;\nimport com.datastax.oss.driver.api.core.cql.Row;\nimport com.fasterxml.jackson.databind.ObjectMapper;\n\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.Parameter;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\n\n\n@Path(\"/api/v0/ops/keyspace\")\npublic class KeyspaceOpsResources\n{\n    private static final Logger logger = LoggerFactory.getLogger(KeyspaceOpsResources.class);\n    private static final ObjectMapper jsonMapper = new ObjectMapper();\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public KeyspaceOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/cleanup\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Operation(summary = \"Triggers the immediate cleanup of keys no longer belonging to a node. By default, clean all keyspaces. This operation is blocking and will return the executed job after finishing.\",\n            operationId = \"cleanup\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Job ID for keyspace cleanup process\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n            )\n        )\n    )\n    public Response cleanup(KeyspaceRequest keyspaceRequest)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            List<String> tables = keyspaceRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = keyspaceRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"NON_LOCAL_STRATEGY\";\n            }\n\n            if (StringUtils.equalsAnyIgnoreCase(keyspaceName, \"system\", \"system_schema\"))\n            {\n                return Response.ok(\"OK\").build();\n            }\n\n            return Response.ok(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.forceKeyspaceCleanup(?, ?, ?, ?)\",\n                    keyspaceRequest.jobs, keyspaceName, tables, false)).build();\n        });\n    }\n\n    @POST\n    @Path(\"/refresh\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"SSTables loaded successfully\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Keyspace name or Table name not provided\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Must provide a keyspace name\"\n            )\n        )\n    )\n    @Operation(summary = \"Load newly placed SSTables to the system without restart\", operationId = \"refresh\")\n    public Response refresh(@QueryParam(value=\"keyspaceName\")String keyspaceName, @QueryParam(value=\"table\")String table)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Must provide a keyspace name\").build();\n            }\n\n            if (StringUtils.isBlank(table))\n            {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"table must be provided\").build();\n            }\n\n            cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.loadNewSSTables(?, ?)\", keyspaceName, table);\n\n            return Response.ok(\"OK\").build();\n        });\n    }\n\n    @POST\n    @Path(\"/create\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Keyspace created successfully\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Keyspace name or Replication Settings not provided\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Keyspace creation failed. Non-empty 'keyspace_name' must be provided\"\n            )\n        )\n    )\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Operation(summary = \"Create a new keyspace with the given name and replication settings\", operationId = \"createKeyspace\")\n    public Response create(CreateOrAlterKeyspaceRequest createOrAlterKeyspaceRequest)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            if (StringUtils.isBlank(createOrAlterKeyspaceRequest.keyspaceName))\n            {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Keyspace creation failed. Non-empty 'keyspace_name' must be provided\").build();\n            }\n\n            if (null == createOrAlterKeyspaceRequest.replicationSettings || createOrAlterKeyspaceRequest.replicationSettings.isEmpty())\n            {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Keyspace creation failed. 'replication_settings' must be provided\").build();\n            }\n\n            cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.createKeyspace(?, ?)\",\n                    createOrAlterKeyspaceRequest.keyspaceName, createOrAlterKeyspaceRequest.replicationSettingsAsMap());\n\n            return Response.ok(\"OK\").build();\n        });\n    }\n\n    @POST\n    @Path(\"/alter\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Keyspace Replication Settings altered successfully\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Keyspace name or Replication Settings not provided\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Altering Keyspace failed. Non-empty 'keyspace_name' must be provided\"\n            )\n        )\n    )\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Operation(summary = \"Alter the replication settings of an existing keyspace\", operationId = \"alterKeyspace\")\n    public Response alter(CreateOrAlterKeyspaceRequest createOrAlterKeyspaceRequest)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            if (StringUtils.isBlank(createOrAlterKeyspaceRequest.keyspaceName))\n            {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Altering Keyspace failed. Non-empty 'keyspace_name' must be provided\").build();\n            }\n\n            if (null == createOrAlterKeyspaceRequest.replicationSettings || createOrAlterKeyspaceRequest.replicationSettings.isEmpty())\n            {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Altering Keyspace failed. 'replication_settings' must be provided\").build();\n            }\n\n            cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.alterKeyspace(?, ?)\",\n                    createOrAlterKeyspaceRequest.keyspaceName, createOrAlterKeyspaceRequest.replicationSettingsAsMap());\n\n            return Response.ok(\"OK\").build();\n        });\n    }\n\n    @GET\n    @Produces(MediaType.APPLICATION_JSON)\n    @ApiResponse(responseCode = \"200\", description = \"List of Keyspaces\",\n        content = @Content(\n            mediaType = MediaType.APPLICATION_JSON,\n            examples = @ExampleObject(\n                value = \"[\\n    \\\"system_schema\\\",\\n    \\\"system\\\",\\n    \\\"system_auth\\\",\\n    \\\"system_distributed\\\",\\n    \\\"system_traces\\\"\\n]\"\n            )\n        )\n    )\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Operation(summary = \"List the keyspaces existing in the cluster\", operationId = \"listKeyspaces\")\n    public Response list(@QueryParam(value=\"keyspaceName\")String keyspaceName)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            ResultSet result = cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.getKeyspaces()\");\n            Row row = result.one();\n            List<String> keyspaces = null;\n            if (row != null)\n            {\n                List<String> allKeyspaces = row.getList(0, String.class);\n                keyspaces = allKeyspaces.stream()\n                        .filter(ks -> ks.equals(keyspaceName) || StringUtils.isBlank(keyspaceName))\n                        .collect(Collectors.toList());\n            }\n\n            return Response.ok(jsonMapper.writeValueAsString(keyspaces), MediaType.APPLICATION_JSON).build();\n        });\n    }\n\n    @GET\n    @Path(\"/replication\")\n    @Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})\n    @ApiResponse(responseCode = \"200\", description = \"Keyspace Replication Settings\",\n        content = @Content(\n            mediaType = MediaType.APPLICATION_JSON,\n            examples = @ExampleObject(\n                value = \"{\\n    \\\"class\\\": \\\"org.apache.cassandra.locator.SimpleStrategy\\\",\\n    \\\"replication_factor\\\": \\\"2\\\"\\n}\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Keyspace name not provided\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Get keyspace replication failed. Non-empty 'keyspaceName' must be provided\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"404\", description = \"Keyspace name not found\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Get keyspace replication failed. Keyspace 'my_keyspace' does not exist.\"\n            )\n        )\n    )\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Operation(summary = \"Get the replication settings of an existing keyspace\", operationId = \"replication\")\n    public Response getReplication(@Parameter(required = true) @QueryParam(value=\"keyspaceName\")String keyspaceName) {\n        if (StringUtils.isBlank(keyspaceName)) {\n            return Response.status(HttpStatus.SC_BAD_REQUEST)\n                    .entity(\"Get keyspace replication failed. Non-empty 'keyspaceName' must be provided\").build();\n        }\n        return NodeOpsResources.handle(() ->\n        {\n            ResultSet result = cqlService.executePreparedStatement(\n                    app.dbUnixSocketFile, \"CALL NodeOps.getReplication(?)\", keyspaceName);\n            Row row = result.one();\n            if (row == null) {\n                return Response.status(HttpStatus.SC_NOT_FOUND)\n                        .entity(String.format(\"Get keyspace replication failed. Keyspace '%s' does not exist.\", keyspaceName)).build();\n            } else {\n                Map<String, String> replication = row.getMap(0, String.class, String.class);\n                assert replication != null;\n                return Response.ok(replication, MediaType.APPLICATION_JSON).build();\n            }\n        });\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the `/api/v0/ops/keyspace/cleanup` endpoint with HTTP method POST to generate the response objects for the OpenAPI specification.\n\nLet me examine the `cleanup` method in the provided file:\n\n1. The method is annotated with `@POST` and `@Path(\"/cleanup\")`\n2. It consumes `MediaType.APPLICATION_JSON` and produces `MediaType.TEXT_PLAIN`\n3. It has an `@ApiResponse` annotation that specifies the response for code 200\n4. The method takes a `KeyspaceRequest` parameter\n\nLet me check the `KeyspaceRequest` model to understand the request structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c599553184c34023b9c6deb7",
+            "function": {
+              "arguments": "{\"command\": \"find src -name \\\"KeyspaceRequest.java\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/datastax/mgmtapi/resources/models/KeyspaceRequest.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_c599553184c34023b9c6deb7"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me examine the KeyspaceRequest model to understand the request structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_6a57c59877044a068761553b",
+            "function": {
+              "arguments": "{\"command\": \"cat src/main/java/com/datastax/mgmtapi/resources/models/KeyspaceRequest.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/**\\n * Copyright DataStax, Inc.\\n *\\n * Please see the included license file for details.\\n */\\npackage com.datastax.mgmtapi.resources.models;\\n\\nimport java.io.Serializable;\\nimport java.util.List;\\nimport java.util.Objects;\\n\\nimport com.fasterxml.jackson.annotation.JsonCreator;\\nimport com.fasterxml.jackson.annotation.JsonProperty;\\n\\npublic class KeyspaceRequest implements Serializable\\n{\\n    @JsonProperty(value = \"jobs\", required = true)\\n    public final int jobs;\\n\\n    @JsonProperty(value = \"keyspace_name\", required = true)\\n    public final String keyspaceName;\\n\\n    @JsonProperty(value = \"tables\", required = true)\\n    public final List<String> tables;\\n\\n    @JsonCreator\\n    public KeyspaceRequest(@JsonProperty(\"jobs\") int jobs, @JsonProperty(\"keyspace_name\") String keyspaceName, @JsonProperty(\"tables\") List<String> tables)\\n    {\\n        this.jobs = jobs == 0 ? 1 : jobs;\\n        this.keyspaceName = keyspaceName;\\n        this.tables = tables;\\n    }\\n\\n    @Override\\n    public boolean equals(Object o)\\n    {\\n        if (this == o)\\n        {\\n            return true;\\n        }\\n        if (o == null || getClass() != o.getClass())\\n        {\\n            return false;\\n        }\\n        KeyspaceRequest that = (KeyspaceRequest) o;\\n        return jobs == that.jobs &&\\n                Objects.equals(keyspaceName, that.keyspaceName) &&\\n                Objects.equals(tables, that.tables);\\n    }\\n\\n    @Override\\n    public int hashCode()\\n    {\\n        return Objects.hash(jobs, keyspaceName, tables);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_6a57c59877044a068761553b"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I need to check if there are any other potential response codes that could be returned by this endpoint. I can see from the code that there's a `NodeOpsResources.handle()` method that might handle exceptions and return different status codes. Let me check this:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_f5c23164b0d947de9c1cc129",
+            "function": {
+              "arguments": "{\"command\": \"find src -name \\\"NodeOpsResources.java\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java\\nsrc/main/java/com/datastax/mgmtapi/resources/NodeOpsResources.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_f5c23164b0d947de9c1cc129"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-aeb095a2-4c2b-9527-9f35-a1e529e314cf",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me check the NodeOpsResources.java file to understand the handle method:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_c86dec9342644279b6d042fc",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"cat src/main/java/com/datastax/mgmtapi/resources/NodeOpsResources.java\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767254285,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 4061,
+      "completion_tokens": 53,
+      "prompt_tokens": 4008,
+      "prompt_tokens_details": {
+        "cached_tokens": 3072
+      }
+    }
+  }
+}

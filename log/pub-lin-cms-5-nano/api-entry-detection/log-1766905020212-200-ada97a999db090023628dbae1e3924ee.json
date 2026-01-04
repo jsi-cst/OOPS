@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766905020212,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/api/v1/book.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/api/v1/book.py`:\n\n```\n\"\"\"\na standard CRUD template of book\n通过 图书 来实现一套标准的 CRUD 功能，供学习\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nfrom flask import Blueprint, g\n\nfrom app.api import AuthorizationBearerSecurity, api\nfrom app.api.v1.exception import BookNotFound\nfrom app.api.v1.model.book import Book\nfrom app.api.v1.schema import BookInSchema, BookOutSchema, BookQuerySearchSchema, BookSchemaList\nfrom app.lin import DocResponse, Success, group_required, login_required, permission_meta\n\nbook_api = Blueprint(\"book\", __name__)\n\n\n@book_api.route(\"/<int:id>\")\n@api.validate(\n    resp=DocResponse(BookNotFound, r=BookOutSchema),\n    tags=[\"图书\"],\n)\ndef get_book(id):\n    \"\"\"\n    获取id指定图书的信息\n    \"\"\"\n    book = Book.get(id=id)\n    if book:\n        return book\n    raise BookNotFound\n\n\n@book_api.route(\"\")\n@api.validate(\n    resp=DocResponse(r=BookSchemaList),\n    tags=[\"图书\"],\n)\ndef get_books():\n    \"\"\"\n    获取图书列表\n    \"\"\"\n    return Book.get(one=False)\n\n\n@book_api.route(\"/search\")\n@api.validate(\n    resp=DocResponse(r=BookSchemaList),\n    tags=[\"图书\"],\n)\ndef search(query: BookQuerySearchSchema):\n    \"\"\"\n    关键字搜索图书\n    \"\"\"\n    return Book.query.filter(Book.title.like(\"%\" + g.q + \"%\"), Book.is_deleted == False).all()\n\n\n@book_api.route(\"\", methods=[\"POST\"])\n@login_required\n@api.validate(\n    resp=DocResponse(Success(12)),\n    security=[AuthorizationBearerSecurity],\n    tags=[\"图书\"],\n)\ndef create_book(json: BookInSchema):\n    \"\"\"\n    创建图书\n    \"\"\"\n    Book.create(**json.dict(), commit=True)\n    raise Success(12)\n\n\n@book_api.route(\"/<int:id>\", methods=[\"PUT\"])\n@login_required\n@api.validate(\n    resp=DocResponse(Success(13)),\n    security=[AuthorizationBearerSecurity],\n    tags=[\"图书\"],\n)\ndef update_book(id, json: BookInSchema):\n    \"\"\"\n    更新图书信息\n    \"\"\"\n    book = Book.get(id=id)\n    if book:\n        book.update(\n            id=id,\n            **json.dict(),\n            commit=True,\n        )\n        raise Success(13)\n    raise BookNotFound\n\n\n@book_api.route(\"/<int:id>\", methods=[\"DELETE\"])\n@permission_meta(name=\"删除图书\", module=\"图书\")\n@group_required\n@api.validate(\n    resp=DocResponse(BookNotFound, Success(14)),\n    security=[AuthorizationBearerSecurity],\n    tags=[\"图书\"],\n)\ndef delete_book(id):\n    \"\"\"\n    传入id删除对应图书\n    \"\"\"\n    book = Book.get(id=id)\n    if book:\n        # 删除图书，软删除\n        book.delete(commit=True)\n        raise Success(14)\n    raise BookNotFound\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": \"/{id}\",\n    \"handler\": \"get_book\",\n    \"in_source_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_derived_from_convention\": false,\n    \"is_restful\": true,\n    \"is_testing\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"get_books\",\n    \"in_source_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_derived_from_convention\": false,\n    \"is_restful\": true,\n    \"is_testing\": false\n  },\n  {\n    \"path\": \"/search\",\n    \"handler\": \"search\",\n    \"in_source_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_derived_from_convention\": false,\n    \"is_restful\": true,\n    \"is_testing\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"create_book\",\n    \"in_source_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_derived_from_convention\": false,\n    \"is_restful\": true,\n    \"is_testing\": false\n  },\n  {\n    \"path\": \"/{id}\",\n    \"handler\": \"update_book\",\n    \"in_source_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_derived_from_convention\": false,\n    \"is_restful\": true,\n    \"is_testing\": false\n  },\n  {\n    \"path\": \"/{id}\",\n    \"handler\": \"delete_book\",\n    \"in_source_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_derived_from_convention\": false,\n    \"is_restful\": true,\n    \"is_testing\": false\n  }\n]\n\nExplanation:\n- Each Flask route decorator defines an API entry. I mapped the routes to RESTful endpoints and noted the corresponding handler (function names in this file).\n- Path parameters in Flask use <type:name> syntax; I converted to the required {name} format (e.g., <int:id> -> {id}).\n- For routes defined as \"\" (the blueprint root), the final full path depends on how the blueprint is registered in the application (prefix). Since that prefix is not present in this file, I set the path to null for those entries.\n- All handlers (get_book, get_books, search, create_book, update_book, delete_book) are implemented in this same source file, so in_source_file is true for all.\n- Path strings are extracted from literal strings in the source code (path_from_literal = true) and none appear to be derived from naming conventions or be path prefixes.\n- All entries represent RESTful CRUD-style endpoints, and none are specifically intended for testing purposes.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766904992,
+    "id": "chatcmpl-CrezYh4N9ip3ijF6RgKKFIRf4pf1M",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 4278,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 3648,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1091,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 5369
+    }
+  }
+}

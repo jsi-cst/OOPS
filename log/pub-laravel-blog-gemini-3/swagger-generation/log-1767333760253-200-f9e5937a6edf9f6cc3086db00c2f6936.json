@@ -1,0 +1,67 @@
+{
+  "timestamp": 1767333760253,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/media` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\n2. In `app/Policies/MediaPolicy.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\n3. In `app/Http/Resources/Media.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\n4. In `app/Http/Requests/Admin/MediaLibraryRequest.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/MediaController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\MediaLibraryRequest;\nuse App\\Http\\Resources\\Media as MediaResource;\nuse App\\Models\\Media;\nuse App\\Models\\MediaLibrary;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass MediaController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return MediaResource::collection(\n            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(MediaLibraryRequest $request): MediaResource\n    {\n        $this->authorize('store', Media::class);\n\n        $image = $request->file('image');\n        $name = $image->getClientOriginalName();\n\n        if ($request->filled('name')) {\n            $name = $request->input('name');\n        }\n\n        return new MediaResource(\n            MediaLibrary::first()\n                ->addMedia($image)\n                ->usingName($name)\n                ->toMediaCollection()\n        );\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Media $medium): Response\n    {\n        $this->authorize('delete', $medium);\n\n        $medium->delete();\n\n        return response()->noContent();\n    }\n}\n```\n\nContents of file `app/Policies/MediaPolicy.php`:\n\n```\n<?php\n\nnamespace App\\Policies;\n\nuse App\\Models\\Media;\nuse App\\Models\\User;\nuse Illuminate\\Auth\\Access\\HandlesAuthorization;\n\nclass MediaPolicy\n{\n    use HandlesAuthorization;\n\n    /**\n     * Determine whether the user is admin for all authorization.\n     */\n    public function before(User $user)\n    {\n        if ($user->isAdmin()) {\n            return true;\n        }\n    }\n\n    /**\n     * Determine whether the user can store a medium.\n     */\n    public function store(User $user): bool\n    {\n        return $user->isAdmin();\n    }\n\n    /**\n     * Determine whether the user can delete the medium.\n     */\n    public function delete(User $user, Media $medium): bool\n    {\n        return $user->isAdmin();\n    }\n}\n```\n\nContents of file `app/Http/Resources/Media.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Resources;\n\nuse Illuminate\\Http\\Resources\\Json\\JsonResource;\n\nclass Media extends JsonResource\n{\n    /**\n     * Transform the resource into an array.\n     */\n    public function toArray($request): array\n    {\n        return [\n            'id' => $this->id,\n            'name' => $this->name,\n            'url' => url($this->getUrl()),\n            'thumb_url' => url($this->getUrl('thumb')),\n        ];\n    }\n}\n```\n\nContents of file `app/Http/Requests/Admin/MediaLibraryRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse Illuminate\\Foundation\\Http\\FormRequest;\n\nclass MediaLibraryRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'image' => 'required|image',\n            'name' => 'nullable|string|max:255'\n        ];\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-8522b73a857c43d5bddb13ab5a0ae693",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333760,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "To generate the OpenAPI Specification (Swagger 2.0) Parameter Objects for the `POST /v1/media` endpoint, we analyzed the provided backend source code:\n\n1.  **Controller Analysis**: The `MediaController@store` method uses the `MediaLibraryRequest` to handle and validate the incoming request. It explicitly processes a file upload named `image` and an optional `name` field.\n2.  **Request Analysis**: The `MediaLibraryRequest` defines the validation rules:\n    *   `image`: Required, must be an image file (`required|image`).\n    *   `name`: Optional, string, maximum length of 255 characters (`nullable|string|max:255`).\n3.  **Parameter Location**: Since the request involves a file upload (`$request->file('image')`), the `consumes` type for this endpoint would be `multipart/form-data`, and the parameters are located in the `formData`.\n4.  **Parameter Details**:\n    *   `image`: Defined as `type: file` because it is a file upload.\n    *   `name`: Defined as `type: string` with a `maxLength` of 255.\n\nthe final generated result begins\n\n```json\n[\n  {\n    \"name\": \"image\",\n    \"in\": \"formData\",\n    \"description\": \"The image file to upload.\",\n    \"required\": true,\n    \"type\": \"file\"\n  },\n  {\n    \"name\": \"name\",\n    \"in\": \"formData\",\n    \"description\": \"The name of the media resource.\",\n    \"required\": false,\n    \"type\": \"string\",\n    \"maxLength\": 255\n  }\n]\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1402,
+      "completion_tokens": 1890,
+      "total_tokens": 3292,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1510
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097652770,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript (Node.js) and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/invoices` with method POST, and here is the relevant information I found:\n\n1. In `controllers/invoices.js`, `getInvoicesByUser` is implemented to process HTTP requests to `/invoices` with HTTP method POST.\n\n2. In `controllers/invoices.js`, `createInvoice` is implemented to process HTTP requests to `/invoices` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/invoices.js`:\n\n```\n//Copyright (c) 2022 Panshak Solomon\n\nimport express from 'express'\nimport mongoose from 'mongoose'\n\nimport InvoiceModel from '../models/InvoiceModel.js'\n\nexport const getInvoicesByUser = async (req, res) => {\n    const {searchQuery} = req.query;\n\n    try {\n        const invoices = await InvoiceModel.find({ creator: searchQuery });\n\n        res.status(200).json({ data: invoices });\n    } catch (error) {    \n        res.status(404).json({ message: error.message });\n    }\n}\n\n\nexport const getTotalCount = async (req, res) => {\n    const {searchQuery} = req.query;\n\n    try {\n        // const invoices = await InvoiceModel.find({ creator: searchQuery });\n        const totalCount = await InvoiceModel.countDocuments({ creator: searchQuery });\n\n        res.status(200).json(totalCount);\n    } catch (error) {    \n        res.status(404).json({ message: error.message });\n    }\n}\n\n\nexport const getInvoices = async (req, res) => {\n\n    try {\n        const allInvoices = await InvoiceModel.find({}).sort({_id:-1}) \n\n        res.status(200).json(allInvoices)\n\n    } catch (error) {\n        res.status(409).json(error.message)\n        \n    }\n    \n}\n\n\n\n\nexport const createInvoice = async (req, res) => {\n\n    const invoice = req.body\n\n    const newInvoice = new InvoiceModel(invoice)\n\n    try {\n        await newInvoice.save()\n        res.status(201).json(newInvoice)\n    } catch (error) {\n        res.status(409).json(error.message)\n    }\n\n}\n\nexport const getInvoice = async (req, res) => { \n    const { id } = req.params;\n\n    try {\n        const invoice = await InvoiceModel.findById(id);\n        \n        res.status(200).json(invoice);\n    } catch (error) {\n        res.status(409).json({ message: error.message });\n    }\n}\n\n\nexport const updateInvoice = async (req, res) => {\n    const { id: _id } = req.params\n    const invoice = req.body\n\n    if(!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send('No invoice with that id')\n\n    const updatedInvoice = await InvoiceModel.findByIdAndUpdate(_id, {...invoice, _id}, { new: true})\n\n    res.json(updatedInvoice)\n}\n\n\nexport const deleteInvoice = async (req, res) => {\n    const { id } = req.params\n\n    if(!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send('No invoice with that id')\n\n    await InvoiceModel.findByIdAndRemove(id)\n\n    res.json({message: 'Invoice deleted successfully'})\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsT6eGs7YoL82qnQLrHfUXq8fY070",
+    "object": "chat.completion",
+    "created": 1767097632,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation\n\nI inspected controllers/invoices.js. Two exported functions are implemented that handle POST requests to /invoices in this codebase:\n\n- getInvoicesByUser reads req.query.searchQuery and returns a 200 JSON response with { data: invoices } where invoices is an array of invoice documents found by InvoiceModel.find({ creator: searchQuery }). On error it returns 404 with { message: error.message }.\n\n- createInvoice reads req.body, constructs and saves a new InvoiceModel, and on success returns 201 with the newly created invoice object; on error it returns 409 with error.message.\n\nBecause both handlers are described as processing POST /invoices, the OpenAPI Operation documents both possible behaviors on the same operation: (a) query by searchQuery via query parameter returning 200 with data array, and (b) create a new invoice by sending a JSON request body returning 201 with the created invoice. The requestBody is left optional because the endpoint is used for querying as well; searchQuery is an optional query parameter. The schemas are kept generic (object / array of objects) because the InvoiceModel schema was not provided in the files you gave me. Error responses follow the shapes observed in the code: 404 returns an object { message: string }, while 409 returns the raw error.message (string).\n\nthe final generated result begins\n{\n  \"parameters\": [\n    {\n      \"name\": \"searchQuery\",\n      \"in\": \"query\",\n      \"description\": \"Creator identifier used to filter invoices (matches InvoiceModel.creator). Optional.\",\n      \"required\": false,\n      \"schema\": {\n        \"type\": \"string\"\n      }\n    }\n  ],\n  \"requestBody\": {\n    \"description\": \"Invoice object to create. Not required when querying by searchQuery.\",\n    \"required\": false,\n    \"content\": {\n      \"application/json\": {\n        \"schema\": {\n          \"type\": \"object\"\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Successful response when querying invoices by user.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"data\": {\n                \"type\": \"array\",\n                \"items\": {\n                  \"type\": \"object\"\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"201\": {\n      \"description\": \"Invoice created successfully.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\"\n          }\n        }\n      }\n    },\n    \"404\": {\n      \"description\": \"Resource not found or error occurred.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\"\n              }\n            }\n          }\n        }\n      }\n    },\n    \"409\": {\n      \"description\": \"Conflict or validation error; error.message returned.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"string\"\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 979,
+      "completion_tokens": 2266,
+      "total_tokens": 3245,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1600,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "timestamp": 1766915051261,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v1/posts/{post}/likes` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\Http\\Controllers\\Api\\V1\\PostLikeController@destroy` is implemented to process HTTP requests to `/api/v1/posts/{post}/likes` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     *\n     * @return Response\n     */\n    public function store(Request $request, Post $post)\n    {\n        return $post->like();\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     *\n     * @return \\Illuminate\\Http\\Response\n     */\n    public function destroy(Post $post)\n    {\n        return $post->dislike();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I'll start by inspecting the repository to infer what the Post model's like() and dislike() methods return, as this will inform the possible HTTP responses for the DELETE endpoint. I'll search for the methods and related routes to build accurate Swagger response objects.",
+        "tool_calls": [
+          {
+            "id": "call_Cpy6pcYPEgz39grvC7RgYEVg",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'grep -RIn --no-heading \\\"function like|function dislike|likes|dislike|like\\\" app | head -n 200'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': \"grep: unrecognized option '--no-heading'\\nUsage: grep [OPTION]... PATTERNS [FILE]...\\nTry 'grep --help' for more information.\\n\"}",
+        "tool_call_id": "call_Cpy6pcYPEgz39grvC7RgYEVg"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_gj5g4Nqxlf9AIWJpK1ng5s9F",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'grep -Rni \\\"function like|function dislike|->like|->dislike|Post\\\\:\\\\:|likes|dislike|like\\\\(\\\" app | head -n 200'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': 'grep: Unmatched ( or \\\\(\\n'}",
+        "tool_call_id": "call_gj5g4Nqxlf9AIWJpK1ng5s9F"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_rXwlIJKbnb16xNsnGDeMW8TD",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'grep -Rni --include=*.php \\\"like\\\\(|dislike|like\\\\(|dislike\\\\(\\\" app | head -n 200'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': 'grep: Unmatched ( or \\\\(\\n'}",
+        "tool_call_id": "call_rXwlIJKbnb16xNsnGDeMW8TD"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_hliR34pDl0de6dZ5EAgslsRK",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'grep -Rni --include=*.php \\\"function like\\\" app | head -n 20'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'app/Concern/Likeable.php:21:    public function likes(): morphMany\\napp/Concern/Likeable.php:29:    public function like()\\napp/Models/User.php:132:    public function likes(): HasMany\\napp/Models/Like.php:28:    public function likeable(): MorphTo\\n', 'stderr': ''}",
+        "tool_call_id": "call_hliR34pDl0de6dZ5EAgslsRK"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_yXsV6LU5bRhVNgEPr3F4eUBN",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'sed -n \\\"1,160p\\\" app/Concern/Likeable.php'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Concern;\\n\\nuse App\\\\Models\\\\Like;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\morphMany;\\n\\ntrait Likeable\\n{\\n    /**\\n     * The \"booting\" method of the trait.\\n     */\\n    protected static function bootLikeable(): void\\n    {\\n        static::deleting(fn ($resource) => $resource->likes->each->delete());\\n    }\\n\\n    /**\\n     * Get all of the resource\\'s likes.\\n     */\\n    public function likes(): morphMany\\n    {\\n        return $this->morphMany(Like::class, \\'likeable\\');\\n    }\\n\\n    /**\\n     * Create a like if it does not exist yet.\\n     */\\n    public function like()\\n    {\\n        if ($this->likes()->where(\\'author_id\\', auth()->id())->doesntExist()) {\\n            return $this->likes()->create([\\'author_id\\' => auth()->id()]);\\n        }\\n    }\\n\\n    /**\\n     * Check if the resource is liked by the current user\\n     */\\n    public function isLiked(): bool\\n    {\\n        return $this->likes->where(\\'author_id\\', auth()->id())->isNotEmpty();\\n    }\\n\\n    /**\\n     * Delete like for a resource.\\n     */\\n    public function dislike()\\n    {\\n        return $this->likes()->where(\\'author_id\\', auth()->id())->get()->each->delete();\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_yXsV6LU5bRhVNgEPr3F4eUBN"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"bash -lc 'sed -n \\\"1,240p\\\" app/Models/Post.php'\"}",
+                "name": "run_command"
+              },
+              "id": "call_poWS6t5KZMdl6wd0IWe7RfTp",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1766915050,
+    "id": "chatcmpl-CrhbmpdtZ5nRdxli9UrBdn7yAnTiQ",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 36,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1448,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1484
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "timestamp": 1767326140872,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/notifications/{notificationId}` with method DELETE, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `io.github.proxyprint.kitchen.controllers.notifications.NotificationsController.deleteNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `io.github.proxyprint.kitchen.controllers.notifications.NotificationsController.readNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n3. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `NotificationsController#deleteNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n4. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `NotificationsController#readNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n5. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `deleteNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n6. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `readNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n7. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `io.github.proxyprint.kitchen.controllers.notifications.NotificationsController.deleteNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n8. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `io.github.proxyprint.kitchen.controllers.notifications.NotificationsController.readNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n9. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `NotificationsController#deleteNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n10. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `NotificationsController#readNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n11. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `deleteNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\n12. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `readNotification` is implemented to process HTTP requests to `/notifications/{notificationId}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`:\n\n```\n/*\n * Copyright 2016 Pivotal Software, Inc..\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.github.proxyprint.kitchen.controllers.notifications;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonObject;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.notifications.Notification;\nimport io.github.proxyprint.kitchen.models.repositories.ConsumerDAO;\nimport io.github.proxyprint.kitchen.utils.NotificationManager;\nimport java.security.Principal;\nimport java.util.List;\n\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.transaction.annotation.Transactional;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\nimport org.springframework.web.context.request.WebRequest;\nimport org.springframework.web.servlet.mvc.method.annotation.SseEmitter;\n\n/**\n *\n * @author jose\n */\n@RestController \npublic class NotificationsController {\n\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private NotificationManager notificationManager;\n    @Autowired\n    private Gson GSON;\n\n    @Transactional\n    @ApiOperation(value = \"Returns nothing\", notes = \"This method sends a notification to a consumer.\")\n    @RequestMapping(value = \"/consumer/{id}/notify\", method = RequestMethod.POST)\n    public void greeting(@PathVariable(value = \"id\") long id, WebRequest request, Principal principal) throws Exception {\n        String message = request.getParameter(\"message\");\n        String name = consumers.findOne(id).getUsername();\n        notificationManager.sendNotification(name, new Notification(message));\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows a consumer to subscribe the SSE.\")\n    @RequestMapping(value = \"/consumer/subscribe\", produces = \"text/event-stream\")\n    public ResponseEntity<SseEmitter> subscribe(WebRequest request){\n        String username = request.getParameter(\"username\");\n        String password = request.getParameter(\"password\");\n\n        Consumer consumer = this.consumers.findByUsername(username);\n        if (consumer == null) {\n            return new ResponseEntity<>(HttpStatus.NOT_FOUND);\n        } else if (consumer.getPassword().equals(password)) {\n            return new ResponseEntity<>(this.notificationManager.subscribe(username), HttpStatus.OK);\n        } else {\n            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);\n        }\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns list of notifications.\", notes = \"This method retrieves to consumer his list of notifications.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/notifications\", method = RequestMethod.GET)\n    public List<Notification> getConsumerNotifications(Principal principal) {\n        Consumer consumer = this.consumers.findByUsername(principal.getName());\n        return consumer.getNotifications();\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns success.\", notes = \"This method allows consumers to delete a notification.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value=\"/notifications/{notificationId}\", method = RequestMethod.DELETE)\n    public ResponseEntity<String> deleteNotification(@PathVariable(value = \"notificationId\") long notId, WebRequest request){\n        JsonObject response = new JsonObject();\n        notificationManager.removeNotification(notId);\n        response.addProperty(\"success\", true);\n        return new ResponseEntity<>(GSON.toJson(response), HttpStatus.OK);\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns success.\", notes = \"This method allows consumers to mark a notification as read.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value=\"/notifications/{notificationId}\", method = RequestMethod.PUT)\n    public ResponseEntity<String> readNotification (@PathVariable (value=\"notificationId\") long notId){\n        JsonObject response = new JsonObject();\n        notificationManager.readNotification(notId);\n        response.addProperty(\"success\", true);\n        return new ResponseEntity<>(GSON.toJson(response), HttpStatus.OK);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_3220e4eb778642e2ad62ad0901bcb53a",
+            "function": {
+              "arguments": "{\"command\":\"grep -r \\\"@ControllerAdvice\\\" src/main/java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_3220e4eb778642e2ad62ad0901bcb53a"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_eaeed0e052104574a566f0b716c60227",
+            "function": {
+              "arguments": "{\"command\":\"find src -name \\\"NotificationManager.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/io/github/proxyprint/kitchen/utils/NotificationManager.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_eaeed0e052104574a566f0b716c60227"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_ba9fd94060d446a997376030d3e6537f",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/io/github/proxyprint/kitchen/utils/NotificationManager.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/*\\n * Copyright 2016 Pivotal Software, Inc..\\n *\\n * Licensed under the Apache License, Version 2.0 (the \"License\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *      http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \"AS IS\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\npackage io.github.proxyprint.kitchen.utils;\\n\\nimport com.google.common.collect.HashMultimap;\\nimport com.google.common.collect.Multimap;\\nimport io.github.proxyprint.kitchen.WebAppConfig;\\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\\nimport io.github.proxyprint.kitchen.models.notifications.Notification;\\nimport io.github.proxyprint.kitchen.models.repositories.ConsumerDAO;\\nimport io.github.proxyprint.kitchen.models.repositories.NotificationDAO;\\nimport java.io.IOException;\\nimport java.util.logging.Level;\\nimport org.apache.catalina.connector.ClientAbortException;\\nimport org.slf4j.Logger;\\nimport org.slf4j.LoggerFactory;\\nimport org.springframework.beans.factory.annotation.Autowired;\\nimport org.springframework.http.MediaType;\\nimport org.springframework.web.servlet.mvc.method.annotation.SseEmitter;\\n\\n/**\\n *\\n * @author jose\\n */\\npublic class NotificationManager {\\n  \\n    private final Logger logger = LoggerFactory.getLogger(WebAppConfig.class);\\n    \\n    @Autowired\\n    private ConsumerDAO consumers;\\n    @Autowired\\n    private NotificationDAO notifications;\\n\\n    private final Multimap<String, SseEmitter> subscriptions;\\n\\n    public NotificationManager() {\\n        this.subscriptions = HashMultimap.create();\\n    }\\n\\n    public SseEmitter subscribe(String username) {\\n        SseEmitter sseEmitter = new SseEmitter(0l);\\n        sseEmitter.onCompletion(new DeleteTask(this, username, sseEmitter));\\n        this.subscriptions.put(username, sseEmitter);\\n        return sseEmitter;\\n    }\\n\\n    public void unsubscribe(String username, SseEmitter emitter) {\\n        this.subscriptions.remove(username, emitter);\\n    }\\n\\n    public void sendNotification(String username, Notification notification){\\n        Consumer consumer = this.consumers.findByUsername(username);\\n        notification = notifications.save(notification);\\n        consumer.addNotifications(notification);\\n        consumers.save(consumer);\\n\\n        if (this.subscriptions.containsKey(username)) {\\n            for (SseEmitter sse : this.subscriptions.get(username)) {\\n                try {\\n                    sse.send(notification, MediaType.APPLICATION_JSON);\\n                } catch (IOException ex) {\\n                    this.logger.warn(\"Broken SSE Emitter..discarding it...\");\\n                }\\n            }\\n        }\\n    }\\n\\n    public void removeNotification(long notificationId) {\\n        notifications.delete(notificationId);\\n    }\\n\\n    public void readNotification(long notificationId) {\\n        Notification n = notifications.findById(notificationId);\\n        n.setReadStatus(true);\\n        notifications.save(n);\\n    }\\n}\\n\\nclass DeleteTask implements Runnable {\\n\\n    private final Logger logger = LoggerFactory.getLogger(WebAppConfig.class);\\n    private NotificationManager notifications;\\n    private String username;\\n    private SseEmitter sse;\\n\\n    public DeleteTask(NotificationManager notifications, String username, SseEmitter sse) {\\n        this.notifications = notifications;\\n        this.username = username;\\n        this.sse = sse;\\n    }\\n\\n    @Override\\n    public void run() {\\n        this.logger.info(username + \" disconnected!\");\\n        this.notifications.unsubscribe(username, sse);\\n    }\\n\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_ba9fd94060d446a997376030d3e6537f"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-475b0eb7956744198904c4ca4650ec59",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767326140,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "To analyze the endpoint `DELETE /notifications/{notificationId}`, we look at the `deleteNotification` method in the `NotificationsController` class.\n\n### Analysis:\n1.  **Endpoint and Method**: The method is mapped to `/notifications/{notificationId}` with the HTTP method `DELETE`.\n2.  **Parameters**: It accepts a `notificationId` (long) as a path variable.\n3.  **Operation Logic**:\n    *   It calls `notificationManager.removeNotification(notId)`.\n    *   It creates a new `JsonObject` and adds a boolean property `\"success\": true`.\n    *   It returns this object as a JSON string with an HTTP status of `200 OK`.\n4.  **Security**: The method is annotated with `@Secured({\"ROLE_USER\"})`, which implies that only authenticated users with the role `ROLE_USER` can access this endpoint. In a full Spring Security setup, this would typically result in `401 Unauthorized` if the user is not authenticated and `403 Forbidden` if the user lacks the required role. However, since the method body only explicitly returns `200 OK`, and no global exception handling or other explicit status codes are defined in the provided code for this specific method, we define the primary response as `200 OK`.\n5.  **Response Object**:\n    *   **Status Code**: `200`\n    *   **Description**: Based on `@ApiOperation(value = \"Returns success.\")`, the description is \"Returns success.\".\n    *   **Schema**: The body is a JSON object `{\"success\": true}`, so the schema is an `object` with a `success` property of type `boolean`.\n\n### Resulting Response Object:\nThe response for `200 OK` includes a JSON body representing the success of the operation.\n\nthe final generated result begins\n\n```json\n{\n  \"200\": {\n    \"description\": \"Returns success.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"success\": {\n          \"type\": \"boolean\"\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3302,
+      "completion_tokens": 2968,
+      "total_tokens": 6270,
+      "completion_tokens_details": {
+        "reasoning_tokens": 2500
+      }
+    }
+  }
+}

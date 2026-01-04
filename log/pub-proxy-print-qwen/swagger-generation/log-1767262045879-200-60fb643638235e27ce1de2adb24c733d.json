@@ -1,0 +1,147 @@
+{
+  "timestamp": 1767262045879,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/printshops/{id}/pricetable/deletecover` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java`, `PriceTableController.deleteCoverItem` is implemented to process HTTP requests to `/printshops/{id}/pricetable/deletecover` with HTTP method POST.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java`, `anonymous` is implemented to process HTTP requests to `/printshops/{id}/pricetable/deletecover` with HTTP method POST.\n\n3. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java`, `PriceTableController.deleteCoverItem` is implemented to process HTTP requests to `/printshops/{id}/pricetable/deletecover` with HTTP method POST.\n\n4. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java`, `anonymous` is implemented to process HTTP requests to `/printshops/{id}/pricetable/deletecover` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.printshops;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonObject;\nimport io.github.proxyprint.kitchen.controllers.printshops.pricetable.CoverTableItem;\nimport io.github.proxyprint.kitchen.controllers.printshops.pricetable.PaperTableItem;\nimport io.github.proxyprint.kitchen.controllers.printshops.pricetable.RingTableItem;\nimport io.github.proxyprint.kitchen.models.printshops.PrintShop;\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.BindingItem;\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.CoverItem;\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.Item;\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.RangePaperItem;\nimport io.github.proxyprint.kitchen.models.repositories.PrintShopDAO;\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.util.List;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 10-05-2016.\n */\n@RestController \n@Transactional\npublic class PriceTableController {\n    @Autowired\n    private PrintShopDAO printshops;\n    @Autowired\n    private Gson GSON;\n\n    /*------------------------------------------\n    Paper\n    ----------------------------------------*/\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Addition of a new Paper Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/papers\", method = RequestMethod.POST)\n    public String addNewPaperItem(@PathVariable(value = \"id\") long id, @RequestBody PaperTableItem pti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            pshop.insertPaperTableItemsInPriceTable(pti);\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Edition of a new Paper Item from a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/papers\", method = RequestMethod.PUT)\n    public String editPaperItem(@PathVariable(value = \"id\") long id, @RequestBody PaperTableItem pti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            pshop.insertPaperTableItemsInPriceTable(pti);\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Delete a new Paper Item from a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/deletepaper\", method = RequestMethod.POST)\n    public String deletePaperItem(@PathVariable(value = \"id\") long id, @RequestBody PaperTableItem pti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            // Remove price items\n            List<RangePaperItem> itemsToDelete = pshop.convertPaperTableItemToPaperItems(pti);\n            for(RangePaperItem pi : itemsToDelete) {\n                pshop.getPriceTable().remove(pi.genKey());\n            }\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n\n    /*------------------------------------------\n    Rings\n    ----------------------------------------*/\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Addition of a new Rings Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/rings\", method = RequestMethod.POST)\n    public String addNewRingsItem(@PathVariable(value = \"id\") long id, @RequestBody RingTableItem rti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            BindingItem newBi = new BindingItem(Item.RingType.valueOf(rti.getRingType()), rti.getInfLim(), rti.getSupLim());\n            pshop.addItemPriceTable(newBi.genKey(),Float.parseFloat(rti.getPrice()));\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Edition of an existing Rings Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/rings\", method = RequestMethod.PUT)\n    public String editRingsItem(@PathVariable(value = \"id\") long id, @RequestBody RingTableItem rti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            BindingItem newBi = new BindingItem(Item.RingType.valueOf(rti.getRingType()), rti.getInfLim(), rti.getSupLim());\n            pshop.addItemPriceTable(newBi.genKey(),Float.parseFloat(rti.getPrice()));\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Delete an existing Rings Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/deletering\", method = RequestMethod.POST)\n    public String deleteRingItem(@PathVariable(value = \"id\") long id, @RequestBody RingTableItem rti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            // Remove price items\n            BindingItem newBi = new BindingItem(RingTableItem.getRingTypeForPresentationString(rti.getRingType()), rti.getInfLim(), rti.getSupLim());\n            pshop.getPriceTable().remove(newBi.genKey());\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n\n    /*------------------------------------------\n    Cover\n    ----------------------------------------*/\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Add a new Cover Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/covers\", method = RequestMethod.POST)\n    public String addNewCoverItem(@PathVariable(value = \"id\") long id, @RequestBody CoverTableItem cti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            List<CoverItem> newCoverItems = cti.convertToCoverItems();\n            for(CoverItem newCi : newCoverItems) {\n                if(newCi.getFormat() == Item.Format.A4) {\n                    pshop.addItemPriceTable(newCi.genKey(), Float.parseFloat(cti.getPriceA4()));\n                } else {\n                    pshop.addItemPriceTable(newCi.genKey(), Float.parseFloat(cti.getPriceA3()));\n                }\n            }\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Edit an existent Cover Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/covers\", method = RequestMethod.PUT)\n    public String editCoverItem(@PathVariable(value = \"id\") long id, @RequestBody CoverTableItem cti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            List<CoverItem> newCoverItems = cti.convertToCoverItems();\n            for(CoverItem newCi : newCoverItems) {\n                if(newCi.getFormat() == Item.Format.A4) {\n                    pshop.addItemPriceTable(newCi.genKey(), Float.parseFloat(cti.getPriceA4()));\n                } else {\n                    pshop.addItemPriceTable(newCi.genKey(), Float.parseFloat(cti.getPriceA3()));\n                }\n            }\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Delete an existent Cover Item to a price table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{id}/pricetable/deletecover\", method = RequestMethod.POST)\n    public String deleteCoverItem(@PathVariable(value = \"id\") long id, @RequestBody CoverTableItem cti) {\n        PrintShop pshop = printshops.findOne(id);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            // Remove price items\n            List<CoverItem> toRemoveCoverItems = cti.convertToCoverItems();\n            for(CoverItem oldCi : toRemoveCoverItems) {\n                pshop.getPriceTable().remove(oldCi.genKey());\n            }\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    /*------------------------------------------\n    Stapling\n    ----------------------------------------*/\n\n    @ApiOperation(value = \"Returns success/insuccess\", notes = \"Edit the stapling price property table of a certain print shop.\")\n    @Secured(\"ROLE_MANAGER\")\n    @RequestMapping(value = \"/printshops/{printShopID}/pricetable/editstapling\", method = RequestMethod.PUT)\n    public String editStaplingPrice(@PathVariable(value = \"printShopID\") long psid, @RequestBody String newStaplingPrice) {\n        PrintShop pshop = printshops.findOne(psid);\n        JsonObject response = new JsonObject();\n\n        if(pshop!=null) {\n            // Edit stapling price\n            pshop.getPriceTable().put(\"BINDING,STAPLING,0,0\", Float.parseFloat(newStaplingPrice));\n            printshops.save(pshop);\n            response.addProperty(\"success\", true);\n            return GSON.toJson(response);\n        }\n        else{\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the `deleteCoverItem` method in the `PriceTableController.java` file to understand the endpoint `/printshops/{id}/pricetable/deletecover` with method POST and generate the appropriate response objects.\n\nLet me examine the method:\n\n1. The method `deleteCoverItem` handles POST requests to `/printshops/{id}/pricetable/deletecover`\n2. It takes a path variable `id` and a request body of type `CoverTableItem`\n3. It returns a JSON string with a \"success\" property indicating the result\n4. The method is secured with `@Secured(\"ROLE_MANAGER\")` which means it requires authentication\n5. It returns different responses based on whether the print shop exists or not\n\nLet me look for any exception handling or additional response codes by checking if there are any other relevant files or annotations:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_81394bd274bc4e5dba9d22ed",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"@ResponseStatus\\\\|@ExceptionHandler\\\\|Exception\\\" src/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_81394bd274bc4e5dba9d22ed"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check for any global exception handlers or security configurations that might affect this endpoint:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_28e4e59efd494579b5c306ee",
+            "function": {
+              "arguments": "{\"command\": \"find src/main/java/io/github/proxyprint/kitchen -name \\\"*Exception*\\\" -o -name \\\"*Security*\\\" -o -name \\\"*Auth*\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/io/github/proxyprint/kitchen/config/WebSecurityConfig.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_28e4e59efd494579b5c306ee"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the WebSecurityConfig to understand the authentication requirements:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_387a4259e2514aca83820644",
+            "function": {
+              "arguments": "{\"command\": \"cat src/main/java/io/github/proxyprint/kitchen/config/WebSecurityConfig.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/* \\n * Copyright 2016 Jorge Caldas, José Cortez\\n * José Francisco, Marcelo Gonçalves\\n *\\n * Licensed under the Apache License, Version 2.0 (the \"License\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *      http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \"AS IS\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\npackage io.github.proxyprint.kitchen.config;\\n\\n/*\\n * To change this license header, choose License Headers in Project Properties.\\n * To change this template file, choose Tools | Templates\\n * and open the template in the editor.\\n */\\nimport io.github.proxyprint.kitchen.models.repositories.UserService;\\nimport org.springframework.beans.factory.annotation.Autowired;\\nimport org.springframework.context.annotation.Bean;\\nimport org.springframework.context.annotation.Configuration;\\nimport org.springframework.http.HttpMethod;\\nimport org.springframework.security.authentication.dao.DaoAuthenticationProvider;\\nimport org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;\\nimport org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;\\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\\nimport org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;\\nimport org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;\\n\\n@Configuration\\n@EnableWebSecurity\\n@EnableGlobalMethodSecurity(securedEnabled = true)\\npublic class WebSecurityConfig extends WebSecurityConfigurerAdapter {\\n\\n    @Autowired\\n    private UserService userDetailsService;\\n\\n    @Override\\n    protected void configure(HttpSecurity http) throws Exception {\\n        http.csrf().disable()\\n                .authorizeRequests()\\n                .antMatchers(HttpMethod.OPTIONS, \"/**\").permitAll()\\n                .antMatchers(\"/api/**\").hasRole(\"USER\").and().httpBasic();\\n    }\\n\\n    @Autowired\\n    public void configureGlobalSecurity(AuthenticationManagerBuilder auth) throws Exception {\\n        auth.userDetailsService(userDetailsService);\\n        auth.authenticationProvider(authenticationProvider());\\n    }\\n\\n    @Bean\\n    public DaoAuthenticationProvider authenticationProvider() {\\n        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();\\n        authenticationProvider.setUserDetailsService(userDetailsService);\\n        return authenticationProvider;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_387a4259e2514aca83820644"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I need to understand what the method returns. Based on the code analysis:\n\n1. The `deleteCoverItem` method returns a JSON string containing a success property\n2. When the print shop exists (`pshop != null`), it returns `{\"success\": true}`\n3. When the print shop doesn't exist (`pshop == null`), it returns `{\"success\": false}`\n4. The method is secured with `@Secured(\"ROLE_MANAGER\")`, so unauthorized access will result in a 401 or 403 response\n\nLet me also check if there are any model classes that might be relevant to understand the request body:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_7ecee6e8b09540329a99e7c9",
+            "function": {
+              "arguments": "{\"command\": \"cat src/main/java/io/github/proxyprint/kitchen/controllers/printshops/pricetable/CoverTableItem.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package io.github.proxyprint.kitchen.controllers.printshops.pricetable;\\n\\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.CoverItem;\\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.Item;\\n\\nimport java.util.ArrayList;\\nimport java.util.List;\\n\\n/**\\n * Created by daniel on 02-05-2016.\\n */\\npublic class CoverTableItem {\\n    public static String DEFAULT = \"-\";\\n    public String coverType;\\n    public String priceA4, priceA3;\\n\\n    public CoverTableItem() {\\n        this.coverType = DEFAULT;\\n        this.priceA4 = DEFAULT;\\n        this.priceA3 = DEFAULT;\\n    }\\n\\n    public CoverTableItem(String coverType, String priceA4, String priceA3) {\\n        this.coverType = coverType;\\n        this.priceA4 = priceA4;\\n        this.priceA3 = priceA3;\\n    }\\n\\n    public String getCoverType() { return coverType; }\\n\\n    public void setCoverType(String coverType) {this.coverType = coverType; }\\n\\n    public String getPriceA4() { return priceA4; }\\n\\n    public void setPriceA4(String priceA4) { this.priceA4 = priceA4; }\\n\\n    public String getPriceA3() { return priceA3; }\\n\\n    public void setPriceA3(String priceA3) { this.priceA3 = priceA3; }\\n\\n    public static String getPresentationStringForCover(Item.CoverType ct) {\\n        if(ct.equals(Item.CoverType.CRISTAL_ACETATE)) {\\n            return \"Acetato Cristal\";\\n        } else if(ct.equals(Item.CoverType.PVC_TRANSPARENT)) {\\n            return \"PVC Transparente\";\\n        } else if(ct.equals(Item.CoverType.PVC_OPAQUE)) {\\n            return \"PVC Opaco\";\\n        }\\n        return \"\";\\n    }\\n\\n    public List<CoverItem> convertToCoverItems() {\\n        List<CoverItem> res = new ArrayList<>();\\n        CoverItem ci;\\n        if(!this.getPriceA3().equals(DEFAULT)) {\\n            // Has A3 price\\n            ci = new CoverItem(Item.CoverType.valueOf(this.getCoverType()), Item.Format.A3);\\n            res.add(ci);\\n        }\\n        if(!this.getPriceA4().equals(DEFAULT)) {\\n            // Has A4 price\\n            ci = new CoverItem(Item.CoverType.valueOf(this.getCoverType()), Item.Format.A4);\\n            res.add(ci);\\n        }\\n\\n        return res;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_7ecee6e8b09540329a99e7c9"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-253ae35a-11aa-9b87-82c4-8099d98d5ff4",
+    "choices": [
+      {
+        "message": {
+          "content": "Based on my analysis of the `deleteCoverItem` method in the `PriceTableController.java` file, I can determine the possible responses for the endpoint `/printshops/{id}/pricetable/deletecover` with method POST:\n\n1. **200 OK**: When the operation is successful (print shop exists and cover item is deleted), the method returns a JSON string with `{\"success\": true}`\n\n2. **200 OK**: When the operation fails (print shop doesn't exist), the method returns a JSON string with `{\"success\": false}`\n\n3. **401 Unauthorized**: Since the method is secured with `@Secured(\"ROLE_MANAGER\")` and the security config requires authentication, unauthorized requests will return a 401 status\n\n4. **403 Forbidden**: Since the method requires the \"ROLE_MANAGER\" role, authenticated users without this role will receive a 403 status\n\n5. **400 Bad Request**: If the request body is malformed or invalid, Spring will likely return a 400 status\n\n6. **404 Not Found**: If the print shop ID doesn't exist in the path, the method will handle it gracefully but may still return a 200 with success=false, though a 404 could also be possible depending on how the system handles non-existent IDs.\n\n## Analysis of the responses:\n\n- The method returns JSON strings with a success property, which when parsed would be `{\"success\": true}` or `{\"success\": false}`\n- The method is secured with ROLE_MANAGER, so authentication and authorization responses are possible\n- The method handles the case where the print shop doesn't exist gracefully by returning a success=false response\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"Success status of the delete operation\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"success\": {\n          \"type\": \"boolean\",\n          \"description\": \"Indicates whether the delete operation was successful\"\n        }\n      },\n      \"required\": [\"success\"]\n    }\n  },\n  \"400\": {\n    \"description\": \"Bad request - invalid request body\"\n  },\n  \"401\": {\n    \"description\": \"Unauthorized - authentication required\"\n  },\n  \"403\": {\n    \"description\": \"Forbidden - insufficient permissions (requires ROLE_MANAGER)\"\n  },\n  \"404\": {\n    \"description\": \"Not found - print shop with given ID does not exist\"\n  }\n}\n```",
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "stop"
+      }
+    ],
+    "created": 1767262036,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 5441,
+      "completion_tokens": 531,
+      "prompt_tokens": 4910,
+      "prompt_tokens_details": {
+        "cached_tokens": 3328
+      }
+    }
+  }
+}

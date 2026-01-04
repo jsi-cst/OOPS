@@ -1,0 +1,97 @@
+{
+  "timestamp": 1766912161711,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/likes` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method POST.\n\n2. In `app/Concern/Likeable.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method POST.\n\n3. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     *\n     * @return Response\n     */\n    public function store(Request $request, Post $post)\n    {\n        return $post->like();\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     *\n     * @return \\Illuminate\\Http\\Response\n     */\n    public function destroy(Post $post)\n    {\n        return $post->dislike();\n    }\n}\n```\n\nContents of file `app/Concern/Likeable.php`:\n\n```\n<?php\n\nnamespace App\\Concern;\n\nuse App\\Models\\Like;\nuse Illuminate\\Database\\Eloquent\\Relations\\morphMany;\n\ntrait Likeable\n{\n    /**\n     * The \"booting\" method of the trait.\n     */\n    protected static function bootLikeable(): void\n    {\n        static::deleting(fn ($resource) => $resource->likes->each->delete());\n    }\n\n    /**\n     * Get all of the resource's likes.\n     */\n    public function likes(): morphMany\n    {\n        return $this->morphMany(Like::class, 'likeable');\n    }\n\n    /**\n     * Create a like if it does not exist yet.\n     */\n    public function like()\n    {\n        if ($this->likes()->where('author_id', auth()->id())->doesntExist()) {\n            return $this->likes()->create(['author_id' => auth()->id()]);\n        }\n    }\n\n    /**\n     * Check if the resource is liked by the current user\n     */\n    public function isLiked(): bool\n    {\n        return $this->likes->where('author_id', auth()->id())->isNotEmpty();\n    }\n\n    /**\n     * Delete like for a resource.\n     */\n    public function dislike()\n    {\n        return $this->likes()->where('author_id', auth()->id())->get()->each->delete();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_ka6dhrY1KuhzNsLxYkXa0LgJ",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_ka6dhrY1KuhzNsLxYkXa0LgJ"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The controller route is POST /v1/posts/{post}/likes handled by PostLikeController@store which receives (Request $request, Post $post). That indicates a path parameter named \"post\" is used for route model binding.\n- The Post model overrides getRouteKeyName(): it returns 'id' when request()->expectsJson() is true (API requests) and 'slug' otherwise. For this API endpoint we should model the path parameter as the post's id (an integer) because API requests expect JSON and the route model binding will use the id.\n- The store() implementation does not read any request body or query parameters (it simply calls $post->like() which uses auth()->id()), so there are no body/query parameters to document for this operation. Authentication is implied by usage of auth() in the code but is not represented here as a Parameter Object.\n\nthe final generated result begins\n[\n  {\n    \"name\": \"post\",\n    \"in\": \"path\",\n    \"description\": \"ID of the post to like. Resolved via route model binding; for API requests the model's route key is 'id'.\",\n    \"required\": true,\n    \"type\": \"integer\",\n    \"format\": \"int64\"\n  }\n]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912155,
+    "id": "chatcmpl-Crgr5ZAwDSBFTpFT4KP0QD2mgEIN8",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 845,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 576,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1987,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2832
+    }
+  }
+}

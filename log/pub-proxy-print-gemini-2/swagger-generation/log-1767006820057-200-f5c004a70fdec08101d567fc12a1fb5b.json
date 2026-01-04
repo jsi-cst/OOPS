@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767006820057,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/paypal/ipn/consumer/{consumerID}` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java`, `PayPalController.consumerLoadUpConfirmation` is implemented to process HTTP requests to `/paypal/ipn/consumer/{consumerID}` with HTTP method POST.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java`, `PayPalController.consumerLoadUpConfirmation` is implemented to process HTTP requests to `/paypal/ipn/consumer/{consumerID}` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.consumer;\n\nimport com.google.gson.Gson;\nimport com.paypal.core.LoggingManager;\nimport com.paypal.ipn.IPNMessage;\nimport io.github.proxyprint.kitchen.Configuration;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.PrintRequest;\nimport io.github.proxyprint.kitchen.models.notifications.Notification;\nimport io.github.proxyprint.kitchen.models.repositories.*;\nimport io.github.proxyprint.kitchen.utils.NotificationManager;\nimport io.github.proxyprint.kitchen.utils.PayPalWrapper;\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport javax.servlet.ServletException;\nimport javax.servlet.http.HttpServletRequest;\nimport javax.servlet.http.HttpServletResponse;\nimport java.io.IOException;\nimport java.util.Map;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 20-05-2016.\n */\n@RestController \n@Transactional\npublic class PayPalController {\n    @Autowired\n    private UserDAO users;\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private EmployeeDAO employees;\n    @Autowired\n    private PrintRequestDAO printRequests;\n    @Autowired\n    private PrintShopDAO printShops;\n    @Autowired\n    private ManagerDAO managers;\n    @Autowired\n    private Gson GSON;\n    @Autowired\n    private NotificationManager notificationManager;\n\n    @ApiOperation(value = \"Returns nothing\", notes = \"This method implements the payment check mechanism given by PayPal. This method acts as callback, it reacts to the change of status of a transaction to Completed (eCheck - complete).\")\n    @RequestMapping(value = \"/paypal/ipn/{printRequestID}\", method = RequestMethod.POST)\n    protected void someRequestPaymentConfirmationFromPaylPal(@PathVariable(value = \"printRequestID\") long prid, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {\n        Map<String,String> configurationMap =  Configuration.getConfig();\n        IPNMessage ipnlistener = new IPNMessage(request,configurationMap);\n        boolean isIpnVerified = ipnlistener.validate();\n        String transactionType = ipnlistener.getTransactionType();\n        Map<String,String> map = ipnlistener.getIpnMap();\n\n        // Parse content of interest from the IPN notification JSON Body -- :D\n        String payerEmail = map.get(\"payer_email\");\n        Double quantity = Double.valueOf(map.get(\"mc_gross\"));\n        String paymentStatus = map.get(\"payment_status\");\n        String transactionID = map.get(\"txn_id\");\n\n\n        if(payerEmail!=null && quantity!=null && paymentStatus!=null) {\n            PrintRequest pr = printRequests.findOne(prid);\n\n            if (pr != null) {\n                LoggingManager.info(this.getClass(), \"******* IPN (name:value) pair : \" + map + \"  \" +\n                        \"######### TransactionType : \" + transactionType + \"  ======== IPN verified : \" + isIpnVerified);\n\n                Consumer c = pr.getConsumer();\n\n                // Divine Condition for secure request background check\n                if(c!=null && c.getPrintRequests().contains(pr) && pr.getCost()==quantity && paymentStatus.equals(PayPalWrapper.PAYPAL_COMPLETED_PAYMENT)) {\n                    // The print request may now go to the printshop\n                    pr.setStatus(PrintRequest.Status.PENDING);\n                    pr.setPayPalSaleID(transactionID);\n                    printRequests.save(pr);\n                    String message = \"O pagamento via PayPal do seu pedido nº #\"+pr.getId()+\" foi confirmado. Obrigado!\";\n                    notificationManager.sendNotification(c.getUsername(), new Notification(message));\n                    return;\n                }\n            } else {\n                LoggingManager.info(this.getClass(), \"PayPal transaction ERROR: consumer with email <\" + payerEmail + \"> is not registred in ProxyPrint.\");\n                return;\n            }\n        } else {\n            LoggingManager.info(this.getClass(), \"PayPal transaction ERROR: bad IPN JSON body for values payerEmail, quantity, paymentStatus, paymentData\");\n        }\n    }\n\n    @ApiOperation(value = \"It confirms that a certain consumer has pay its load up on ProxyPrint.\", notes = \"Its a route for being remotely called by PayPal servers.\")\n    @RequestMapping(value = \"paypal/ipn/consumer/{consumerID}\", method = RequestMethod.POST)\n    protected void consumerLoadUpConfirmation(@PathVariable(value = \"consumerID\") long cid, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {\n        Map<String,String> configurationMap =  Configuration.getConfig();\n        IPNMessage ipnlistener = new IPNMessage(request,configurationMap);\n        boolean isIpnVerified = ipnlistener.validate();\n        String transactionType = ipnlistener.getTransactionType();\n        Map<String,String> map = ipnlistener.getIpnMap();\n\n\n        String payerEmail = map.get(\"payer_email\");\n        Double quantity = Double.valueOf(map.get(\"mc_gross\"));\n        String paymentStatus = map.get(\"payment_status\");\n        Consumer consumer = consumers.findOne(cid);\n\n        if(consumer!=null) {\n            if(paymentStatus.equals(PayPalWrapper.PAYPAL_COMPLETED_PAYMENT)) {\n                LoggingManager.info(this.getClass(), \"******* IPN (name:value) pair : \" + map + \"  Load Balance Confirmation for Consumer #\"+consumer.getId());\n\n                // Payment is completed\n                consumer.getBalance().addDoubleQuantity(quantity);\n\n                // Send notification to user informing its balance was updated\n                String message = \"O seu carregamento de \"+quantity+\" € via PayPal foi confirmado. Obrigado!\";\n                notificationManager.sendNotification(consumer.getUsername(), new Notification(message));\n                return;\n            }\n            // Send notification to user informing something went wrong\n            String message = \"O seu carregamento de \"+quantity+\" € não pode ser confirmado. Por favor contacte proxyprint.pt@gmail.com indicando o seu username e quantia para que lhe possámos devolver o dinheiro.\";\n            notificationManager.sendNotification(consumer.getUsername(), new Notification(message));\n        }\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-20251229191555697365219QXSkYqSH",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1767006958,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Okay, I will analyze the provided Java code to generate the response objects for the `/paypal/ipn/consumer/{consumerID}` POST endpoint.\n\nThe `consumerLoadUpConfirmation` method in `PayPalController` handles POST requests to `/paypal/ipn/consumer/{consumerID}`. Based on the code, the method does not return any data directly in the response body. It processes a PayPal Instant Payment Notification (IPN) and updates the consumer's balance if the payment is successful. It also sends notifications. Therefore, the successful scenarios should return `200 OK` with no content. In case of any error, the method does not explicitly return any specific HTTP status code, but it logs the error.\n\nHere's the breakdown:\n\n*   **200 OK:** This status code is appropriate for a successful processing of the IPN, indicating that the server has successfully processed the request. The method does not return any content in the response body.\n\nTherefore, the response object should be:\n\n```json\n{\n  \"200\": {\n    \"description\": \"OK\"\n  }\n}\n```\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"OK\"\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1942,
+      "completion_tokens": 271,
+      "total_tokens": 2213,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1942,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

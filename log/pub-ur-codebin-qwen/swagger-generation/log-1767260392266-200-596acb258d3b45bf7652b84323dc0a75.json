@@ -1,0 +1,138 @@
+{
+  "timestamp": 1767260392266,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/paste` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\n2. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController.postNewCodePasteWith` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\n3. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `postNewCodePasteWith` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\n4. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\n5. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController.postNewCodePasteWith` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\n6. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `postNewCodePasteWith` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`:\n\n```\npackage com.urcodebin.api.controllers;\n\nimport com.urcodebin.api.controllers.requestbody.UploadPasteRequestBody;\nimport com.urcodebin.api.dto.CodePasteDTO;\nimport com.urcodebin.api.entities.CodePaste;\nimport com.urcodebin.api.enums.PasteSyntax;\nimport com.urcodebin.api.error.exception.MissingRequiredSourceCodeException;\nimport com.urcodebin.api.error.exception.PasteNotFoundException;\nimport com.urcodebin.api.services.interfaces.CodePasteService;\nimport org.modelmapper.ModelMapper;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.beans.factory.annotation.Qualifier;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.util.List;\nimport java.util.Optional;\nimport java.util.UUID;\nimport java.util.stream.Collectors;\n\n@RestController\n@RequestMapping(\"/api/paste\")\npublic class CodePasteController {\n\n    private final CodePasteService codePasteService;\n\n    private final ModelMapper modelMapper;\n\n    private static final int MAX_TITLE_LENGTH = 50;\n    private static final int MIN_TITLE_LENGTH = 1;\n    private static final int MAX_SEARCH_LIMIT = 20;\n    private static final int MIN_SEARCH_LIMIT = 1;\n\n    @Autowired\n    public CodePasteController(@Qualifier(\"PasteService\") CodePasteService codePasteService,\n                               ModelMapper modelMapper) {\n        this.codePasteService = codePasteService;\n        this.modelMapper = modelMapper;\n    }\n\n    @GetMapping(path = \"/{paste_id}\")\n    public CodePasteDTO getCodePasteFromId(@PathVariable(\"paste_id\") String pasteId) {\n        UUID pasteUUID = createUUIDFromString(pasteId);\n        Optional<CodePaste> foundPasteId = codePasteService.findByCodePasteId(pasteUUID);\n        final CodePaste codePaste = foundPasteId.orElseThrow(() ->\n                            new PasteNotFoundException(\"No CodePaste has been found with the given id.\"));\n        return convertToDTO(codePaste);\n    }\n\n    @DeleteMapping(path = \"/{paste_id}\")\n    public void deleteCodePasteWithId(@PathVariable(\"paste_id\") String pasteId) {\n        UUID pasteUUID = createUUIDFromString(pasteId);\n        if(!codePasteService.doesCodePasteWithIdExist(pasteUUID))\n            throw new PasteNotFoundException(\"No CodePaste has been found with the given id.\");\n\n        codePasteService.deleteCodePasteById(pasteUUID);\n    }\n\n    @GetMapping(path = \"/public\")\n    public List<CodePasteDTO> getListOfPublicPastesWith(\n                @RequestParam(value = \"paste_title\", defaultValue = \"\") String pasteTitle,\n                @RequestParam(value = \"paste_syntax\", required = false) String pasteSyntax,\n                @RequestParam(value = \"limit\", defaultValue = \"5\") int limit) {\n        if(limit > MAX_SEARCH_LIMIT || limit < MIN_SEARCH_LIMIT)\n            throw new IllegalArgumentException(\"limit number must be between 1 and 20.\");\n\n        List<CodePaste> listOfPastes;\n        if(pasteSyntax == null) {\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, limit);\n        } else {\n            PasteSyntax pasteSyntaxToSearch = createPasteSyntaxFromString(pasteSyntax);\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, pasteSyntaxToSearch, limit);\n        }\n        return listOfPastes.stream()\n                .map(this::convertToDTO)\n                .collect(Collectors.toList());\n    }\n\n    @PostMapping\n    public CodePasteDTO postNewCodePasteWith(@RequestBody UploadPasteRequestBody pasteRequestBody) {\n        if(pasteRequestBody.getSourceCode().isEmpty())\n            throw new MissingRequiredSourceCodeException(\"Required field (source_code) is missing.\");\n\n        int titleLength = pasteRequestBody.getPasteTitle().length();\n        if(titleLength > MAX_TITLE_LENGTH || titleLength < MIN_TITLE_LENGTH) {\n            String errorMsg = String.format(\"Paste Title field length must be within %s and %s\",\n                                                MIN_TITLE_LENGTH, MAX_TITLE_LENGTH);\n            throw new IllegalArgumentException(errorMsg);\n        }\n\n        final CodePaste newCodePaste = codePasteService.createNewCodePaste(pasteRequestBody);\n        return convertToDTO(newCodePaste);\n    }\n\n    private CodePasteDTO convertToDTO(CodePaste codePaste) {\n        return modelMapper.map(codePaste, CodePasteDTO.class);\n    }\n\n    private UUID createUUIDFromString(String stringId) {\n        try {\n            return UUID.fromString(stringId);\n        } catch (IllegalArgumentException e) {\n            throw new IllegalArgumentException(\"Invalid UUID format, please format properly!\");\n        }\n    }\n\n    private PasteSyntax createPasteSyntaxFromString(String pasteSyntax) {\n        try {\n            return PasteSyntax.valueOf(pasteSyntax);\n        } catch (IllegalArgumentException e) {\n            throw new IllegalArgumentException(\"paste_syntax parameter is not any of the given options.\");\n        }\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the POST endpoint at `/api/paste` to generate the OpenAPI parameters. Let me first examine the method that handles this endpoint and understand what parameters it expects.\n\nFrom the provided code, I can see that the `postNewCodePasteWith` method handles the POST request to `/api/paste` and takes a `@RequestBody UploadPasteRequestBody` parameter. To properly document this in OpenAPI format, I need to understand the structure of the `UploadPasteRequestBody` class.\n\nLet me find and examine the `UploadPasteRequestBody` class:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c624024839c34fd8b34f86dd",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"UploadPasteRequestBody.java\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './src/main/java/com/urcodebin/api/controllers/requestbody/UploadPasteRequestBody.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_c624024839c34fd8b34f86dd"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me examine the contents of the `UploadPasteRequestBody` class to understand its structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a14b73c7a576455ab210c0bf",
+            "function": {
+              "arguments": "{\"command\": \"cat ./src/main/java/com/urcodebin/api/controllers/requestbody/UploadPasteRequestBody.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.controllers.requestbody;\\n\\nimport com.fasterxml.jackson.annotation.JsonProperty;\\nimport com.fasterxml.jackson.annotation.JsonSetter;\\nimport com.fasterxml.jackson.annotation.Nulls;\\nimport com.urcodebin.api.enums.PasteExpiration;\\nimport com.urcodebin.api.enums.PasteSyntax;\\nimport com.urcodebin.api.enums.PasteVisibility;\\n\\n/**\\n * Object that is used when handling in the POST request to\\n * upload a new Code Paste. JSON request body is mapped to this\\n * object to be further used.\\n */\\npublic class UploadPasteRequestBody {\\n\\n    @JsonProperty(value = \"paste_title\")\\n    @JsonSetter(nulls = Nulls.SKIP)\\n    private String pasteTitle;\\n\\n    @JsonProperty(value = \"paste_syntax\")\\n    @JsonSetter(nulls = Nulls.SKIP)\\n    private PasteSyntax pasteSyntax;\\n\\n    @JsonProperty(value = \"paste_visibility\")\\n    @JsonSetter(nulls = Nulls.SKIP)\\n    private PasteVisibility pasteVisibility;\\n\\n    @JsonProperty(value = \"paste_expiration\")\\n    @JsonSetter(nulls = Nulls.SKIP)\\n    private PasteExpiration pasteExpiration;\\n\\n    @JsonProperty(value = \"source_code\")\\n    private String sourceCode;\\n\\n    /*\\n     * Constructor starts out using the default values for each request body\\n     * and then Jackson will set non-null values to each, if possible.\\n     */\\n    public UploadPasteRequestBody() {\\n        this.pasteTitle = \"Untitled Paste\";\\n        this.pasteSyntax = PasteSyntax.NONE;\\n        this.pasteVisibility = PasteVisibility.PRIVATE;\\n        this.pasteExpiration = PasteExpiration.ONEHOUR;\\n        this.sourceCode = \"\";\\n    }\\n\\n    public void setPasteTitle(String pasteTitle) {\\n        this.pasteTitle = pasteTitle;\\n    }\\n\\n    public void setPasteSyntax(PasteSyntax pasteSyntax) {\\n        this.pasteSyntax = pasteSyntax;\\n    }\\n\\n    public void setPasteVisibility(PasteVisibility pasteVisibility) {\\n        this.pasteVisibility = pasteVisibility;\\n    }\\n\\n    public void setPasteExpiration(PasteExpiration pasteExpiration) {\\n        this.pasteExpiration = pasteExpiration;\\n    }\\n\\n    public void setSourceCode(String sourceCode) {\\n        this.sourceCode = sourceCode;\\n    }\\n\\n    public String getPasteTitle() {\\n        return pasteTitle;\\n    }\\n\\n    public PasteSyntax getPasteSyntax() {\\n        return pasteSyntax;\\n    }\\n\\n    public PasteVisibility getPasteVisibility() {\\n        return pasteVisibility;\\n    }\\n\\n    public PasteExpiration getPasteExpiration() {\\n        return pasteExpiration;\\n    }\\n\\n    public String getSourceCode() {\\n        return sourceCode;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_a14b73c7a576455ab210c0bf"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I need to check the enum classes to understand the possible values for the different fields in the request body. Let me find the enum files:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_9973691cc6484cb597ff2fd0",
+            "function": {
+              "arguments": "{\"command\": \"find ./src/main/java/com/urcodebin/api/enums/ -name \\\"*.java\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './src/main/java/com/urcodebin/api/enums/PasteExpiration.java\\n./src/main/java/com/urcodebin/api/enums/PasteVisibility.java\\n./src/main/java/com/urcodebin/api/enums/PasteSyntax.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_9973691cc6484cb597ff2fd0"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-9663d3ac-c712-9843-8070-9067ced5cd74",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me examine each of the enum classes to understand the possible values:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_04cc4e74b2c4464896b5c35e",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"cat ./src/main/java/com/urcodebin/api/enums/PasteExpiration.java\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767260391,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 2824,
+      "completion_tokens": 52,
+      "prompt_tokens": 2772,
+      "prompt_tokens_details": {
+        "cached_tokens": 2560
+      }
+    }
+  }
+}

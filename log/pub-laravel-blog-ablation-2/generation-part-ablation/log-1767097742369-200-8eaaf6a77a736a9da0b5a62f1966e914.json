@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097742369,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/admin/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\CommentsRequest;\nuse App\\Models\\Comment;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\View\\View;\n\nclass CommentController extends Controller\n{\n    /**\n     * Show the application comments index.\n     */\n    public function index(): View\n    {\n        return view('admin.comments.index', [\n            'comments' => Comment::with('post', 'author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Comment $comment): View\n    {\n        return view('admin.comments.edit', [\n            'comment' => $comment,\n            'users' => User::pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(CommentsRequest $request, Comment $comment): RedirectResponse\n    {\n        $comment->update($request->validated());\n\n        return redirect()->route('admin.comments.edit', $comment)->withSuccess(__('comments.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): RedirectResponse\n    {\n        $comment->delete();\n\n        return redirect()->route('admin.comments.index')->withSuccess(__('comments.deleted'));\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation of results and mapping from source code to OpenAPI Operation fields:\n\n- Controller method: The CommentController::index() handles GET requests to /admin/comments and returns a Blade view using view('admin.comments.index', [...]). This corresponds to an HTTP 200 response with HTML content (text/html).\n- Pagination: The controller uses Comment::with('post', 'author')->latest()->paginate(50). Laravel's paginator reads page from the query string parameter \"page\". I therefore include an optional query parameter \"page\" (integer, minimum 1) to represent pagination.\n- Returned data: Since the method returns a rendered view (HTML), the response content type is text/html and the schema is a string (HTML).\n- Operation metadata: I include a concise summary, a description with key details (includes relations post and author and page size of 50), a descriptive operationId, and a tag grouping for admin/comment operations.\n- I limited fields to common Operation Object fields (tags, summary, description, operationId, parameters, responses) inferred directly from the controller and avoided adding authentication/security or other responses not present in the code.\n\nthe final generated result begins\n{\n  \"tags\": [\n    \"admin.comments\"\n  ],\n  \"summary\": \"List comments (admin)\",\n  \"description\": \"Return the admin comments index view. The controller loads Comment models with their related post and author, ordered by latest, paginated at 50 items per page. The response is an HTML page (text/html).\",\n  \"operationId\": \"adminCommentsIndex\",\n  \"parameters\": [\n    {\n      \"name\": \"page\",\n      \"in\": \"query\",\n      \"description\": \"Page number for pagination (Laravel paginator uses this query parameter).\",\n      \"required\": false,\n      \"schema\": {\n        \"type\": \"integer\",\n        \"format\": \"int32\",\n        \"minimum\": 1,\n        \"example\": 1\n      }\n    }\n  ],\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Successful response containing the rendered HTML comments index.\",\n      \"content\": {\n        \"text/html\": {\n          \"schema\": {\n            \"type\": \"string\",\n            \"format\": \"html\"\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097730,
+    "id": "chatcmpl-CsT8EpgkB1HC2CseMn7LnjxJVQfTh",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1180,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 704,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 675,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1855
+    }
+  }
+}

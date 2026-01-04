@@ -1,0 +1,97 @@
+{
+  "timestamp": 1766915503943,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController::index` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Events\\CommentPosted;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Api\\CommentsRequest;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Return the post's comments.\n     */\n    public function index(Request $request, Post $post): ResourceCollection\n    {\n        return CommentResource::collection(\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request, Post $post): CommentResource\n    {\n        $comment = new CommentResource(\n            Auth::user()->comments()->create([\n                'post_id' => $post->id,\n                'content' => $request->input('content')\n            ])\n        );\n\n        broadcast(new CommentPosted($comment, $post))->toOthers();\n\n        return $comment;\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "Okay, I will analyze the provided code to generate the OpenAPI specification for the `/v1/posts/{post}/comments` GET endpoint.\n\nThe `index` method in `PostCommentController` handles the GET request. It retrieves comments associated with a specific post. The code uses `CommentResource` to format the response, and it paginates the results.\n\nBased on this information, I can infer the following about the response:\n\n*   **Status Code:** Likely a 200 OK for a successful retrieval.\n*   **Content Type:** application/json, as it's a JSON API.\n*   **Schema:** The response will be a collection of `CommentResource` objects, which likely includes comment details. Since pagination is used, the response will probably include pagination metadata (e.g., `current_page`, `per_page`, `total`).\n\nTo get more details about the structure of `CommentResource`, I will use the `run_command` to inspect the `CommentResource` class.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_07f46df09f9e4d9194a43d083e5aa8a7",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_07f46df09f9e4d9194a43d083e5aa8a7"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-20251228175358610741103aE0An9YX",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766915642,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Now I have the content of `CommentResource.php`. Based on the `toArray` method, the response will include the following fields for each comment: `id`, `content`, `posted_at`, `humanized_posted_at`, `author_id`, `post_id`, `author_name`, `author_url`, and `can_delete`.\n\nHere's the generated OpenAPI specification for the responses:\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"Successful operation\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"data\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"id\": {\n                \"type\": \"integer\",\n                \"format\": \"int64\"\n              },\n              \"content\": {\n                \"type\": \"string\"\n              },\n              \"posted_at\": {\n                \"type\": \"string\",\n                \"format\": \"date-time\"\n              },\n              \"humanized_posted_at\": {\n                \"type\": \"string\"\n              },\n              \"author_id\": {\n                \"type\": \"integer\",\n                \"format\": \"int64\"\n              },\n              \"post_id\": {\n                \"type\": \"integer\",\n                \"format\": \"int64\"\n              },\n              \"author_name\": {\n                \"type\": \"string\"\n              },\n              \"author_url\": {\n                \"type\": \"string\"\n              },\n              \"can_delete\": {\n                \"type\": \"boolean\"\n              }\n            }\n          }\n        },\n        \"meta\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"current_page\": {\n              \"type\": \"integer\"\n            },\n            \"from\": {\n              \"type\": \"integer\"\n            },\n            \"last_page\": {\n              \"type\": \"integer\"\n            },\n            \"path\": {\n              \"type\": \"string\"\n            },\n            \"per_page\": {\n              \"type\": \"integer\"\n            },\n            \"to\": {\n              \"type\": \"integer\"\n            },\n            \"total\": {\n              \"type\": \"integer\"\n            }\n          }\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1170,
+      "completion_tokens": 553,
+      "total_tokens": 1723,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1170,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766644263613,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v0/ops/auth/role` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/datastax/mgmtapi/resources/AuthResources.java`, `AuthResources.createRole` is implemented to process HTTP requests to `/api/v0/ops/auth/role` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/AuthResources.java`:\n\n```\n/**\n * Copyright DataStax, Inc.\n *\n * Please see the included license file for details.\n */\npackage com.datastax.mgmtapi.resources;\n\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.QueryParam;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\n\nimport org.apache.commons.lang3.StringUtils;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\nimport javax.ws.rs.Produces;\n\n@Path(\"/api/v0/ops/auth\")\npublic class AuthResources\n{\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public AuthResources(ManagementApplication application)\n    {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/role/\")\n    @Operation(summary = \"Creates a new user role\", operationId = \"createRole\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Role created\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Username and/or password is empty\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Username is empty\"\n            )\n        )\n    )\n    public Response createRole(\n            @QueryParam(value = \"username\")String name,\n            @QueryParam(value = \"is_superuser\") Boolean isSuperUser,\n            @QueryParam(value = \"can_login\") Boolean canLogin,\n            @QueryParam(value = \"password\") String password)\n    {\n        return handle(() -> {\n\n            if (StringUtils.isBlank(name))\n                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), \"Username is empty\").build();\n\n            if (StringUtils.isBlank(password))\n                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), \"Password is empty\").build();\n\n            cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.createRole(?,?,?,?)\", name, isSuperUser, canLogin, password);\n\n            return Response.ok(\"OK\").build();\n        });\n    }\n\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\nI inspected AuthResources.createRole in src/main/java/com/datastax/mgmtapi/resources/AuthResources.java. The method is mapped to POST /api/v0/ops/auth/role and reads four query parameters via @QueryParam:\n\n- username (mapped from QueryParam \"username\"): checked with StringUtils.isBlank(name) and returns 400 if blank, so it is required and is a string.\n- is_superuser (mapped from QueryParam \"is_superuser\"): a Boolean, not validated for presence, so optional and boolean.\n- can_login (mapped from QueryParam \"can_login\"): a Boolean, not validated for presence, so optional and boolean.\n- password (mapped from QueryParam \"password\"): checked with StringUtils.isBlank(password) and returns 400 if blank, so it is required and is a string.\n\nFollowing Swagger 2.0 Parameter Object structure for query parameters, the list below contains one Parameter Object per query parameter with name, in, required, and type fields (no $ref).\n\nthe final generated result begins\n[\n  {\n    \"name\": \"username\",\n    \"in\": \"query\",\n    \"required\": true,\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"is_superuser\",\n    \"in\": \"query\",\n    \"required\": false,\n    \"type\": \"boolean\"\n  },\n  {\n    \"name\": \"can_login\",\n    \"in\": \"query\",\n    \"required\": false,\n    \"type\": \"boolean\"\n  },\n  {\n    \"name\": \"password\",\n    \"in\": \"query\",\n    \"required\": true,\n    \"type\": \"string\"\n  }\n]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766644254,
+    "id": "chatcmpl-CqZA6kHF2nJivmAH4BfE6EQmJrj4p",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 992,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 640,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 989,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1981
+    }
+  }
+}

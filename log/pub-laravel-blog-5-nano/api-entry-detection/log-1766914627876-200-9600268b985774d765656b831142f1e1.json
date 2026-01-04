@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766914627876,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Controllers/NewsletterSubscriptionController.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/NewsletterSubscriptionController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\NewsletterSubscriptionRequest;\nuse App\\Jobs\\UnsubscribeEmailNewsletter;\nuse App\\Models\\NewsletterSubscription;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Support\\Facades\\Auth;\nuse Illuminate\\Support\\Facades\\Session;\nuse Validator;\n\nclass NewsletterSubscriptionController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(NewsletterSubscriptionRequest $request): RedirectResponse\n    {\n        $newsletterSubscription = NewsletterSubscription::create($request->validated());\n\n        return back()->withSuccess(__('newsletter.created'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function unsubscribe(Request $request)\n    {\n        $validator = Validator::make($request->all(), [\n            'email' => 'required|email|exists:newsletter_subscriptions,email'\n        ]);\n\n        if ($validator->fails()) {\n            $errors = $validator->errors()->all();\n            $route = 'login';\n\n            if (Auth::check()) {\n                $route = 'home';\n            }\n\n            return redirect()->route($route)->withErrors($errors);\n        }\n\n        UnsubscribeEmailNewsletter::dispatch($request->input('email'));\n\n        Session::flash('success', __('newsletter.unsubscribed'));\n\n        return view('newsletters.unsubscribed');\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CrhUqbcnqiImhjvQuWtqkMiOihhhD",
+    "object": "chat.completion",
+    "created": 1766914620,
+    "model": "gpt-5-nano",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "[\n]\nExplanation:\n- This Laravel controller defines two methods: store and unsubscribe.\n- However, there are no route definitions or literal path strings present in this file that map HTTP requests to these handlers. In Laravel, routes are typically defined in routes/web.php or routes/api.php (e.g., Route::post('/newsletter-subscriptions', [NewsletterSubscriptionController::class, 'store'])), but such route declarations are not in the provided file.\n- Because the task requires extracting API entries only when the path is explicitly defined in the source (as a literal string, or via an explicit naming/convention supported by the framework), there are no API entries to list from this file.\n- If route definitions were present in this file (or if a convention-based routing rule in this project maps methods to paths within this file), they would be included. As-is, none can be determined from the given content.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 741,
+      "completion_tokens": 1343,
+      "total_tokens": 2084,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1152,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

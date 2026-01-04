@@ -1,0 +1,202 @@
+{
+  "timestamp": 1766912228496,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}/likes` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\PostLikeController::store` is implemented to process HTTP requests to `/posts/{post}/likes` with HTTP method POST.\n\n2. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\PostLikeController::destroy` is implemented to process HTTP requests to `/posts/{post}/likes` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Str;\n\nuse function HotwiredLaravel\\TurboLaravel\\dom_id;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->like();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->dislike();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Mxr6nZCaAnwpNcmJnZfHH5sf",
+            "function": {
+              "arguments": "{\"command\":\"rg \\\"posts/{post}/likes\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': 'rg: regex parse error:\\n    (?:posts/{post}/likes)\\n              ^\\nerror: repetition quantifier expects a valid decimal\\n'}",
+        "tool_call_id": "call_Mxr6nZCaAnwpNcmJnZfHH5sf"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_xtXYqn4J0FoyKhsojJ2RmjaE",
+            "function": {
+              "arguments": "{\"command\":\"rg \\\"posts/.*/likes\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'tests/Feature/Api/V1/PostLikeTest.php:18:            ->json(\\'POST\\', \"/api/v1/posts/{$post->id}/likes\")\\ntests/Feature/Api/V1/PostLikeTest.php:31:            ->json(\\'DELETE\\', \"/api/v1/posts/{$post->id}/likes\")\\nroutes/api.php:33:        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\nroutes/api.php:34:        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\nroutes/auth.php:55:    Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\nroutes/auth.php:56:    Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n', 'stderr': ''}",
+        "tool_call_id": "call_xtXYqn4J0FoyKhsojJ2RmjaE"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_TCorYxDwHeT4CuSWSvVCEHcv",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_TCorYxDwHeT4CuSWSvVCEHcv"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_VOEQh8Nq2CIAlIYJV0x1Yk4B",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' tests/Feature/Api/V1/PostLikeTest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace Tests\\\\Feature\\\\Api\\\\V1;\\n\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Foundation\\\\Testing\\\\RefreshDatabase;\\nuse Tests\\\\TestCase;\\n\\nclass PostLikeTest extends TestCase\\n{\\n    use RefreshDatabase;\\n\\n    public function testPostLike()\\n    {\\n        $post = Post::factory()->create();\\n\\n        $this->actingAsUser(\\'sanctum\\')\\n            ->json(\\'POST\\', \"/api/v1/posts/{$post->id}/likes\")\\n            ->assertCreated();\\n\\n        $this->assertCount(1, $post->likes);\\n    }\\n\\n    public function testPostDislike()\\n    {\\n        $user = $this->user();\\n        $post = Post::factory()->create();\\n        $post->likes()->create([\\'author_id\\' => $user->id]);\\n\\n        $this->actingAs($user, \\'sanctum\\')\\n            ->json(\\'DELETE\\', \"/api/v1/posts/{$post->id}/likes\")\\n            ->assertOk();\\n\\n        $this->assertCount(0, $post->likes);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_VOEQh8Nq2CIAlIYJV0x1Yk4B"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_P6iAIhpkyDucEi2U9m4Kw64t",
+            "function": {
+              "arguments": "{\"command\":\"rg \\\"turboStream\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"app/Http/Controllers/PostLikeController.php:20:        return response()->turboStream([\\napp/Http/Controllers/PostLikeController.php:21:            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\\napp/Http/Controllers/PostLikeController.php:22:            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\\napp/Http/Controllers/PostLikeController.php:33:        return response()->turboStream([\\napp/Http/Controllers/PostLikeController.php:34:            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\\napp/Http/Controllers/PostLikeController.php:35:            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\\napp/Http/Controllers/CommentController.php:19:        return response()->turboStream([\\napp/Http/Controllers/CommentController.php:20:            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\\napp/Http/Controllers/CommentController.php:21:            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\\napp/Http/Controllers/CommentController.php:22:            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\\napp/Http/Controllers/CommentController.php:35:        return response()->turboStream([\\napp/Http/Controllers/CommentController.php:36:            response()->turboStream()->remove($comment),\\napp/Http/Controllers/CommentController.php:37:            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\\n\", 'stderr': ''}",
+        "tool_call_id": "call_P6iAIhpkyDucEi2U9m4Kw64t"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_iek49TXVzOuwzCMPaBwiiKGW",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Controllers/Api/V1/PostLikeController.php || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Http\\\\Controllers\\\\Api\\\\V1;\\n\\nuse App\\\\Http\\\\Controllers\\\\Controller;\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Http\\\\Request;\\n\\nclass PostLikeController extends Controller\\n{\\n    /**\\n     * Store a newly created resource in storage.\\n     *\\n     * @return Response\\n     */\\n    public function store(Request $request, Post $post)\\n    {\\n        return $post->like();\\n    }\\n\\n    /**\\n     * Remove the specified resource from storage.\\n     *\\n     * @return \\\\Illuminate\\\\Http\\\\Response\\n     */\\n    public function destroy(Post $post)\\n    {\\n        return $post->dislike();\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_iek49TXVzOuwzCMPaBwiiKGW"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CrgsElcuqY1e2YghAZskxCh7kd4Nm",
+    "object": "chat.completion",
+    "created": 1766912226,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,240p' app/Models/Post.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_ZcimeIk2l1i5cza1vUviqT7a",
+              "type": "function"
+            }
+          ],
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2862,
+      "completion_tokens": 229,
+      "total_tokens": 3091,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 192,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "timestamp": 1766912149209,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::store` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_CZmqXNqnVkJVAfC1O7unSdBv",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Requests/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required',\\n            'post_id' => 'required|exists:posts,id'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_CZmqXNqnVkJVAfC1O7unSdBv"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The CommentController::store method accepts a CommentsRequest instance. I inspected app/Http/Requests/CommentsRequest.php to determine which request fields are validated.\n- CommentsRequest::rules() declares two required fields:\n  - content (required) — treated as a string for the comment text.\n  - post_id (required|exists:posts,id) — treated as an integer referencing the post id.\n- There is no explicit declaration in these files of additional parameters (headers, query, path parameters, or authentication header). Per instructions I did not add fields not present in the provided source.\n- In Swagger 2.0, a POST request with a JSON/form body is represented as a single \"body\" parameter. The parameter object below models the request body schema with the two required properties.\n\nthe final generated result begins\n[\n  {\n    \"name\": \"body\",\n    \"in\": \"body\",\n    \"required\": true,\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"content\": {\n          \"type\": \"string\",\n          \"description\": \"The comment content\"\n        },\n        \"post_id\": {\n          \"type\": \"integer\",\n          \"description\": \"ID of the post being commented on\"\n        }\n      },\n      \"required\": [\n        \"content\",\n        \"post_id\"\n      ]\n    }\n  }\n]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912141,
+    "id": "chatcmpl-CrgqrF2Gzd3VGO5cqMssOKTQZ8UuO",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 996,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 704,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 940,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1936
+    }
+  }
+}

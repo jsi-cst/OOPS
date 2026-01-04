@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766915197483,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `tests/Feature/Api/V1/UserTest.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `tests/Feature/Api/V1/UserTest.php`:\n\n```\n<?php\n\nnamespace Tests\\Feature\\Api\\V1;\n\nuse App\\Models\\Comment;\nuse App\\Models\\Post;\nuse App\\Models\\Role;\nuse App\\Models\\User;\nuse Illuminate\\Foundation\\Testing\\RefreshDatabase;\nuse Tests\\TestCase;\n\nclass UserTest extends TestCase\n{\n    use RefreshDatabase;\n\n    public function testUserIndex()\n    {\n        User::factory()\n            ->count(2)\n            ->create()\n            ->each(fn ($user) => $user->roles()->save(Role::factory()->create()));\n\n        $this->json('GET', '/api/v1/users')\n            ->assertOk()\n            ->assertJsonStructure([\n                'data' => [[\n                    'id',\n                    'name',\n                    'email',\n                    'provider',\n                    'provider_id',\n                    'registered_at',\n                    'comments_count',\n                    'posts_count',\n                    'roles' => [[\n                        'id',\n                        'name'\n                    ]]\n                ]],\n                'links' => [\n                    'first',\n                    'last',\n                    'prev',\n                    'next',\n                ],\n                'meta' => [\n                    'current_page',\n                    'from',\n                    'last_page',\n                    'path',\n                    'per_page',\n                    'to',\n                    'total',\n                ]\n            ]);\n    }\n\n    public function testUserShow()\n    {\n        $user = User::factory()->anakin()->create();\n        $role = Role::factory()->editor()->create();\n        $user->roles()->save($role);\n\n        Comment::factory()->count(2)->create(['author_id' => $user->id]);\n        Post::factory()->count(2)->create(['author_id' => $user->id]);\n\n        $this->json('GET', \"/api/v1/users/{$user->id}\")\n            ->assertOk()\n            ->assertJsonStructure([\n                'data' => [\n                    'id',\n                    'name',\n                    'email',\n                    'provider',\n                    'provider_id',\n                    'registered_at',\n                    'comments_count',\n                    'posts_count',\n                    'roles' => [[\n                        'id',\n                        'name'\n                    ]]\n                ]\n            ])\n            ->assertJson([\n                'data' => [\n                    'id' => $user->id,\n                    'name' => 'Anakin',\n                    'email' => 'anakin@skywalker.st',\n                    'provider' => null,\n                    'provider_id' => null,\n                    'registered_at' => $user->registered_at->toIso8601String(),\n                    'comments_count' => 2,\n                    'posts_count' => 2,\n                    'roles' => [[\n                        'id' => $role->id,\n                        'name' => 'editor'\n                    ]]\n                ],\n            ]);\n    }\n\n    public function testUpdate()\n    {\n        $user = $this->user();\n        $params = $this->validParams();\n\n        $this->actingAs($user, 'sanctum')\n            ->json('PATCH', \"/api/v1/users/{$user->id}\", $params)\n            ->assertOk();\n\n        $user->refresh();\n\n        $this->assertDatabaseHas('users', $params);\n        $this->assertEquals($params['email'], $user->email);\n        $this->assertEquals($params['name'], $user->name);\n    }\n\n    /**\n     * Valid params for updating or creating a resource\n     */\n    private function validParams(array $overrides = []): array\n    {\n        return array_merge([\n            'name' => 'Anakin',\n            'email' => 'anakin@skywalker.st',\n        ], $overrides);\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-2025122817485283140754CwAQ5ikv",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766915335,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": \"/api/v1/users\",\n    \"handler\": \"Tests\\\\Feature\\\\Api\\\\V1\\\\UserTest::testUserIndex\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"from_literal_string\": true,\n    \"from_naming_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": true\n  },\n  {\n    \"path\": \"/api/v1/users/{id}\",\n    \"handler\": \"Tests\\\\Feature\\\\Api\\\\V1\\\\UserTest::testUserShow\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"from_literal_string\": true,\n    \"from_naming_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": true\n  },\n  {\n    \"path\": \"/api/v1/users/{id}\",\n    \"handler\": \"Tests\\\\Feature\\\\Api\\\\V1\\\\UserTest::testUpdate\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"from_literal_string\": true,\n    \"from_naming_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": true\n  }\n]\n```\n\n**Explanation:**\n\nThe code provided contains three API entries, all defined within the `UserTest` class.  Each entry is identified by the `json()` method calls, which specify the HTTP method (GET or PATCH) and the request path.\n\n*   **`/api/v1/users`**: This path is used in the `testUserIndex` method. It's a GET request to retrieve a list of users.\n*   **`/api/v1/users/{id}`**: This path is used in the `testUserShow` method. It's a GET request to retrieve a specific user by their ID.\n*   **`/api/v1/users/{id}`**: This path is used in the `testUpdate` method. It's a PATCH request to update a specific user by their ID.\n\nAll paths are extracted from literal strings within the test methods. The handlers are the test methods themselves. All entries are for a RESTful API and are intended for testing purposes.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1367,
+      "completion_tokens": 520,
+      "total_tokens": 1887,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1367,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

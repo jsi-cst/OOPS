@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766738318557,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `routes/orderRoutes.js`, I found that `orderRoutes` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```\n\nContents of file `routes/orderRoutes.js`:\n\n```\nimport express from 'express';\nconst router = express.Router();\nimport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n} from '../controllers/orderController.js';\nimport { protect, admin } from '../middleware/authMiddleware.js';\n\nrouter.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);\nrouter.route('/mine').get(protect, getMyOrders);\nrouter.route('/:id').get(protect, getOrderById);\nrouter.route('/:id/pay').put(protect, updateOrderToPaid);\nrouter.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251226163704522237873mKAqzs5d",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766738231,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Here's the analysis of the `orderRoutes.js` based on the provided code and the context from `server.js`:\n\n**Endpoint Analysis:**\n\nBased on `server.js`, the base path for order-related routes is `/api/orders`.  `orderRoutes.js` defines several routes relative to this base path.\n\n1.  **`/` (Root Path)**\n\n    *   **Full Path:** `/api/orders/`\n    *   **HTTP Methods:**\n        *   **HEAD:** Not explicitly defined.\n        *   **POST:** Acceptable (defined in `orderRoutes.js` with `addOrderItems` and `protect`).\n        *   **OPTIONS:** Not explicitly defined.\n        *   **TRACE:** Not explicitly defined.\n        *   **GET:** Acceptable (defined in `orderRoutes.js` with `getOrders`, `protect`, and `admin`).\n        *   **PUT:** Not explicitly defined.\n        *   **DELETE:** Not explicitly defined.\n        *   **PATCH:** Not explicitly defined.\n        *   **ALL:** Not explicitly defined.\n\n2.  **`/mine`**\n\n    *   **Full Path:** `/api/orders/mine`\n    *   **HTTP Methods:**\n        *   **HEAD:** Not explicitly defined.\n        *   **POST:** Not explicitly defined.\n        *   **OPTIONS:** Not explicitly defined.\n        *   **TRACE:** Not explicitly defined.\n        *   **GET:** Acceptable (defined in `orderRoutes.js` with `getMyOrders` and `protect`).\n        *   **PUT:** Not explicitly defined.\n        *   **DELETE:** Not explicitly defined.\n        *   **PATCH:** Not explicitly defined.\n        *   **ALL:** Not explicitly defined.\n\n3.  **`/:id`**\n\n    *   **Full Path:** `/api/orders/{id}`\n    *   **HTTP Methods:**\n        *   **HEAD:** Not explicitly defined.\n        *   **POST:** Not explicitly defined.\n        *   **OPTIONS:** Not explicitly defined.\n        *   **TRACE:** Not explicitly defined.\n        *   **GET:** Acceptable (defined in `orderRoutes.js` with `getOrderById` and `protect`).\n        *   **PUT:** Not explicitly defined.\n        *   **DELETE:** Not explicitly defined.\n        *   **PATCH:** Not explicitly defined.\n        *   **ALL:** Not explicitly defined.\n\n4.  **`/:id/pay`**\n\n    *   **Full Path:** `/api/orders/{id}/pay`\n    *   **HTTP Methods:**\n        *   **HEAD:** Not explicitly defined.\n        *   **POST:** Not explicitly defined.\n        *   **OPTIONS:** Not explicitly defined.\n        *   **TRACE:** Not explicitly defined.\n        *   **GET:** Not explicitly defined.\n        *   **PUT:** Acceptable (defined in `orderRoutes.js` with `updateOrderToPaid` and `protect`).\n        *   **DELETE:** Not explicitly defined.\n        *   **PATCH:** Not explicitly defined.\n        *   **ALL:** Not explicitly defined.\n\n5.  **`/:id/deliver`**\n\n    *   **Full Path:** `/api/orders/{id}/deliver`\n    *   **HTTP Methods:**\n        *   **HEAD:** Not explicitly defined.\n        *   **POST:** Not explicitly defined.\n        *   **OPTIONS:** Not explicitly defined.\n        *   **TRACE:** Not explicitly defined.\n        *   **GET:** Not explicitly defined.\n        *   **PUT:** Acceptable (defined in `orderRoutes.js` with `updateOrderToDelivered`, `protect`, and `admin`).\n        *   **DELETE:** Not explicitly defined.\n        *   **PATCH:** Not explicitly defined.\n        *   **ALL:** Not explicitly defined.\n\n**Summary Table:**\n\n| Path                | HEAD  | POST  | OPTIONS | TRACE | GET   | PUT   | DELETE | PATCH | ALL   |\n| ------------------- | ----- | ----- | ------- | ----- | ----- | ----- | ------ | ----- | ----- |\n| `/api/orders/`      | No    | Yes   | No      | No    | Yes   | No    | No     | No    | No    |\n| `/api/orders/mine`  | No    | No    | No      | No    | Yes   | No    | No     | No    | No    |\n| `/api/orders/{id}`  | No    | No    | No      | No    | Yes   | No    | No     | No    | No    |\n| `/api/orders/{id}/pay` | No    | No    | No      | No    | No    | Yes   | No     | No    | No    |\n| `/api/orders/{id}/deliver` | No    | No    | No      | No    | No    | Yes   | No     | No    | No    |\n\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 999,
+      "completion_tokens": 1095,
+      "total_tokens": 2094,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 999,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

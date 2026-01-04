@@ -1,0 +1,173 @@
+{
+  "timestamp": 1766915071043,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/media` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/MediaController.php`, `App\\Http\\Controllers\\Api\\V1\\MediaController@store` is implemented to process HTTP requests to `/v1/media` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/MediaController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\MediaLibraryRequest;\nuse App\\Http\\Resources\\Media as MediaResource;\nuse App\\Models\\Media;\nuse App\\Models\\MediaLibrary;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass MediaController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return MediaResource::collection(\n            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(MediaLibraryRequest $request): MediaResource\n    {\n        $this->authorize('store', Media::class);\n\n        $image = $request->file('image');\n        $name = $image->getClientOriginalName();\n\n        if ($request->filled('name')) {\n            $name = $request->input('name');\n        }\n\n        return new MediaResource(\n            MediaLibrary::first()\n                ->addMedia($image)\n                ->usingName($name)\n                ->toMediaCollection()\n        );\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Media $medium): Response\n    {\n        $this->authorize('delete', $medium);\n\n        $medium->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Q81iU7oo0IORugUlavErJmL0",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'ls -la && echo --- && ls -la app/Http/Resources && echo --- && sed -n \\\"1,200p\\\" app/Http/Resources/Media.php'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"total 600\\ndrwxr-xr-x 15 user user   4096 Jan  1  1970 .\\ndrwxr-xr-x  5 user user   4096 Dec 26 16:45 ..\\ndrwxr-xr-x 18 user user   4096 Jan  1  1970 app\\n-rw-r--r--  1 user user   1686 Jan  1  1970 artisan\\ndrwxr-xr-x  3 user user   4096 Jan  1  1970 bootstrap\\n-rw-r--r--  1 user user   2130 Jan  1  1970 composer.json\\n-rw-r--r--  1 user user 341223 Jan  1  1970 composer.lock\\ndrwxr-xr-x  2 user user   4096 Jan  1  1970 config\\ndrwxr-xr-x  2 user user   4096 Jan  1  1970 data\\ndrwxr-xr-x  5 user user   4096 Jan  1  1970 database\\n-rw-r--r--  1 user user   1029 Jan  1  1970 Dockerfile\\n-rw-r--r--  1 user user    223 Jan  1  1970 .editorconfig\\n-rw-r--r--  1 user user    608 Jan  1  1970 .env.example\\n-rw-r--r--  1 user user    179 Jan  1  1970 .env.testing\\n-rw-r--r--  1 user user    327 Jan  1  1970 .eslintrc.cjs\\n-rw-r--r--  1 user user     68 Jan  1  1970 .gitattributes\\ndrwxr-xr-x  3 user user   4096 Jan  1  1970 .github\\n-rw-r--r--  1 user user    399 Jan  1  1970 .gitignore\\ndrwxr-xr-x  2 user user   4096 Jan  1  1970 .kamal\\ndrwxr-xr-x  4 user user   4096 Jan  1  1970 lang\\n-rw-r--r--  1 user user   1068 Jan  1  1970 LICENSE\\n-rw-r--r--  1 user user      3 Jan  1  1970 .node-version\\n-rw-r--r--  1 user user    977 Jan  1  1970 package.json\\n-rw-r--r--  1 user user   1083 Jan  1  1970 phpunit.xml\\ndrwxr-xr-x  2 user user   4096 Jan  1  1970 public\\n-rw-r--r--  1 user user   4695 Jan  1  1970 README.md\\ndrwxr-xr-x  5 user user   4096 Jan  1  1970 resources\\ndrwxr-xr-x  2 user user   4096 Jan  1  1970 routes\\ndrwxr-xr-x  5 user user   4096 Jan  1  1970 storage\\ndrwxr-xr-x  4 user user   4096 Jan  1  1970 tests\\n-rw-r--r--  1 user user    277 Jan  1  1970 vite.config.js\\n-rw-r--r--  1 user user 135587 Jan  1  1970 yarn.lock\\n-rw-r--r--  1 user user     25 Jan  1  1970 .yarnrc.yml\\n---\\ntotal 28\\ndrwxr-xr-x 2 user user 4096 Jan  1  1970 .\\ndrwxr-xr-x 6 user user 4096 Jan  1  1970 ..\\n-rw-r--r-- 1 user user  847 Jan  1  1970 Comment.php\\n-rw-r--r-- 1 user user  436 Jan  1  1970 Media.php\\n-rw-r--r-- 1 user user  840 Jan  1  1970 Post.php\\n-rw-r--r-- 1 user user  335 Jan  1  1970 Role.php\\n-rw-r--r-- 1 user user  753 Jan  1  1970 User.php\\n---\\n<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\n\\nclass Media extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        return [\\n            'id' => $this->id,\\n            'name' => $this->name,\\n            'url' => url($this->getUrl()),\\n            'thumb_url' => url($this->getUrl('thumb')),\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_Q81iU7oo0IORugUlavErJmL0"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_R7zXa0eOm9CVzVOYG8vYWsXM",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'sed -n \\\"1,200p\\\" app/Http/Requests/Admin/MediaLibraryRequest.php'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Admin;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass MediaLibraryRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'image' => 'required|image',\\n            'name' => 'nullable|string|max:255'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_R7zXa0eOm9CVzVOYG8vYWsXM"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_qX8D889E588n0XhYzgJs1xec",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'sed -n \\\"1,200p\\\" app/Models/Media.php'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse Spatie\\\\MediaLibrary\\\\MediaCollections\\\\Models\\\\Media as BaseMedia;\\n\\nclass Media extends BaseMedia\\n{\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime',\\n        'manipulations' => 'array',\\n        'custom_properties' => 'array',\\n        'generated_conversions' => 'array',\\n        'responsive_images' => 'array',\\n    ];\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_qX8D889E588n0XhYzgJs1xec"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_IQHUBCwn8NSkT4MPcOJ3MtrD",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'sed -n \\\"1,200p\\\" app/Models/MediaLibrary.php'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Spatie\\\\MediaLibrary\\\\HasMedia;\\nuse Spatie\\\\MediaLibrary\\\\InteractsWithMedia;\\nuse Spatie\\\\MediaLibrary\\\\MediaCollections\\\\Models\\\\Media;\\n\\nclass MediaLibrary extends Model implements HasMedia\\n{\\n    use InteractsWithMedia;\\n\\n    public function registerMediaConversions(?Media $media = null): void\\n    {\\n        $this->addMediaConversion('thumb')\\n            ->width(350)\\n            ->height(250);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_IQHUBCwn8NSkT4MPcOJ3MtrD"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_3XRYIv5sdi9fICXWXC7bpPsg",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'sed -n \\\"1,200p\\\" routes/api.php'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_3XRYIv5sdi9fICXWXC7bpPsg"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The endpoint /v1/media with POST is handled by MediaController@store and returns a single media resource. The request uses MediaLibraryRequest which requires an image file and optionally a name. On success, it creates a Media via Spatie's Media Library and returns it wrapped in a MediaResource, which exposes id, name, url, and thumb_url. Possible responses include:\n- 200: Successful creation returning the MediaResource with id, name, url, thumb_url.\n- 422: Validation errors when image is missing or invalid, or other validation failures.\n- 401: Unauthorized when authentication is required but not provided.\n- 403: Forbidden when the authenticated user is not authorized to store the media.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"Successful operation\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"id\": { \"type\": \"integer\" },\n        \"name\": { \"type\": \"string\" },\n        \"url\": { \"type\": \"string\", \"format\": \"url\" },\n        \"thumb_url\": { \"type\": \"string\", \"format\": \"url\" }\n      }\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": { \"type\": \"string\" }\n      }\n    }\n  },\n  \"403\": {\n    \"description\": \"Forbidden\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": { \"type\": \"string\" }\n      }\n    }\n  },\n  \"422\": {\n    \"description\": \"Validation Error\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": { \"type\": \"string\" },\n        \"errors\": { \"type\": \"object\" }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766915054,
+    "id": "chatcmpl-Crhbq7uwiX6klBtKnCCuicS7uQqzm",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2461,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 2048,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3319,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 5780
+    }
+  }
+}

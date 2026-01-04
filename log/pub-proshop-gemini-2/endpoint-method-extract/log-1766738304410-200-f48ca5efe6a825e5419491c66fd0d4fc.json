@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766738304410,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `routes/uploadRoutes.js`, I found that `anonymous` is implemented to process HTTP requests to the path `/upload`. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```\n\nContents of file `routes/uploadRoutes.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport multer from 'multer';\n\nconst router = express.Router();\n\nconst storage = multer.diskStorage({\n  destination(req, file, cb) {\n    cb(null, 'uploads/');\n  },\n  filename(req, file, cb) {\n    cb(\n      null,\n      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`\n    );\n  },\n});\n\nfunction fileFilter(req, file, cb) {\n  const filetypes = /jpe?g|png|webp/;\n  const mimetypes = /image\\/jpe?g|image\\/png|image\\/webp/;\n\n  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());\n  const mimetype = mimetypes.test(file.mimetype);\n\n  if (extname && mimetype) {\n    cb(null, true);\n  } else {\n    cb(new Error('Images only!'), false);\n  }\n}\n\nconst upload = multer({ storage, fileFilter });\nconst uploadSingleImage = upload.single('image');\n\nrouter.post('/', (req, res) => {\n  uploadSingleImage(req, res, function (err) {\n    if (err) {\n      return res.status(400).send({ message: err.message });\n    }\n\n    res.status(200).send({\n      message: 'Image uploaded successfully',\n      image: `/${req.file.path}`,\n    });\n  });\n});\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-202512261636536784284152SnQyG9h",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766738217,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "- **Full HTTP request path:** `/api/upload`\n- **Acceptable HTTP methods:**\n  - **HEAD:** false\n  - **POST:** true\n  - **OPTIONS:** false\n  - **TRACE:** false\n  - **GET:** false\n  - **PUT:** false\n  - **DELETE:** false\n  - **PATCH:** false\n\n**Explanation:**\n\n1.  **Full HTTP request path:** The `server.js` file uses `app.use('/api/upload', uploadRoutes);` to mount the `uploadRoutes` router at the `/api/upload` path. The `uploadRoutes.js` file defines the routes handled by this router.\n\n2.  **Acceptable HTTP methods:**\n    *   **HEAD:** The code in `uploadRoutes.js` does not define a handler for the HEAD method.\n    *   **POST:** The code in `uploadRoutes.js` defines a POST route at `/` using `router.post('/', ...)` which handles image uploads.\n    *   **OPTIONS:** The code in `uploadRoutes.js` does not define a handler for the OPTIONS method.\n    *   **TRACE:** The code in `uploadRoutes.js` does not define a handler for the TRACE method.\n    *   **GET:** The code in `uploadRoutes.js` does not define a handler for the GET method.\n    *   **PUT:** The code in `uploadRoutes.js` does not define a handler for the PUT method.\n    *   **DELETE:** The code in `uploadRoutes.js` does not define a handler for the DELETE method.\n    *   **PATCH:** The code in `uploadRoutes.js` does not define a handler for the PATCH method.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1189,
+      "completion_tokens": 374,
+      "total_tokens": 1563,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1189,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

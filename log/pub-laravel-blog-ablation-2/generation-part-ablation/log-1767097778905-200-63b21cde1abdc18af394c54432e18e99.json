@@ -1,0 +1,116 @@
+{
+  "timestamp": 1767097778905,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@index` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Events\\CommentPosted;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Api\\CommentsRequest;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Return the post's comments.\n     */\n    public function index(Request $request, Post $post): ResourceCollection\n    {\n        return CommentResource::collection(\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request, Post $post): CommentResource\n    {\n        $comment = new CommentResource(\n            Auth::user()->comments()->create([\n                'post_id' => $post->id,\n                'content' => $request->input('content')\n            ])\n        );\n\n        broadcast(new CommentPosted($comment, $post))->toOthers();\n\n        return $comment;\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_a9cAEjVfVvAzH3NrKtGJna29",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Requests/Api/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Api;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_a9cAEjVfVvAzH3NrKtGJna29"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_DtPe5xL5A9HjDeJLDQUHp6x0",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_DtPe5xL5A9HjDeJLDQUHp6x0"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- Controller: App\\Http\\Controllers\\Api\\V1\\PostCommentController@store handles POST /v1/posts/{post}/comments and returns a CommentResource constructed from the authenticated user's created comment; it also broadcasts a CommentPosted event.\n- Request validation: App\\Http\\Requests\\Api\\CommentsRequest requires 'content' (required). Therefore the requestBody is application/json with a required string property \"content\".\n- Path parameter: the route parameter {post} is route-model-bound to App\\Models\\Post; the controller type-hints Post $post, so the path parameter represents a Post identifier (modeled here as an integer id).\n- Response: store returns a CommentResource (JsonResource) representing the comment as an object with fields provided by App\\Http\\Resources\\Comment: id, content, posted_at (ISO8601), humanized_posted_at, author_id, post_id, author_name, author_url, can_delete. The controller does not explicitly set a different HTTP status, so the response is modeled as 200 OK with application/json containing that object.\n- Validation errors: since the request uses FormRequest validation, include 422 Unprocessable Entity response with the typical Laravel validation error structure.\n\nthe final generated result begins\n{\n  \"summary\": \"Store a newly created comment for a post\",\n  \"description\": \"Creates a new comment on the specified post. Requires an authenticated user. The created comment is returned as a Comment resource and a CommentPosted event is broadcast to others.\",\n  \"operationId\": \"App\\\\\\\\Http\\\\\\\\Controllers\\\\\\\\Api\\\\\\\\V1\\\\\\\\PostCommentController@store\",\n  \"parameters\": [\n    {\n      \"name\": \"post\",\n      \"in\": \"path\",\n      \"required\": true,\n      \"schema\": {\n        \"type\": \"integer\"\n      },\n      \"description\": \"ID of the post to comment on (route-model-bound to App\\\\Models\\\\Post)\"\n    }\n  ],\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"application/json\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"content\": {\n              \"type\": \"string\",\n              \"description\": \"The text content of the comment\"\n            }\n          },\n          \"required\": [\n            \"content\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Comment successfully created and returned.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"id\": {\n                \"type\": \"integer\"\n              },\n              \"content\": {\n                \"type\": \"string\"\n              },\n              \"posted_at\": {\n                \"type\": \"string\",\n                \"format\": \"date-time\",\n                \"description\": \"ISO 8601 timestamp when the comment was posted\"\n              },\n              \"humanized_posted_at\": {\n                \"type\": \"string\",\n                \"description\": \"Human-friendly posted at string\"\n              },\n              \"author_id\": {\n                \"type\": \"integer\"\n              },\n              \"post_id\": {\n                \"type\": \"integer\"\n              },\n              \"author_name\": {\n                \"type\": \"string\"\n              },\n              \"author_url\": {\n                \"type\": \"string\",\n                \"format\": \"uri\"\n              },\n              \"can_delete\": {\n                \"type\": \"boolean\"\n              }\n            },\n            \"required\": [\n              \"id\",\n              \"content\",\n              \"posted_at\",\n              \"author_id\",\n              \"post_id\",\n              \"author_name\",\n              \"author_url\",\n              \"can_delete\"\n            ]\n          }\n        }\n      }\n    },\n    \"422\": {\n      \"description\": \"Validation error (e.g. missing or invalid content).\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\"\n              },\n              \"errors\": {\n                \"type\": \"object\",\n                \"additionalProperties\": {\n                  \"type\": \"array\",\n                  \"items\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097758,
+    "id": "chatcmpl-CsT8gKZe0jzG4LXK86PXsHB0qqEBL",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2362,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1472,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1212,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3574
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767005258886,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/documents/{id}` with method GET, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`, `io.github.proxyprint.kitchen.controllers.printshops.EmployeeController.getEmployees` is implemented to process HTTP requests to `/documents/{id}` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.printshops;\n\nimport com.google.gson.Gson;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.Document;\nimport io.github.proxyprint.kitchen.models.printshops.Employee;\nimport io.github.proxyprint.kitchen.models.repositories.DocumentDAO;\nimport io.github.proxyprint.kitchen.models.repositories.EmployeeDAO;\nimport java.io.File;\n\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.core.io.FileSystemResource;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport java.security.Principal;\nimport javax.annotation.Resource;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 14-05-2016.\n */\n@RestController \n@Transactional\npublic class EmployeeController {\n\n    @Resource(name = \"documentsPath\")\n    private String documentsPath;\n    @Autowired\n    private EmployeeDAO employees;\n    @Autowired\n    private DocumentDAO documents;\n    @Autowired\n    private Gson GSON;\n\n    @ApiOperation(value = \"Returns a document\", notes = \"This method allows employees to get a document by a given id.\")\n    @Secured(\"ROLE_EMPLOYEE\")\n    @RequestMapping(value = \"/documents/{id}\", method = RequestMethod.GET)\n    public ResponseEntity<FileSystemResource> getEmployees(@PathVariable(value = \"id\") long id, Principal principal) {\n        HttpHeaders headers = new HttpHeaders();\n\n        Employee emp = this.employees.findByUsername(principal.getName());\n        Document doc = this.documents.findOne(id);\n\n        if (doc == null) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.NOT_FOUND);\n        } else if (emp.getPrintShop().getId() != doc.getPrintRequest().getPrintshop().getId()) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.UNAUTHORIZED);\n        } else {\n            headers.setContentType(MediaType.parseMediaType(\"application/pdf\"));\n            headers.add(\"Content-Disposition\", \"inline;filename=\" + doc.getName() + \".pdf\");\n            headers.setCacheControl(\"must-revalidate, post-check=0, pre-check=0\");\n\n            return new ResponseEntity(new FileSystemResource(new File(this.documentsPath+doc.getFile().getName())), headers, HttpStatus.OK);\n        }\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- I examined EmployeeController.getEmployees which is mapped to GET /documents/{id}.\n- The method returns three distinct HTTP status codes explicitly:\n  - 200 OK when the document is served. The response body is a FileSystemResource wrapping a File, and the code sets the Content-Type to \"application/pdf\" and adds a \"Content-Disposition\" header (inline;filename={name}.pdf) and a \"Cache-Control\" header (\"must-revalidate, post-check=0, pre-check=0\"). In Swagger 2.0, a file response is represented with a response schema of type \"file\".\n  - 404 NOT_FOUND when the Document object is null. The code sets Content-Type to application/json for this response but does not include a response body.\n  - 401 UNAUTHORIZED when the requesting employee's printshop id does not match the document's printshop id. The code sets Content-Type to application/json for this response but does not include a response body.\n- Although Spring Security @Secured may cause other authentication/authorization responses at a filter level, I included only the responses explicitly produced by the controller method (200, 401, 404).\n- The response objects below contain descriptions, and for the 200 response a schema of type \"file\" plus header descriptions for Content-Disposition, Cache-Control, and Content-Type to reflect the headers set by the controller. The 401 and 404 responses include descriptive messages noting the Content-Type set in the controller.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"OK - PDF document returned.\",\n    \"schema\": {\n      \"type\": \"file\"\n    },\n    \"headers\": {\n      \"Content-Disposition\": {\n        \"type\": \"string\",\n        \"description\": \"Indicates inline display and the filename, e.g. \\\"inline;filename={name}.pdf\\\".\"\n      },\n      \"Cache-Control\": {\n        \"type\": \"string\",\n        \"description\": \"Cache control header set to \\\"must-revalidate, post-check=0, pre-check=0\\\".\"\n      },\n      \"Content-Type\": {\n        \"type\": \"string\",\n        \"description\": \"application/pdf\"\n      }\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized - the authenticated employee does not belong to the printshop that owns the document. Content-Type: application/json.\"\n  },\n  \"404\": {\n    \"description\": \"Not Found - document with the given id does not exist. Content-Type: application/json.\"\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767005241,
+    "id": "chatcmpl-Cs54T3XeubqehQol2P09eMtJkdFfW",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1616,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1088,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 986,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2602
+    }
+  }
+}

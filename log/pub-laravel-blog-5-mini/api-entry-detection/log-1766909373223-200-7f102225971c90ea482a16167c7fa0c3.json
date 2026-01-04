@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766909373223,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Controllers/Auth/PasswordResetLinkController.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Auth/PasswordResetLinkController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Auth;\n\nuse App\\Http\\Controllers\\Controller;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Support\\Facades\\Password;\nuse Illuminate\\View\\View;\n\nclass PasswordResetLinkController extends Controller\n{\n    /**\n     * Display the password reset link request view.\n     */\n    public function create(): View\n    {\n        return view('auth.forgot-password');\n    }\n\n    /**\n     * Handle an incoming password reset link request.\n     *\n     * @throws \\Illuminate\\Validation\\ValidationException\n     */\n    public function store(Request $request): RedirectResponse\n    {\n        $request->validate([\n            'email' => ['required', 'email'],\n        ]);\n\n        // We will send the password reset link to this user. Once we have attempted\n        // to send the link, we will examine the response then see the message we\n        // need to show to the user. Finally, we'll send out a proper response.\n        $status = Password::sendResetLink(\n            $request->only('email')\n        );\n\n        return $status == Password::RESET_LINK_SENT\n                    ? back()->with('status', __($status))\n                    : back()->withInput($request->only('email'))\n                        ->withErrors(['email' => __($status)]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\n  \"api_entries\": [],\n  \"explanation\": \"No API entries found in this file. The controller defines two methods (create and store) but there are no route/path literal strings and no route annotations present. The file does contain a view name ('auth.forgot-password') and calls to Password::sendResetLink, but those are not HTTP paths. Because the source code does not contain any explicit path strings nor an explicit routing convention binding inside this file, no API entries can be extracted per the rule that paths must come from literal strings in the file or from framework-supported naming conventions defined in the same file.\"\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766909367,
+    "id": "chatcmpl-Crg87vgtzB8y3P14kcL2KCmIL4SYT",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 585,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 448,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 744,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1329
+    }
+  }
+}

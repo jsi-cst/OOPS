@@ -1,0 +1,116 @@
+{
+  "timestamp": 1766912226388,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/PostController.php`, `App\\Http\\Controllers\\PostController::show` is implemented to process HTTP requests to `/posts/{post}` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\View\\View;\n\nclass PostController extends Controller\n{\n    /**\n     * Show the application dashboard.\n     */\n    public function index(Request $request): View\n    {\n        return view('posts.index', [\n            'posts' => Post::search($request->input('q'))\n                ->with('author', 'likes')\n                ->withCount('comments', 'thumbnail', 'likes')\n                ->latest()\n                ->paginate(20)\n        ]);\n    }\n\n    /**\n     * Display the specified resource.\n     */\n    public function show(Request $request, Post $post): View\n    {\n        $post->comments_count = $post->comments()->count();\n        $post->likes_count = $post->likes()->count();\n\n        return view('posts.show', [\n            'post' => $post\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_rL6MOIQzKmgvzsZ6Mt6Va76j",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/web.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\PostFeedController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Web Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register web routes for your application. These\\n| routes are loaded by the RouteServiceProvider and all of them will\\n| be assigned to the \"web\" middleware group. Make something great!\\n|\\n*/\\n\\nRoute::get(\\'/\\', [PostController::class, \\'index\\'])->name(\\'home\\');\\nRoute::get(\\'/posts/feed\\', [PostFeedController::class, \\'index\\'])->name(\\'posts.feed\\');\\nRoute::resource(\\'posts\\', PostController::class)->only(\\'show\\');\\nRoute::resource(\\'users\\', UserController::class)->only(\\'show\\');\\nRoute::resource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n\\nRoute::get(\\'newsletter-subscriptions/unsubscribe\\', [NewsletterSubscriptionController::class, \\'unsubscribe\\'])->name(\\'newsletter-subscriptions.unsubscribe\\');\\n', 'stderr': ''}",
+        "tool_call_id": "call_rL6MOIQzKmgvzsZ6Mt6Va76j"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_wbH9UNCcT7CHlnfi81HzvAfi",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_wbH9UNCcT7CHlnfi81HzvAfi"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CrgrylyGA7HRrGdKxy6taBRH4m0Xs",
+    "object": "chat.completion",
+    "created": 1766912210,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\nStep-by-step reasoning:\n- The route for this endpoint is defined via Route::resource('posts', PostController::class)->only('show') in routes/web.php, so GET /posts/{post} is handled by PostController::show.\n- The controller method show(Request $request, Post $post) fills two derived properties on the Post instance (comments_count and likes_count) and returns view('posts.show', ['post' => $post]). That means a successful response is the rendered HTML view for the post.\n- Laravel route-model binding is used for the {post} parameter. The Post model's getRouteKeyName() returns 'slug' for normal (HTML) requests and 'id' if the request expects JSON. If the model isn't found, Laravel throws a ModelNotFoundException which becomes a 404 response (the response body will be an HTML \"not found\" page for normal requests or a JSON error if the request expects JSON).\n- Therefore the realistic responses for GET /posts/{post} are:\n  - 200: the rendered HTML post show page (content-type text/html, represented as a string schema).\n  - 404: post not found (content-type typically text/html for browser requests; may be application/json for requests that expect JSON). We represent it as a string schema since the controller returns views for the regular request path and Laravel's error pages are typically HTML for web requests.\n- I include minimal Swagger 2.0 Response Object fields: description and schema (no $ref), and avoid adding unrelated fields.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"OK - Rendered HTML view for the requested post.\",\n    \"schema\": {\n      \"type\": \"string\",\n      \"format\": \"html\"\n    }\n  },\n  \"404\": {\n    \"description\": \"Not Found - No Post matched the provided identifier (slug for normal requests, id for JSON-expected requests).\",\n    \"schema\": {\n      \"type\": \"string\",\n      \"format\": \"html\"\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1948,
+      "completion_tokens": 1778,
+      "total_tokens": 3726,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1344,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

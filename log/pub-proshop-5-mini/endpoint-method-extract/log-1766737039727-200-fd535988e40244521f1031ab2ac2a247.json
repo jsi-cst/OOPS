@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766737039727,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `controllers/productController.js`, I found that `createProductReview` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```\n\nContents of file `routes/productRoutes.js`:\n\n```\nimport express from 'express';\nconst router = express.Router();\nimport {\n  getProducts,\n  getProductById,\n  createProduct,\n  updateProduct,\n  deleteProduct,\n  createProductReview,\n  getTopProducts,\n} from '../controllers/productController.js';\nimport { protect, admin } from '../middleware/authMiddleware.js';\nimport checkObjectId from '../middleware/checkObjectId.js';\n\nrouter.route('/').get(getProducts).post(protect, admin, createProduct);\nrouter.route('/:id/reviews').post(protect, checkObjectId, createProductReview);\nrouter.get('/top', getTopProducts);\nrouter\n  .route('/:id')\n  .get(checkObjectId, getProductById)\n  .put(protect, admin, checkObjectId, updateProduct)\n  .delete(protect, admin, checkObjectId, deleteProduct);\n\nexport default router;\n```\n\nContents of file `controllers/productController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Product from '../models/productModel.js';\n\n// @desc    Fetch all products\n// @route   GET /api/products\n// @access  Public\nconst getProducts = asyncHandler(async (req, res) => {\n  const pageSize = process.env.PAGINATION_LIMIT;\n  const page = Number(req.query.pageNumber) || 1;\n\n  const keyword = req.query.keyword\n    ? {\n        name: {\n          $regex: req.query.keyword,\n          $options: 'i',\n        },\n      }\n    : {};\n\n  const count = await Product.countDocuments({ ...keyword });\n  const products = await Product.find({ ...keyword })\n    .limit(pageSize)\n    .skip(pageSize * (page - 1));\n\n  res.json({ products, page, pages: Math.ceil(count / pageSize) });\n});\n\n// @desc    Fetch single product\n// @route   GET /api/products/:id\n// @access  Public\nconst getProductById = asyncHandler(async (req, res) => {\n  // NOTE: checking for valid ObjectId to prevent CastError moved to separate\n  // middleware. See README for more info.\n\n  const product = await Product.findById(req.params.id);\n  if (product) {\n    return res.json(product);\n  } else {\n    // NOTE: this will run if a valid ObjectId but no product was found\n    // i.e. product may be null\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Create a product\n// @route   POST /api/products\n// @access  Private/Admin\nconst createProduct = asyncHandler(async (req, res) => {\n  const product = new Product({\n    name: 'Sample name',\n    price: 0,\n    user: req.user._id,\n    image: '/images/sample.jpg',\n    brand: 'Sample brand',\n    category: 'Sample category',\n    countInStock: 0,\n    numReviews: 0,\n    description: 'Sample description',\n  });\n\n  const createdProduct = await product.save();\n  res.status(201).json(createdProduct);\n});\n\n// @desc    Update a product\n// @route   PUT /api/products/:id\n// @access  Private/Admin\nconst updateProduct = asyncHandler(async (req, res) => {\n  const { name, price, description, image, brand, category, countInStock } =\n    req.body;\n\n  const product = await Product.findById(req.params.id);\n\n  if (product) {\n    product.name = name;\n    product.price = price;\n    product.description = description;\n    product.image = image;\n    product.brand = brand;\n    product.category = category;\n    product.countInStock = countInStock;\n\n    const updatedProduct = await product.save();\n    res.json(updatedProduct);\n  } else {\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Delete a product\n// @route   DELETE /api/products/:id\n// @access  Private/Admin\nconst deleteProduct = asyncHandler(async (req, res) => {\n  const product = await Product.findById(req.params.id);\n\n  if (product) {\n    await Product.deleteOne({ _id: product._id });\n    res.json({ message: 'Product removed' });\n  } else {\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Create new review\n// @route   POST /api/products/:id/reviews\n// @access  Private\nconst createProductReview = asyncHandler(async (req, res) => {\n  const { rating, comment } = req.body;\n\n  const product = await Product.findById(req.params.id);\n\n  if (product) {\n    const alreadyReviewed = product.reviews.find(\n      (r) => r.user.toString() === req.user._id.toString()\n    );\n\n    if (alreadyReviewed) {\n      res.status(400);\n      throw new Error('Product already reviewed');\n    }\n\n    const review = {\n      name: req.user.name,\n      rating: Number(rating),\n      comment,\n      user: req.user._id,\n    };\n\n    product.reviews.push(review);\n\n    product.numReviews = product.reviews.length;\n\n    product.rating =\n      product.reviews.reduce((acc, item) => item.rating + acc, 0) /\n      product.reviews.length;\n\n    await product.save();\n    res.status(201).json({ message: 'Review added' });\n  } else {\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Get top rated products\n// @route   GET /api/products/top\n// @access  Public\nconst getTopProducts = asyncHandler(async (req, res) => {\n  const products = await Product.find({}).sort({ rating: -1 }).limit(3);\n\n  res.json(products);\n});\n\nexport {\n  getProducts,\n  getProductById,\n  createProduct,\n  updateProduct,\n  deleteProduct,\n  createProductReview,\n  getTopProducts,\n};\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "- Full path: /api/products/{id}/reviews\n\n- allMethods: false\n\n- HEAD: false\n- POST: true\n- OPTIONS: false\n- TRACE: false\n- GET: false\n- PUT: false\n- DELETE: false\n- PATCH: false\n\nExplanation:\n- server.js mounts the product routes at the prefix /api/products (app.use('/api/products', productRoutes)).\n- routes/productRoutes.js registers the route router.route('/:id/reviews').post(protect, checkObjectId, createProductReview); so the only HTTP method explicitly defined for that path is POST (with protect and checkObjectId middleware).\n- controllers/productController.js implements createProductReview and documents it as handling POST /api/products/:id/reviews.\n- No handlers for GET, PUT, DELETE, PATCH, OPTIONS, TRACE, or HEAD are defined for this exact path. Express does not implicitly expose those methods for a POST-only route (HEAD is only automatically handled when a GET route exists), so they are marked false.\n- allMethods is false because there is no code allowing all methods.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766737030,
+    "id": "chatcmpl-CqxIU6sDbyzAEYuu4pH5bzlODxxR5",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 873,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 640,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1964,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2837
+    }
+  }
+}

@@ -1,0 +1,221 @@
+{
+  "timestamp": 1766912251562,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/users/{user}/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/UserCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController@index` is implemented to process HTTP requests to `/v1/users/{user}/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/UserCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\n\nclass UserCommentController extends Controller\n{\n    /**\n     * Return the user's comments.\n     */\n    public function index(Request $request, User $user): ResourceCollection\n    {\n        return CommentResource::collection(\n            $user->comments()->latest()->paginate($request->input('limit', 20))\n        );\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_XeSqD3HHlDzwHzdw1MXDEtlL",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_XeSqD3HHlDzwHzdw1MXDEtlL"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_lS6KkmACYux16Egh6VHXE67Q",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"paginate(\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"app/Http/Controllers/Admin/PostController.php:22:            'posts' => Post::withCount('comments', 'likes')->with('author')->latest()->paginate(50)\\napp/Http/Controllers/Admin/CommentController.php:20:            'comments' => Comment::with('post', 'author')->latest()->paginate(50)\\napp/Http/Controllers/Admin/UserController.php:21:            'users' => User::latest()->paginate(50)\\napp/Http/Controllers/PostController.php:21:                ->paginate(20)\\napp/Http/Controllers/Api/V1/MediaController.php:22:            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\\napp/Http/Controllers/Api/V1/UserCommentController.php:19:            $user->comments()->latest()->paginate($request->input('limit', 20))\\napp/Http/Controllers/Api/V1/PostController.php:21:            Post::search($request->input('q'))->withCount('comments')->latest()->paginate($request->input('limit', 20))\\napp/Http/Controllers/Api/V1/PostCommentController.php:22:            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\\napp/Http/Controllers/Api/V1/CommentController.php:20:            Comment::latest()->paginate($request->input('limit', 20))\\napp/Http/Controllers/Api/V1/UserController.php:21:            User::withCount(['comments', 'posts'])->with('roles')->latest()->paginate($request->input('limit', 20))\\napp/Http/Controllers/Api/V1/UserPostController.php:19:            $user->posts()->latest()->paginate($request->input('limit', 20))\\n\", 'stderr': ''}",
+        "tool_call_id": "call_lS6KkmACYux16Egh6VHXE67Q"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_lyvtJRwWDg3X1MBqsXSNRzBI",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Models/User.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\belongsToMany;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Foundation\\\\Auth\\\\User as Authenticatable;\\nuse Illuminate\\\\Notifications\\\\Notifiable;\\nuse Illuminate\\\\Support\\\\Str;\\nuse Laravel\\\\Sanctum\\\\HasApiTokens;\\n\\nclass User extends Authenticatable\\n{\\n    use HasApiTokens, HasFactory, Notifiable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'name', 'email', 'password', 'provider', 'provider_id', 'registered_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'registered_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * The attributes that should be hidden for arrays.\\n     *\\n     * @var array\\n     */\\n    protected $hidden = [\\n        'password', 'remember_token',\\n    ];\\n\\n    /**\\n     * Get the user's fullname titleized.\\n     */\\n    public function getFullnameAttribute(): string\\n    {\\n        return Str::title($this->name);\\n    }\\n\\n    /**\\n     * Scope a query to only include users registered last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('registered_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order users by latest registered.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('registered_at', 'desc');\\n    }\\n\\n    /**\\n     * Scope a query to filter available author users.\\n     */\\n    public function scopeAuthors(Builder $query): Builder\\n    {\\n        return $query->whereHas('roles', function ($query) {\\n            $query->where('roles.name', Role::ROLE_ADMIN)\\n                ->orWhere('roles.name', Role::ROLE_EDITOR);\\n        });\\n    }\\n\\n    /**\\n     * Check if the user can be an author\\n     */\\n    public function canBeAuthor(): bool\\n    {\\n        return $this->isAdmin() || $this->isEditor();\\n    }\\n\\n    /**\\n     * Check if the user has a role\\n     */\\n    public function hasRole(string $role): bool\\n    {\\n        return $this->roles->where('name', $role)->isNotEmpty();\\n    }\\n\\n    /**\\n     * Check if the user has role admin\\n     */\\n    public function isAdmin(): bool\\n    {\\n        return $this->hasRole(Role::ROLE_ADMIN);\\n    }\\n\\n    /**\\n     * Check if the user has role editor\\n     */\\n    public function isEditor(): bool\\n    {\\n        return $this->hasRole(Role::ROLE_EDITOR);\\n    }\\n\\n    /**\\n     * Return the user's posts\\n     */\\n    public function posts(): HasMany\\n    {\\n        return $this->hasMany(Post::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the user's comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the user's likes\\n     */\\n    public function likes(): HasMany\\n    {\\n        return $this->hasMany(Like::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the user's roles\\n     */\\n    public function roles(): belongsToMany\\n    {\\n        return $this->belongsToMany(Role::class)->withTimestamps();\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_lyvtJRwWDg3X1MBqsXSNRzBI"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_0RBw65Fo5tgeLzANmaNThEcD",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Controllers/Api/V1/PostCommentController.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Controllers\\\\Api\\\\V1;\\n\\nuse App\\\\Events\\\\CommentPosted;\\nuse App\\\\Http\\\\Controllers\\\\Controller;\\nuse App\\\\Http\\\\Requests\\\\Api\\\\CommentsRequest;\\nuse App\\\\Http\\\\Resources\\\\Comment as CommentResource;\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Http\\\\Request;\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass PostCommentController extends Controller\\n{\\n    /**\\n     * Return the post's comments.\\n     */\\n    public function index(Request $request, Post $post): ResourceCollection\\n    {\\n        return CommentResource::collection(\\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\\n        );\\n    }\\n\\n    /**\\n     * Store a newly created resource in storage.\\n     */\\n    public function store(CommentsRequest $request, Post $post): CommentResource\\n    {\\n        $comment = new CommentResource(\\n            Auth::user()->comments()->create([\\n                'post_id' => $post->id,\\n                'content' => $request->input('content')\\n            ])\\n        );\\n\\n        broadcast(new CommentPosted($comment, $post))->toOthers();\\n\\n        return $comment;\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_0RBw65Fo5tgeLzANmaNThEcD"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_j9k9F6v9R7CZwLQ56lVwe2ie",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"ResourceCollection\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'app/Http/Controllers/Api/V1/MediaController.php:11:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/MediaController.php:19:    public function index(Request $request): ResourceCollection\\napp/Http/Controllers/Api/V1/UserCommentController.php:9:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/UserCommentController.php:16:    public function index(Request $request, User $user): ResourceCollection\\napp/Http/Controllers/Api/V1/PostController.php:10:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/PostController.php:18:    public function index(Request $request): ResourceCollection\\napp/Http/Controllers/Api/V1/PostCommentController.php:11:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/PostCommentController.php:19:    public function index(Request $request, Post $post): ResourceCollection\\napp/Http/Controllers/Api/V1/CommentController.php:9:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/CommentController.php:17:    public function index(Request $request): ResourceCollection\\napp/Http/Controllers/Api/V1/UserController.php:10:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/UserController.php:18:    public function index(Request $request): ResourceCollection\\napp/Http/Controllers/Api/V1/UserPostController.php:9:use Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\napp/Http/Controllers/Api/V1/UserPostController.php:16:    public function index(Request $request, User $user): ResourceCollection\\n', 'stderr': ''}",
+        "tool_call_id": "call_j9k9F6v9R7CZwLQ56lVwe2ie"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_6yZJZgnxLAUe8fz9dZElserR",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Controllers/Api/V1/CommentController.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Controllers\\\\Api\\\\V1;\\n\\nuse App\\\\Http\\\\Controllers\\\\Controller;\\nuse App\\\\Http\\\\Resources\\\\Comment as CommentResource;\\nuse App\\\\Models\\\\Comment;\\nuse Illuminate\\\\Http\\\\Request;\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\nuse Illuminate\\\\Http\\\\Response;\\n\\nclass CommentController extends Controller\\n{\\n    /**\\n     * Return the comments.\\n     */\\n    public function index(Request $request): ResourceCollection\\n    {\\n        return CommentResource::collection(\\n            Comment::latest()->paginate($request->input('limit', 20))\\n        );\\n    }\\n\\n    /**\\n     * Return the specified resource.\\n     */\\n    public function show(Comment $comment): CommentResource\\n    {\\n        return new CommentResource($comment);\\n    }\\n\\n    /**\\n     * Remove the specified resource from storage.\\n     */\\n    public function destroy(Comment $comment): Response\\n    {\\n        $this->authorize('delete', $comment);\\n\\n        $comment->delete();\\n\\n        return response()->noContent();\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_6yZJZgnxLAUe8fz9dZElserR"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_1vMSrN5DnqyotxNM1LU7RdJ9",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Controllers/Api/V1/PostController.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Controllers\\\\Api\\\\V1;\\n\\nuse App\\\\Http\\\\Controllers\\\\Controller;\\nuse App\\\\Http\\\\Requests\\\\Admin\\\\PostsRequest;\\nuse App\\\\Http\\\\Resources\\\\Post as PostResource;\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Http\\\\Request;\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\nuse Illuminate\\\\Http\\\\Response;\\n\\nclass PostController extends Controller\\n{\\n    /**\\n     * Return the posts.\\n     */\\n    public function index(Request $request): ResourceCollection\\n    {\\n        return PostResource::collection(\\n            Post::search($request->input('q'))->withCount('comments')->latest()->paginate($request->input('limit', 20))\\n        );\\n    }\\n\\n    /**\\n     * Update the specified resource in storage.\\n     */\\n    public function update(PostsRequest $request, Post $post): PostResource\\n    {\\n        $this->authorize('update', $post);\\n\\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\\n\\n        return new PostResource($post);\\n    }\\n\\n    /**\\n     * Store a newly created resource in storage.\\n     */\\n    public function store(PostsRequest $request): PostResource\\n    {\\n        $this->authorize('store', Post::class);\\n\\n        return new PostResource(\\n            Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']))\\n        );\\n    }\\n\\n    /**\\n     * Return the specified resource.\\n     */\\n    public function show(Post $post): PostResource\\n    {\\n        return new PostResource($post);\\n    }\\n\\n    /**\\n     * Remove the specified resource from storage.\\n     */\\n    public function destroy(Post $post): Response\\n    {\\n        $this->authorize('delete', $post);\\n\\n        $post->delete();\\n\\n        return response()->noContent();\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_1vMSrN5DnqyotxNM1LU7RdJ9"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,200p' routes/api.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_FtXMO3mBf5P23LTSK1PRNydK",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1766912249,
+    "id": "chatcmpl-CrgsblkBbTboPURhkiq6ZALMiBNjC",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 163,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 128,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3975,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4138
+    }
+  }
+}

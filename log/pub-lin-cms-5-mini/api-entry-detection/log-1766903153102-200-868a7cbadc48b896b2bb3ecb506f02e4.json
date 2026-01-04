@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766903153102,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/lin/file.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/lin/file.py`:\n\n```\n\"\"\"uploader of Lin\n~~~~~~~~~\n\nuploader 模块，使用策略模式实现的上传文件接口\n\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nimport hashlib\nimport os\nfrom typing import Any, Dict, List, Optional, Tuple, Union\n\nfrom flask import current_app\nfrom werkzeug.datastructures import FileStorage\n\nfrom .exception import FileExtensionError, FileTooLarge, FileTooMany, ParameterError\n\n\nclass Uploader(object):\n    def __init__(self, files: Union[List[FileStorage], FileStorage], config: Dict[str, Any] = {}):\n        #: the list of allowed files\n        #: 被允许的文件类型列表\n        self._include: List[str] = []\n        #: the list of not allowed files\n        #: 不被允许的文件类型列表\n        self._exclude: List[str] = []\n        #: the max bytes of single file\n        #: 单个文件的最大字节数\n        self._single_limit: int = 0\n        #: the max bytes of multiple files\n        #: 多个文件的最大字节数\n        self._total_limit: int = 0\n        #: the max nums of files\n        #: 文件上传的最大数量\n        self._nums: int = 0\n        #: the directory of file storage\n        #: 文件存贮目录\n        self._store_dir: str = \"\"\n        #: the FileStorage Object\n        #: 文件存贮对象\n        self._file_storage: List[FileStorage] = self.__parse_files(files)\n        self.__load_config(config)\n        self.__verify()\n\n    def upload(self, **kwargs) -> Dict[str, Any]:\n        \"\"\"\n        文件上传抽象方法，一定要被子类所实现\n        \"\"\"\n        raise NotImplementedError()\n\n    @staticmethod\n    def _generate_uuid() -> str:\n        import uuid\n\n        return str(uuid.uuid1())\n\n    @staticmethod\n    def _get_ext(filename: str) -> str:\n        \"\"\"\n        得到文件的扩展名\n        :param filename: 原始文件名\n        :return: string 文件的扩展名\n        \"\"\"\n        return \".\" + filename.lower().split(\".\")[-1]\n\n    @staticmethod\n    def _generate_md5(data: bytes) -> str:\n        md5_obj = hashlib.md5()\n        md5_obj.update(data)\n        ret = md5_obj.hexdigest()\n        return ret\n\n    @staticmethod\n    def _get_size(file_obj: FileStorage) -> int:\n        \"\"\"\n        得到文件大小（字节）\n        :param file_obj: 文件对象\n        :return: 文件的字节数\n        \"\"\"\n        file_obj.seek(0, os.SEEK_END)\n        size = file_obj.tell()\n        file_obj.seek(0)  # 将文件指针重置\n        return size\n\n    @staticmethod\n    def _generate_name(filename: str) -> str:\n        return Uploader._generate_uuid() + Uploader._get_ext(filename)\n\n    def __load_config(self, custom_config: Dict[str, Any]) -> None:\n        \"\"\"\n        加载文件配置，如果用户不传 config 参数，则加载默认配置\n        :param custom_config: 用户自定义配置参数\n        :return: None\n        \"\"\"\n        default_config = current_app.config.get(\"FILE\")\n        self._include = custom_config[\"INCLUDE\"] if \"INCLUDE\" in custom_config else default_config[\"INCLUDE\"]\n        self._exclude = custom_config[\"EXCLUDE\"] if \"EXCLUDE\" in custom_config else default_config[\"EXCLUDE\"]\n        self._single_limit = (\n            custom_config[\"SINGLE_LIMIT\"] if \"SINGLE_LIMIT\" in custom_config else default_config[\"SINGLE_LIMIT\"]\n        )\n        self._total_limit = (\n            custom_config[\"TOTAL_LIMIT\"] if \"TOTAL_LIMIT\" in custom_config else default_config[\"TOTAL_LIMIT\"]\n        )\n        self._nums = custom_config[\"NUMS\"] if \"NUMS\" in custom_config else default_config[\"NUMS\"]\n        self._store_dir = custom_config[\"STORE_DIR\"] if \"STORE_DIR\" in custom_config else default_config[\"STORE_DIR\"]\n\n    @staticmethod\n    def __parse_files(files: Union[List[FileStorage], FileStorage]) -> List[FileStorage]:\n        ret: List[FileStorage] = []\n        for key, value in files.items():\n            ret += files.getlist(key)\n        return ret\n\n    def __verify(self) -> None:\n        \"\"\"\n        验证文件是否合法\n        \"\"\"\n        if not self._file_storage:\n            raise ParameterError(\"未找到符合条件的文件资源\")\n        self.__allowed_file()\n        self.__allowed_file_size()\n\n    def _get_store_path(self, filename: str) -> Tuple[str, str, str]:\n        uuid_filename = self._generate_name(filename)\n        format_day = self.__get_format_day()\n        store_dir = self._store_dir\n        return (\n            os.path.join(store_dir, uuid_filename),\n            format_day + os.path.sep + uuid_filename,\n            uuid_filename,\n        )\n\n    def mkdir_if_not_exists(self) -> None:\n        if not os.path.isabs(self._store_dir):\n            self._store_dir = os.path.abspath(self._store_dir)\n        # mkdir by YYYY/MM/DD\n        self._store_dir += os.path.sep + self.__get_format_day()\n        if not os.path.exists(self._store_dir):\n            os.makedirs(self._store_dir)\n\n    @staticmethod\n    def __get_format_day() -> str:\n        import time\n\n        return str(time.strftime(\"%Y/%m/%d\"))\n\n    def __allowed_file(self) -> bool:\n        \"\"\"\n        验证扩展名是否合法\n        \"\"\"\n        if (self._include and self._exclude) or self._include:\n            for single in self._file_storage:\n                if \".\" not in single.filename or single.filename.lower().rsplit(\".\", 1)[1] not in self._include:\n                    raise FileExtensionError()\n            return True\n        elif self._exclude and not self._include:\n            for single in self._file_storage:\n                if \".\" not in single.filename or single.filename.lower().rsplit(\".\", 1)[1] in self._exclude:\n                    raise FileExtensionError()\n            return True\n        return False\n\n    def __allowed_file_size(self) -> None:\n        \"\"\"\n        验证文件大小是否合法\n        \"\"\"\n        file_count = len(self._file_storage)\n        if file_count > 1:\n            if file_count > self._nums:\n                raise FileTooMany()\n            total_size = 0\n            for single in self._file_storage:\n                if self._get_size(single) > self._single_limit:\n                    raise FileTooLarge(single.filename + \"大小不能超过\" + str(self._single_limit) + \"字节\")\n                total_size += self._get_size(single)\n            if total_size > self._total_limit:\n                raise FileTooLarge()\n        else:\n            file_size = self._get_size(self._file_storage[0])\n            if file_size > self._single_limit:\n                raise FileTooLarge()\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[]\nExplanation:\n\nI scanned the provided file for any API routing definitions or other constructs that Flask (or common Flask extensions) use to bind HTTP paths to handlers. Specifically I looked for:\n\n- route decorators like @app.route, @blueprint.route, @bp.route, etc.\n- explicit calls like app.add_url_rule(...) or blueprint.add_url_rule(...)\n- Flask view classes / MethodView subclasses or classes inheriting from flask.views.View\n- flask-restful Resource subclasses or registrations\n- any literal path strings used to register routes\n\nNo such occurrences were found. The file defines a Uploader class and several helper/static methods (including an abstract upload() method that raises NotImplementedError), but none of these are registered as HTTP handlers in this file, and there are no literal route strings. Because the path must come from a literal in this file or from a framework-supported naming convention present here, there are no API entries to report.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766903146,
+    "id": "chatcmpl-CreVmDVOiE3KXD8z3pLllBW1B3GGq",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 646,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 448,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1946,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2592
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "timestamp": 1766914991784,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/posts` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/PostController.php`, `PostController::class` is implemented to process HTTP requests to `/admin/posts` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Models\\MediaLibrary;\nuse App\\Models\\Post;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\View\\View;\n\nclass PostController extends Controller\n{\n    /**\n     * Show the application posts index.\n     */\n    public function index(): View\n    {\n        return view('admin.posts.index', [\n            'posts' => Post::withCount('comments', 'likes')->with('author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Post $post): View\n    {\n        return view('admin.posts.edit', [\n            'post' => $post,\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Show the form for creating a new resource.\n     */\n    public function create(Request $request): View\n    {\n        return view('admin.posts.create', [\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): RedirectResponse\n    {\n        $post = Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.created'));\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): RedirectResponse\n    {\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post)\n    {\n        $post->delete();\n\n        return redirect()->route('admin.posts.index')->withSuccess(__('posts.deleted'));\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "To determine the exact HTTP response scenarios for GET /admin/posts, I will inspect the route definitions and middleware that guard this endpoint. I will search for the admin posts route and check related middleware in the Laravel project files.",
+        "tool_calls": [
+          {
+            "id": "call_GMyINU9JXYeUmFzYaUq0u3AL",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'grep -Rn --include=\\\\*.php \\\"admin/posts\\\" -n routes || true'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_GMyINU9JXYeUmFzYaUq0u3AL"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_o0b7PckuqbL9jENzqMWIdvfR",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'grep -RIn --include=*.php \\\"Route::get\\\\(\\\\\\\"/admin/posts\\\" -n routes || true'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': 'grep: Unmatched ( or \\\\(\\n'}",
+        "tool_call_id": "call_o0b7PckuqbL9jENzqMWIdvfR"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_JgiaJP0g72wK4ghArbza0Czq",
+            "function": {
+              "arguments": "{\"command\":\"bash -lc 'rg -n --no-heading \\\"/admin/posts\\\" routes -S || true'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_JgiaJP0g72wK4ghArbza0Czq"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"bash -lc 'ls -la'; echo '---'; grep -RIn \\\"admin.posts\\\" app -S || true; echo '---'; rg -n --no-heading --glob \\\\*.php \\\"/admin/posts\\\" -S routes || true'\"}",
+                "name": "run_command"
+              },
+              "id": "call_ACi1AM2hx3x2yahA15JyQQj3",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1766914991,
+    "id": "chatcmpl-Crhap9SZB7CP8ho8G5eihw52G2ynm",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 69,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1166,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1235
+    }
+  }
+}

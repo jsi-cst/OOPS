@@ -1,0 +1,67 @@
+{
+  "timestamp": 1767256769620,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/config/paypal` with method GET, and here is the relevant information I found:\n\n1. In `server.js`, `anonymous` is implemented to process HTTP requests to `/api/config/paypal` with HTTP method GET.\n\n2. In `server.js`, `anonymous` is implemented to process HTTP requests to `/api/config/paypal` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-1f512eca-8d43-9cb1-b595-810410eda4bd",
+    "choices": [
+      {
+        "message": {
+          "content": "I need to analyze the `/api/config/paypal` endpoint with the GET method to generate the appropriate OpenAPI response object.\n\nLooking at the code in `server.js`, I can see that the endpoint `/api/config/paypal` with the GET method returns a JSON object containing the PayPal client ID from the environment variables:\n\n```javascript\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n```\n\nThis endpoint:\n1. Responds with a JSON object\n2. The object has a single property `clientId` which contains the value from `process.env.PAYPAL_CLIENT_ID`\n3. This would typically be a string value representing the PayPal client ID\n\nLet me create the response object for this endpoint in Swagger 2.0 format.\n\nThe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"PayPal configuration\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"clientId\": {\n          \"type\": \"string\",\n          \"description\": \"PayPal client ID\"\n        }\n      },\n      \"required\": [\"clientId\"]\n    }\n  }\n}\n```",
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "stop"
+      }
+    ],
+    "created": 1767256765,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 1166,
+      "completion_tokens": 249,
+      "prompt_tokens": 917,
+      "prompt_tokens_details": {
+        "cached_tokens": 512
+      }
+    }
+  }
+}

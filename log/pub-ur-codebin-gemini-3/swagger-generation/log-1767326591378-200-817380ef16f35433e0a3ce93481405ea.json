@@ -1,0 +1,195 @@
+{
+  "timestamp": 1767326591378,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/paste` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `postNewCodePasteWith` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\n2. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController#postNewCodePasteWith` is implemented to process HTTP requests to `/api/paste` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`:\n\n```\npackage com.urcodebin.api.controllers;\n\nimport com.urcodebin.api.controllers.requestbody.UploadPasteRequestBody;\nimport com.urcodebin.api.dto.CodePasteDTO;\nimport com.urcodebin.api.entities.CodePaste;\nimport com.urcodebin.api.enums.PasteSyntax;\nimport com.urcodebin.api.error.exception.MissingRequiredSourceCodeException;\nimport com.urcodebin.api.error.exception.PasteNotFoundException;\nimport com.urcodebin.api.services.interfaces.CodePasteService;\nimport org.modelmapper.ModelMapper;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.beans.factory.annotation.Qualifier;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.util.List;\nimport java.util.Optional;\nimport java.util.UUID;\nimport java.util.stream.Collectors;\n\n@RestController\n@RequestMapping(\"/api/paste\")\npublic class CodePasteController {\n\n    private final CodePasteService codePasteService;\n\n    private final ModelMapper modelMapper;\n\n    private static final int MAX_TITLE_LENGTH = 50;\n    private static final int MIN_TITLE_LENGTH = 1;\n    private static final int MAX_SEARCH_LIMIT = 20;\n    private static final int MIN_SEARCH_LIMIT = 1;\n\n    @Autowired\n    public CodePasteController(@Qualifier(\"PasteService\") CodePasteService codePasteService,\n                               ModelMapper modelMapper) {\n        this.codePasteService = codePasteService;\n        this.modelMapper = modelMapper;\n    }\n\n    @GetMapping(path = \"/{paste_id}\")\n    public CodePasteDTO getCodePasteFromId(@PathVariable(\"paste_id\") String pasteId) {\n        UUID pasteUUID = createUUIDFromString(pasteId);\n        Optional<CodePaste> foundPasteId = codePasteService.findByCodePasteId(pasteUUID);\n        final CodePaste codePaste = foundPasteId.orElseThrow(() ->\n                            new PasteNotFoundException(\"No CodePaste has been found with the given id.\"));\n        return convertToDTO(codePaste);\n    }\n\n    @DeleteMapping(path = \"/{paste_id}\")\n    public void deleteCodePasteWithId(@PathVariable(\"paste_id\") String pasteId) {\n        UUID pasteUUID = createUUIDFromString(pasteId);\n        if(!codePasteService.doesCodePasteWithIdExist(pasteUUID))\n            throw new PasteNotFoundException(\"No CodePaste has been found with the given id.\");\n\n        codePasteService.deleteCodePasteById(pasteUUID);\n    }\n\n    @GetMapping(path = \"/public\")\n    public List<CodePasteDTO> getListOfPublicPastesWith(\n                @RequestParam(value = \"paste_title\", defaultValue = \"\") String pasteTitle,\n                @RequestParam(value = \"paste_syntax\", required = false) String pasteSyntax,\n                @RequestParam(value = \"limit\", defaultValue = \"5\") int limit) {\n        if(limit > MAX_SEARCH_LIMIT || limit < MIN_SEARCH_LIMIT)\n            throw new IllegalArgumentException(\"limit number must be between 1 and 20.\");\n\n        List<CodePaste> listOfPastes;\n        if(pasteSyntax == null) {\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, limit);\n        } else {\n            PasteSyntax pasteSyntaxToSearch = createPasteSyntaxFromString(pasteSyntax);\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, pasteSyntaxToSearch, limit);\n        }\n        return listOfPastes.stream()\n                .map(this::convertToDTO)\n                .collect(Collectors.toList());\n    }\n\n    @PostMapping\n    public CodePasteDTO postNewCodePasteWith(@RequestBody UploadPasteRequestBody pasteRequestBody) {\n        if(pasteRequestBody.getSourceCode().isEmpty())\n            throw new MissingRequiredSourceCodeException(\"Required field (source_code) is missing.\");\n\n        int titleLength = pasteRequestBody.getPasteTitle().length();\n        if(titleLength > MAX_TITLE_LENGTH || titleLength < MIN_TITLE_LENGTH) {\n            String errorMsg = String.format(\"Paste Title field length must be within %s and %s\",\n                                                MIN_TITLE_LENGTH, MAX_TITLE_LENGTH);\n            throw new IllegalArgumentException(errorMsg);\n        }\n\n        final CodePaste newCodePaste = codePasteService.createNewCodePaste(pasteRequestBody);\n        return convertToDTO(newCodePaste);\n    }\n\n    private CodePasteDTO convertToDTO(CodePaste codePaste) {\n        return modelMapper.map(codePaste, CodePasteDTO.class);\n    }\n\n    private UUID createUUIDFromString(String stringId) {\n        try {\n            return UUID.fromString(stringId);\n        } catch (IllegalArgumentException e) {\n            throw new IllegalArgumentException(\"Invalid UUID format, please format properly!\");\n        }\n    }\n\n    private PasteSyntax createPasteSyntaxFromString(String pasteSyntax) {\n        try {\n            return PasteSyntax.valueOf(pasteSyntax);\n        } catch (IllegalArgumentException e) {\n            throw new IllegalArgumentException(\"paste_syntax parameter is not any of the given options.\");\n        }\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_60b9a997a81e4a4f8bfc0532b578482f",
+            "function": {
+              "arguments": "{\"command\":\"find src/main/java/com/urcodebin/api/error -name \\\"*.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java\\nsrc/main/java/com/urcodebin/api/error/handler/ErrorResponse.java\\nsrc/main/java/com/urcodebin/api/error/exception/PasteNotFoundException.java\\nsrc/main/java/com/urcodebin/api/error/exception/InvalidLoginFormatException.java\\nsrc/main/java/com/urcodebin/api/error/exception/UserAccountNotFoundException.java\\nsrc/main/java/com/urcodebin/api/error/exception/MissingRequiredSourceCodeException.java\\nsrc/main/java/com/urcodebin/api/error/exception/AuthorizationHeaderNotFoundException.java\\nsrc/main/java/com/urcodebin/api/error/exception/AccountInformationTakenException.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_60b9a997a81e4a4f8bfc0532b578482f"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_586b88eadfc9468aa997fd57ef450d2b",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.error.handler;\\n\\nimport com.urcodebin.api.error.exception.*;\\nimport org.springframework.http.HttpHeaders;\\nimport org.springframework.http.HttpStatus;\\nimport org.springframework.http.ResponseEntity;\\nimport org.springframework.http.converter.HttpMessageNotReadableException;\\nimport org.springframework.web.bind.annotation.ControllerAdvice;\\nimport org.springframework.web.bind.annotation.ExceptionHandler;\\nimport org.springframework.web.context.request.WebRequest;\\nimport org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;\\n\\nimport java.time.LocalDateTime;\\n\\n@ControllerAdvice\\npublic class ResponseExceptionHandler extends ResponseEntityExceptionHandler {\\n\\n    @ExceptionHandler(value = { IllegalArgumentException.class, MissingRequiredSourceCodeException.class })\\n    public ResponseEntity<Object> handleIllegalArgument(final RuntimeException exception, final WebRequest request) {\\n        return baseExceptionHandler(exception, request, HttpStatus.BAD_REQUEST);\\n    }\\n\\n    @ExceptionHandler(value = { PasteNotFoundException.class, UserAccountNotFoundException.class })\\n    public ResponseEntity<Object> handleNotFound(final RuntimeException exception, final WebRequest request) {\\n        return baseExceptionHandler(exception, request, HttpStatus.NOT_FOUND);\\n    }\\n\\n    @ExceptionHandler(value = {AccountInformationTakenException.class })\\n    public ResponseEntity<Object> handleConflict(final RuntimeException exception, final WebRequest request) {\\n        return baseExceptionHandler(exception, request, HttpStatus.CONFLICT);\\n    }\\n\\n    @Override\\n    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,\\n                                                                  HttpHeaders headers, HttpStatus status, WebRequest request) {\\n        return baseExceptionHandler(ex, request, HttpStatus.BAD_REQUEST);\\n    }\\n\\n    private ResponseEntity<Object> baseExceptionHandler(final RuntimeException exception, final WebRequest request,\\n                                                        final HttpStatus status) {\\n        ErrorResponse errorBody = createErrorResponse(exception, status);\\n        return handleExceptionInternal(exception, errorBody, new HttpHeaders(),\\n                status, request);\\n    }\\n\\n    private ErrorResponse createErrorResponse(RuntimeException exception, HttpStatus status) {\\n        ErrorResponse errorResponse = new ErrorResponse();\\n        errorResponse.setTimestamp(LocalDateTime.now());\\n        errorResponse.setStatus(status.value());\\n        errorResponse.setError(status.getReasonPhrase());\\n        errorResponse.setMessage(exception.getMessage());\\n        return errorResponse;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_586b88eadfc9468aa997fd57ef450d2b"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1790d0d16d6841a9896e93cd77083b2f",
+            "function": {
+              "arguments": "{\"command\":\"find src/main/java/com/urcodebin/api/dto -name \\\"CodePasteDTO.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/urcodebin/api/dto/CodePasteDTO.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_1790d0d16d6841a9896e93cd77083b2f"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_74bb1d4f112648adb3dcbcb9e5593e2e",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/dto/CodePasteDTO.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.dto;\\n\\nimport com.fasterxml.jackson.annotation.JsonFormat;\\nimport com.fasterxml.jackson.annotation.JsonProperty;\\nimport com.fasterxml.jackson.databind.annotation.JsonSerialize;\\nimport com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;\\nimport com.urcodebin.api.enums.PasteSyntax;\\nimport com.urcodebin.api.enums.PasteVisibility;\\n\\nimport java.time.LocalDateTime;\\nimport java.util.UUID;\\n\\npublic class CodePasteDTO {\\n\\n    @JsonProperty(\"paste_id\")\\n    private UUID pasteId;\\n\\n    @JsonProperty(\"source_code\")\\n    private String sourceCode;\\n\\n    @JsonProperty(\"paste_title\")\\n    private String pasteTitle;\\n\\n    @JsonProperty(\"paste_syntax\")\\n    private PasteSyntax pasteSyntax;\\n\\n    @JsonProperty(\"paste_expiration_date\")\\n    @JsonFormat(pattern = \"yyyy-MM-dd HH:mm:ss\")\\n    @JsonSerialize(using = LocalDateTimeSerializer.class)\\n    private LocalDateTime pasteExpirationDate;\\n\\n    @JsonProperty(\"paste_visibility\")\\n    private PasteVisibility pasteVisibility;\\n\\n    public UUID getPasteId() {\\n        return UUID.fromString(pasteId.toString());\\n    }\\n\\n    public void setPasteId(UUID pasteId) {\\n        this.pasteId = UUID.fromString(pasteId.toString());\\n    }\\n\\n    public String getSourceCode() {\\n        return sourceCode;\\n    }\\n\\n    public void setSourceCode(String sourceCode) {\\n        this.sourceCode = sourceCode;\\n    }\\n\\n    public String getPasteTitle() {\\n        return pasteTitle;\\n    }\\n\\n    public void setPasteTitle(String pasteTitle) {\\n        this.pasteTitle = pasteTitle;\\n    }\\n\\n    public PasteSyntax getPasteSyntax() {\\n        return pasteSyntax;\\n    }\\n\\n    public void setPasteSyntax(PasteSyntax pasteSyntax) {\\n        this.pasteSyntax = pasteSyntax;\\n    }\\n\\n    public LocalDateTime getPasteExpirationDate() {\\n        return LocalDateTime.from(pasteExpirationDate);\\n    }\\n\\n    public void setPasteExpirationDate(LocalDateTime pasteExpirationDate) {\\n        this.pasteExpirationDate = LocalDateTime.from(pasteExpirationDate);\\n    }\\n\\n    public PasteVisibility getPasteVisibility() {\\n        return pasteVisibility;\\n    }\\n\\n    public void setPasteVisibility(PasteVisibility pasteVisibility) {\\n        this.pasteVisibility = pasteVisibility;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_74bb1d4f112648adb3dcbcb9e5593e2e"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1ef28d84d46b4453948060501b419a9a",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/error/handler/ErrorResponse.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.error.handler;\\n\\nimport com.fasterxml.jackson.annotation.JsonFormat;\\nimport com.fasterxml.jackson.databind.annotation.JsonSerialize;\\nimport com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;\\n\\nimport java.time.LocalDateTime;\\n\\npublic class ErrorResponse {\\n\\n    @JsonFormat(pattern = \"yyyy-MM-dd HH:mm:ss\")\\n    @JsonSerialize(using = LocalDateTimeSerializer.class)\\n    private LocalDateTime timestamp;\\n    private int status;\\n    private String error;\\n    private String message;\\n\\n    public ErrorResponse() {\\n        this.timestamp = LocalDateTime.now();\\n    }\\n\\n    public ErrorResponse(Exception e) {\\n        this.timestamp = LocalDateTime.now();\\n        this.message = e.getMessage();\\n    }\\n\\n    public LocalDateTime getTimestamp() {\\n        return timestamp;\\n    }\\n\\n    public void setTimestamp(LocalDateTime timestamp) {\\n        this.timestamp = timestamp;\\n    }\\n\\n    public int getStatus() {\\n        return status;\\n    }\\n\\n    public void setStatus(int status) {\\n        this.status = status;\\n    }\\n\\n    public String getError() {\\n        return error;\\n    }\\n\\n    public void setError(String error) {\\n        this.error = error;\\n    }\\n\\n    public String getMessage() {\\n        return message;\\n    }\\n\\n    public void setMessage(String message) {\\n        this.message = message;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_1ef28d84d46b4453948060501b419a9a"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_8b309fc445604180b222d3c85b706797",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/enums/PasteSyntax.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.enums;\\n\\npublic enum PasteSyntax {\\n    NONE (\"None\"),\\n    JAVA (\"Java\"),\\n    CSHARP (\"C#\"),\\n    Python (\"Python\"),\\n    JAVASCRIPT (\"JavaScript\"),\\n    GO (\"Go\"),\\n    CLANG (\"C\"),\\n    CPLUSPLUS (\"C++\"),\\n    PHP (\"PHP\"),\\n    SWIFT (\"Swift\"),\\n    LUA (\"Lua\"),\\n    RUBY (\"Ruby\"),\\n    MYSQL(\"MySQL\"),\\n    POSTGRESQL(\"PostgreSQL\");\\n\\n    private final String value;\\n    PasteSyntax(String value) {\\n        this.value = value;\\n    }\\n\\n    public String getStringValue() {\\n        return value;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_8b309fc445604180b222d3c85b706797"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-f7e3e2932d284175b00b3155f9da40b2",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767326591,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_7c94ace2bd334fd6889ed7485c890bae",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/enums/PasteVisibility.java\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3918,
+      "completion_tokens": 36,
+      "total_tokens": 3954
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766904982938,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/lin/model.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/lin/model.py`:\n\n```\nimport os\nfrom typing import Optional\n\nfrom flask import current_app\nfrom sqlalchemy import func\nfrom werkzeug.security import check_password_hash, generate_password_hash\n\nfrom . import manager\nfrom .db import db\nfrom .enums import GroupLevelEnum\nfrom .exception import NotFound, ParameterError, UnAuthentication\nfrom .interface import (\n    GroupInterface,\n    GroupPermissionInterface,\n    PermissionInterface,\n    UserGroupInterface,\n    UserIdentityInterface,\n    UserInterface,\n)\n\n\nclass Group(GroupInterface):\n    @classmethod\n    def count_by_id(cls, id: int) -> int:\n        result = db.session.query(func.count(cls.id)).filter(cls.id == id, cls.is_deleted == False)\n        count = result.scalar()\n        return count\n\n\nclass GroupPermission(GroupPermissionInterface):\n    pass\n\n\nclass Permission(PermissionInterface):\n    def __hash__(self) -> int:\n        return hash(self.name + self.module)\n\n    def __eq__(self, other: object) -> bool:\n        if not isinstance(other, Permission):\n            return NotImplemented\n        if self.name == other.name and self.module == other.module:\n            # 如果出现了复用同名权限，则要保证mount=True的权限生效\n            self.mount = self.mount or other.mount\n            return True\n        else:\n            return False\n\n\nclass User(UserInterface):\n    @property\n    def avatar(self) -> Optional[str]:\n        site_domain = current_app.config.get(\n            \"SITE_DOMAIN\",\n            \"http://{host}:{port}\".format(\n                host=current_app.config.get(\"FLASK_RUN_HOST\", \"127.0.0.1\"),\n                port=current_app.config.get(\"FLASK_RUN_PORT\", \"5000\"),\n            ),\n        )\n\n        if self._avatar is not None:\n            return site_domain + os.path.join(current_app.static_url_path or \"\", self._avatar)\n        return None\n\n    @classmethod\n    def count_by_id(cls, uid: int) -> int:\n        result = db.session.query(func.count(cls.id)).filter(cls.id == uid, cls.is_deleted == False)\n        count = result.scalar()\n        return count\n\n    @staticmethod\n    def count_by_id_and_group_name(user_id: int, group_name: str) -> int:\n        stmt = (\n            db.session.query(manager.group_model.id.label(\"group_id\")).filter_by(soft=True, name=group_name).subquery()\n        )\n        result = db.session.query(func.count(manager.user_group_model.id)).filter(\n            manager.user_group_model.user_id == user_id,\n            manager.user_group_model.group_id == stmt.c.group_id,\n        )\n        count = result.scalar()\n        return count\n\n    @property\n    def is_admin(self) -> bool:\n        return manager.user_group_model.get(user_id=self.id).group_id == GroupLevelEnum.ROOT.value\n\n    @property\n    def is_active(self) -> bool:\n        return True\n\n    @property\n    def password(self) -> str:\n        user_identity = manager.identity_model.get(user_id=self.id)\n        if user_identity:\n            return user_identity.credential\n        return \"\"  # 如果没有认证记录，返回空字符串\n\n    @password.setter\n    def password(self, raw: str) -> None:\n        # 验证密码输入\n        if not raw or len(raw.strip()) == 0:\n            raise ParameterError(\"密码不能为空\")\n        if len(raw) < 6:\n            raise ParameterError(\"密码长度不能少于6位\")\n\n        try:\n            # 查找用户的身份认证记录\n            user_identity = manager.identity_model.get(user_id=self.id)\n\n            if user_identity:\n                # 更新现有的认证记录\n                user_identity.credential = generate_password_hash(raw)\n                user_identity.update(synchronize_session=False)\n\n            else:\n                # 创建新的认证记录\n                user_identity = manager.identity_model()\n                user_identity.user_id = self.id\n                user_identity.identity_type = \"USERNAME_PASSWORD\"  # 默认类型，可根据需要调整\n                user_identity.identifier = self.username  # 使用用户的实际用户名\n                user_identity.credential = generate_password_hash(raw)\n                db.session.add(user_identity)\n                db.session.commit()\n        except Exception as e:\n            db.session.rollback()\n            raise ParameterError(f\"密码设置失败: {str(e)}\")\n\n    def check_password(self, raw: str) -> bool:\n        return check_password_hash(self.password, raw)\n\n    @classmethod\n    def verify(cls, username: str, password: str) -> \"User\":\n        user = cls.query.filter_by(username=username).first()\n        if user is None or user.is_deleted:\n            raise NotFound(\"用户不存在\")\n        if not user.check_password(password):\n            raise ParameterError(\"密码错误，请输入正确密码\")\n        if not user.is_active:\n            raise UnAuthentication(\"您目前处于未激活状态，请联系超级管理员\")\n        return user\n\n\nclass UserGroup(UserGroupInterface):\n    pass\n\n\nclass UserIdentity(UserIdentityInterface):\n    pass\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CrezKvJ1bOfOUQIfDIadgyBoueEAz",
+    "object": "chat.completion",
+    "created": 1766904978,
+    "model": "gpt-5-nano-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "[\n]\n\nExplanation:\nThere are no API entries in app/lin/model.py. This file defines ORM models and related business logic (Group, User, UserIdentity, etc.) but does not declare any Flask routes, blueprints, or REST API endpoints. Consequently, there is no path-to-handler mapping, no literal path strings to extract, and no RESTful API entries to enumerate from this file. API routes are likely defined elsewhere in the project (e.g., in controllers, views, or route definitions) or via dynamic routing not shown in this module.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1485,
+      "completion_tokens": 826,
+      "total_tokens": 2311,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 704,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

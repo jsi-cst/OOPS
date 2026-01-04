@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767099413688,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/upload` with method POST, and here is the relevant information I found:\n\n1. In `routes/uploadRoutes.js`, `anonymous` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n2. In `routes/uploadRoutes.js`, `uploadRoutes` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/uploadRoutes.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport multer from 'multer';\n\nconst router = express.Router();\n\nconst storage = multer.diskStorage({\n  destination(req, file, cb) {\n    cb(null, 'uploads/');\n  },\n  filename(req, file, cb) {\n    cb(\n      null,\n      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`\n    );\n  },\n});\n\nfunction fileFilter(req, file, cb) {\n  const filetypes = /jpe?g|png|webp/;\n  const mimetypes = /image\\/jpe?g|image\\/png|image\\/webp/;\n\n  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());\n  const mimetype = mimetypes.test(file.mimetype);\n\n  if (extname && mimetype) {\n    cb(null, true);\n  } else {\n    cb(new Error('Images only!'), false);\n  }\n}\n\nconst upload = multer({ storage, fileFilter });\nconst uploadSingleImage = upload.single('image');\n\nrouter.post('/', (req, res) => {\n  uploadSingleImage(req, res, function (err) {\n    if (err) {\n      return res.status(400).send({ message: err.message });\n    }\n\n    res.status(200).send({\n      message: 'Image uploaded successfully',\n      image: `/${req.file.path}`,\n    });\n  });\n});\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\nI inspected the provided Express route implementation in routes/uploadRoutes.js. The POST /api/upload endpoint uses multer to accept a single uploaded file under the form field name \"image\". The upload middleware accepts only files with extensions and MIME types for jpeg/jpg, png, and webp; on success it responds with HTTP 200 and a JSON object containing message and image (the image path prefixed with \"/\"). On error (e.g., wrong file type) multer calls back with an error and the handler returns HTTP 400 with a JSON object containing a message. There is no authentication, no query/path parameters, and the request body is multipart/form-data with a required \"image\" file field.\n\nBased on that, the OpenAPI 3.1 Operation Object for POST /api/upload includes:\n- requestBody: required true, content type multipart/form-data, schema requiring an \"image\" property of type string with format \"binary\" and a description of allowed mime/types.\n- responses:\n  - 200: application/json with schema { message: string, image: string }.\n  - 400: application/json with schema { message: string }.\n\nthe final generated result begins\n{\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"multipart/form-data\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"image\": {\n              \"type\": \"string\",\n              \"format\": \"binary\",\n              \"description\": \"Image file to upload. Allowed types: jpeg, jpg, png, webp.\"\n            }\n          },\n          \"required\": [\n            \"image\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Image uploaded successfully\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\",\n                \"example\": \"Image uploaded successfully\"\n              },\n              \"image\": {\n                \"type\": \"string\",\n                \"example\": \"/uploads/image-163434234234.jpg\"\n              }\n            },\n            \"required\": [\n              \"message\",\n              \"image\"\n            ]\n          }\n        }\n      }\n    },\n    \"400\": {\n      \"description\": \"Bad Request - invalid file or upload error\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\",\n                \"example\": \"Images only!\"\n              }\n            },\n            \"required\": [\n              \"message\"\n            ]\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767099394,
+    "id": "chatcmpl-CsTZ4SaZlMvpiJ0Y9pXHKh4tJsGoh",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1789,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1216,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 703,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2492
+    }
+  }
+}

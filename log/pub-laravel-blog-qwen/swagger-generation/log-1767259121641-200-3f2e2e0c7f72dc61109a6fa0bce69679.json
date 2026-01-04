@@ -1,0 +1,178 @@
+{
+  "timestamp": 1767259121641,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments/{comment}` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::destroy` is implemented to process HTTP requests to `/comments/{comment}` with HTTP method DELETE.\n\n2. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::destroy` is implemented to process HTTP requests to `/comments/{comment}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the DELETE endpoint for `/comments/{comment}` to generate the appropriate OpenAPI response specification. Let me examine the controller method and look for any additional information that might help me understand the expected responses.\n\nFrom the provided code, I can see that the `destroy` method:\n1. Authorizes the delete action using `authorize('delete', $comment)`\n2. Deletes the comment\n3. Returns a `MultiplePendingTurboStreamResponse` which contains turbo stream responses\n\nLet me look for any authorization policies or additional information about the expected behavior.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_217c5dd4d9134c47b8e58d07",
+            "function": {
+              "arguments": "{\"command\": \"find app -name \\\"*.php\\\" -exec grep -l \\\"delete.*comment\\\\|comment.*delete\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'app/Policies/CommentPolicy.php\\napp/Http/Controllers/Admin/CommentController.php\\napp/Http/Controllers/Api/V1/CommentController.php\\napp/Http/Controllers/CommentController.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_217c5dd4d9134c47b8e58d07"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the CommentPolicy to understand the authorization requirements:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_53353ec96db4475094f5cfd8",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Policies/CommentPolicy.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Policies;\\n\\nuse App\\\\Models\\\\Comment;\\nuse App\\\\Models\\\\User;\\nuse Illuminate\\\\Auth\\\\Access\\\\HandlesAuthorization;\\n\\nclass CommentPolicy\\n{\\n    use HandlesAuthorization;\\n\\n    /**\\n     * Determine whether the user is admin for all authorization.\\n     */\\n    public function before(User $user)\\n    {\\n        if ($user->isAdmin()) {\\n            return true;\\n        }\\n    }\\n\\n    /**\\n     * Determine whether the user can delete the comment.\\n     */\\n    public function delete(User $user, Comment $comment): bool\\n    {\\n        return $user->id === $comment->author_id;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_53353ec96db4475094f5cfd8"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check if there are any validation rules or request files that might give more insight into the expected behavior:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c9dff133c555494783b8511f",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Http/Requests/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required',\\n            'post_id' => 'required|exists:posts,id'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_c9dff133c555494783b8511f"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the Comment model to understand its structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_e025dd2a93f14dc9b7fe5b8a",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_e025dd2a93f14dc9b7fe5b8a"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check if there are any route definitions that might provide additional context:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c9f6d64b3a594b34b4242e79",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"comments\\\" routes/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/admin.php:Route::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\\nroutes/web.php:Route::resource('posts.comments', PostCommentController::class)->only('index');\\nroutes/auth.php:    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\\nroutes/api.php:        Route::apiResource('comments', CommentController::class)->only('destroy');\\nroutes/api.php:        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\\nroutes/api.php:    Route::apiResource('posts.comments', PostCommentController::class)->only('index');\\nroutes/api.php:    Route::apiResource('users.comments', UserCommentController::class)->only('index');\\nroutes/api.php:    Route::apiResource('comments', CommentController::class)->only(['index', 'show']);\\n\", 'stderr': ''}",
+        "tool_call_id": "call_c9f6d64b3a594b34b4242e79"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-02725740-9601-9f25-b894-d7f5393a0cb5",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me check the specific route file that contains the DELETE endpoint for `/comments/{comment}`:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_7e1e54fca4424344904b67e8",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"grep -A 5 -B 5 \\\"Route::resource.*CommentController\\\" routes/auth.php\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259112,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 2385,
+      "completion_tokens": 60,
+      "prompt_tokens": 2325,
+      "prompt_tokens_details": {
+        "cached_tokens": 1920
+      }
+    }
+  }
+}

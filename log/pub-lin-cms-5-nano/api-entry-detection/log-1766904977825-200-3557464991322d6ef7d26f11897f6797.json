@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766904977825,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/extension/notify/notify.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/extension/notify/notify.py`:\n\n```\n\"\"\"\nnotify of Lin\n~~~~~~~~~\n\nnotify 扩展，消息推送\n\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nimport re\nfrom datetime import datetime\nfrom functools import wraps\n\nfrom flask import Response, request\nfrom flask_jwt_extended import get_current_user\n\nfrom .sse import sser\n\nREG_XP = r\"[{](.*?)[}]\"\nOBJECTS = [\"user\", \"response\", \"request\"]\nSUCCESS_STATUS = [200, 201]\nMESSAGE_EVENTS = set()\n\n\nclass Notify(object):\n    def __init__(self, template=None, event=None, **kwargs):\n        \"\"\"\n        Notify a message or create a log\n        :param template:  message template\n        {user.username}查看自己是否为激活状态 ，状态码为{response.status_code} -> pedro查看自己是否为激活状态 ，状态码为200\n        :param write: write to db or not\n        :param push: push to front_end or not\n        \"\"\"\n        if event:\n            self.event = event\n        elif self.event is None:\n            raise Exception(\"event must not be None!\")\n        if template:\n            self.template: str = template\n        elif self.template is None:\n            raise Exception(\"template must not be None!\")\n        # 加入所有types中\n        MESSAGE_EVENTS.add(event)\n        self.message = \"\"\n        self.response = None\n        self.user = None\n        self.extra = kwargs\n\n    def __call__(self, func):\n        @wraps(func)\n        def wrap(*args, **kwargs):\n            response: Response = func(*args, **kwargs)\n            self.response = response\n            self.user = get_current_user()\n            self.message = self._parse_template()\n            self.push_message()\n            return response\n\n        return wrap\n\n    def push_message(self):\n        # status = '操作成功' if self.response.status_code in SUCCESS_STATUS else '操作失败'\n        sser.add_message(\n            self.event,\n            {\n                \"message\": self.message,\n                \"time\": int(datetime.now().timestamp()),\n                **self.extra,\n            },\n        )\n\n    # 解析自定义消息的模板\n    def _parse_template(self):\n        message = self.template\n        total = re.findall(REG_XP, message)\n        for it in total:\n            assert \".\" in it, \"%s中必须包含 . ,且为一个\" % it\n            i = it.rindex(\".\")\n            obj = it[:i]\n            assert obj in OBJECTS, \"%s只能为user,response,request中的一个\" % obj\n            prop = it[i + 1 :]\n            if obj == \"user\":\n                item = getattr(self.user, prop, \"\")\n            elif obj == \"response\":\n                item = getattr(self.response, prop, \"\")\n            else:\n                item = getattr(request, prop, \"\")\n            message = message.replace(\"{%s}\" % it, str(item))\n        return message\n\n    def _check_can_push(self):\n        # 超级管理员不可push，暂时测试可push\n        if self.user.is_admin:\n            return False\n        return True\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n]\nExplanation:\nThis file defines a Notify class designed to be used as a decorator to wrap Flask view functions (i.e., to push messages when a route is handled). However, there are no actual Flask route declarations, blueprints, or path strings defined in this file itself. Therefore, there are no API entries (no explicit paths mapped to handlers) to extract from literal strings in this source file. Any API endpoints using this decorator would be declared elsewhere in the codebase.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766904973,
+    "id": "chatcmpl-CrezFAL9CRjaKlIkcExB3BWB4PdXU",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 811,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 704,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1115,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1926
+    }
+  }
+}

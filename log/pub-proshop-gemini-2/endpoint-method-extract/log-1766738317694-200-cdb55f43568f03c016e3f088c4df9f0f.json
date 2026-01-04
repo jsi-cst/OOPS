@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766738317694,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `routes/userRoutes.js`, I found that `userRoutes` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```\n\nContents of file `routes/userRoutes.js`:\n\n```\nimport express from 'express';\nimport {\n  authUser,\n  registerUser,\n  logoutUser,\n  getUserProfile,\n  updateUserProfile,\n  getUsers,\n  deleteUser,\n  getUserById,\n  updateUser,\n} from '../controllers/userController.js';\nimport { protect, admin } from '../middleware/authMiddleware.js';\n\nconst router = express.Router();\n\nrouter.route('/').post(registerUser).get(protect, admin, getUsers);\nrouter.post('/auth', authUser);\nrouter.post('/logout', logoutUser);\nrouter\n  .route('/profile')\n  .get(protect, getUserProfile)\n  .put(protect, updateUserProfile);\nrouter\n  .route('/:id')\n  .delete(protect, admin, deleteUser)\n  .get(protect, admin, getUserById)\n  .put(protect, admin, updateUser);\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251226163704519904798B8cCjbyL",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766738230,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Here's the analysis of the `userRoutes.js` based on the provided code and the context from `server.js`:\n\n*   **`/api/users`**:\n    *   **Full Path:** `/api/users`\n    *   **All HTTP Methods:** False\n    *   **HEAD:** False\n    *   **POST:** True (registerUser)\n    *   **OPTIONS:** False\n    *   **TRACE:** False\n    *   **GET:** True (getUsers, protected and admin)\n    *   **PUT:** False\n    *   **DELETE:** False\n    *   **PATCH:** False\n*   **`/api/users/auth`**:\n    *   **Full Path:** `/api/users/auth`\n    *   **All HTTP Methods:** False\n    *   **HEAD:** False\n    *   **POST:** True (authUser)\n    *   **OPTIONS:** False\n    *   **TRACE:** False\n    *   **GET:** False\n    *   **PUT:** False\n    *   **DELETE:** False\n    *   **PATCH:** False\n*   **`/api/users/logout`**:\n    *   **Full Path:** `/api/users/logout`\n    *   **All HTTP Methods:** False\n    *   **HEAD:** False\n    *   **POST:** True (logoutUser)\n    *   **OPTIONS:** False\n    *   **TRACE:** False\n    *   **GET:** False\n    *   **PUT:** False\n    *   **DELETE:** False\n    *   **PATCH:** False\n*   **`/api/users/profile`**:\n    *   **Full Path:** `/api/users/profile`\n    *   **All HTTP Methods:** False\n    *   **HEAD:** False\n    *   **POST:** False\n    *   **OPTIONS:** False\n    *   **TRACE:** False\n    *   **GET:** True (getUserProfile, protected)\n    *   **PUT:** True (updateUserProfile, protected)\n    *   **DELETE:** False\n    *   **PATCH:** False\n*   **`/api/users/{id}`**:\n    *   **Full Path:** `/api/users/{id}`\n    *   **All HTTP Methods:** False\n    *   **HEAD:** False\n    *   **POST:** False\n    *   **OPTIONS:** False\n    *   **TRACE:** False\n    *   **GET:** True (getUserById, protected and admin)\n    *   **PUT:** True (updateUser, protected and admin)\n    *   **DELETE:** True (deleteUser, protected and admin)\n    *   **PATCH:** False\n\n**Explanation:**\n\nThe `server.js` file sets up the base path `/api/users` for the `userRoutes`. The `userRoutes.js` file then defines the specific endpoints and their corresponding HTTP methods.\n\n*   The root path `/` of `userRoutes` is handled by `router.route('/').post(registerUser).get(protect, admin, getUsers);`. This means that the `/api/users` path accepts both POST (for registering a user) and GET (for getting all users, requiring protection and admin privileges) requests.\n*   The `/auth` path handles POST requests for user authentication.\n*   The `/logout` path handles POST requests for user logout.\n*   The `/profile` path handles GET requests for retrieving the user profile and PUT requests for updating the user profile, both requiring user authentication.\n*   The `/:id` path (with a parameter `id`) handles DELETE requests for deleting a user, GET requests for getting a user by ID, and PUT requests for updating a user, all requiring protection and admin privileges.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1027,
+      "completion_tokens": 809,
+      "total_tokens": 1836,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1027,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

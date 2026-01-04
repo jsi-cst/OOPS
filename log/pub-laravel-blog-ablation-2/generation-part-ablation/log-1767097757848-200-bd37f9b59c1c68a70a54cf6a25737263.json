@@ -1,0 +1,97 @@
+{
+  "timestamp": 1767097757848,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::store` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_RUoUVqWWF7Kfck0mLvR7vMyN",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Requests/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required',\\n            'post_id' => 'required|exists:posts,id'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_RUoUVqWWF7Kfck0mLvR7vMyN"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation of results\n\n- I inspected app/Http/Controllers/CommentController.php and found that POST /comments is handled by CommentController::store.\n- The store method uses Auth::user()->comments()->create($request->validated()), which indicates the endpoint requires an authenticated user (it expects a logged-in user).\n- The request is typed as CommentsRequest, so I opened app/Http/Requests/CommentsRequest.php to determine validation rules. The rules are:\n  - content: required\n  - post_id: required and must exist in posts.id\n  This implies the request body must include content (string) and post_id (integer).\n- The controller returns a MultiplePendingTurboStreamResponse composed of multiple turbo-stream actions (prepend a new comment into 'comments', replace 'comments_form', and update 'comments_count'). Turbo Stream responses are emitted as HTML with media type text/vnd.turbo-stream.html (typical for Hotwire Turbo Streams).\n- Based on typical Laravel behavior, I included common error responses:\n  - 401 Unauthorized when the request is not authenticated (because the controller calls Auth::user()).\n  - 422 Unprocessable Entity for validation errors (standard Laravel validation response). These carry an errors object mapping field names to an array of messages.\n- The request body content types accepted are application/json and application/x-www-form-urlencoded (forms), both following the same schema inferred from validation.\n- The Operation object below includes only fields relevant to the POST /comments operation: summary, operationId, tags, requestBody, responses, and security (indicating the endpoint requires an authenticated user). The 200 response uses text/vnd.turbo-stream.html with an HTML/string schema to represent the turbo stream payload.\n\nthe final generated result begins\n{\n  \"summary\": \"Store a newly created comment\",\n  \"operationId\": \"storeComment\",\n  \"tags\": [\n    \"comments\"\n  ],\n  \"security\": [\n    {\n      \"bearerAuth\": []\n    }\n  ],\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"application/json\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"content\": {\n              \"type\": \"string\"\n            },\n            \"post_id\": {\n              \"type\": \"integer\"\n            }\n          },\n          \"required\": [\n            \"content\",\n            \"post_id\"\n          ]\n        }\n      },\n      \"application/x-www-form-urlencoded\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"content\": {\n              \"type\": \"string\"\n            },\n            \"post_id\": {\n              \"type\": \"integer\"\n            }\n          },\n          \"required\": [\n            \"content\",\n            \"post_id\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Turbo Stream response containing multiple turbo-stream actions (prepend new comment, replace the comments form, update comments count).\",\n      \"content\": {\n        \"text/vnd.turbo-stream.html\": {\n          \"schema\": {\n            \"type\": \"string\",\n            \"format\": \"html\"\n          }\n        }\n      }\n    },\n    \"401\": {\n      \"description\": \"Unauthorized - authentication required\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\"\n              }\n            }\n          }\n        }\n      }\n    },\n    \"422\": {\n      \"description\": \"Validation Error\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\"\n              },\n              \"errors\": {\n                \"type\": \"object\",\n                \"additionalProperties\": {\n                  \"type\": \"array\",\n                  \"items\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097739,
+    "id": "chatcmpl-CsT8NKe4xRq8ehzXFKBJzgKmRXkF3",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1930,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1088,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 914,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2844
+    }
+  }
+}

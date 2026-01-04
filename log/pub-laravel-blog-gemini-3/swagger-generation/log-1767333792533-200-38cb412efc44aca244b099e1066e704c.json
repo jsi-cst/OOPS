@@ -1,0 +1,118 @@
+{
+  "timestamp": 1767333792533,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\n2. In `app/Http/Requests/Api/CommentsRequest.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Events\\CommentPosted;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Api\\CommentsRequest;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Return the post's comments.\n     */\n    public function index(Request $request, Post $post): ResourceCollection\n    {\n        return CommentResource::collection(\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request, Post $post): CommentResource\n    {\n        $comment = new CommentResource(\n            Auth::user()->comments()->create([\n                'post_id' => $post->id,\n                'content' => $request->input('content')\n            ])\n        );\n\n        broadcast(new CommentPosted($comment, $post))->toOthers();\n\n        return $comment;\n    }\n}\n```\n\nContents of file `app/Http/Requests/Api/CommentsRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests\\Api;\n\nuse Illuminate\\Foundation\\Http\\FormRequest;\n\nclass CommentsRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'content' => 'required'\n        ];\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_002579b9e9004603bc3332fe77f5a031",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_002579b9e9004603bc3332fe77f5a031"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_f04bd8a9c39b42e283c913b6c391233b",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_f04bd8a9c39b42e283c913b6c391233b"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-7e5dbadbd8a34058a220159c6a65d0f0",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333792,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_7523b77a74dc4fdbb71541210ec21053",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"cat app/Providers/AppServiceProvider.php\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1685,
+      "completion_tokens": 570,
+      "total_tokens": 2255,
+      "completion_tokens_details": {
+        "reasoning_tokens": 546
+      }
+    }
+  }
+}

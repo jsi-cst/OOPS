@@ -1,0 +1,131 @@
+{
+  "timestamp": 1766914871747,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "Here is what I can determine from the given files about the PostController routes and their accepted HTTP methods.\n\n1) Full HTTP request paths (with correct prefix and path parameters)\n\n- Base assumption: the admin routes are loaded with an admin prefix. Therefore paths start with /admin.\n\n- Resource routes for posts (handled by PostController):\n  - GET /admin/posts → index\n  - GET /admin/posts/create → create\n  - POST /admin/posts → store\n  - GET /admin/posts/{post} → show (not implemented in the controller)\n  - GET /admin/posts/{post}/edit → edit\n  - PUT/PATCH /admin/posts/{post} → update\n  - DELETE /admin/posts/{post} → destroy\n\n- Additional route related to PostController (thumbnail deletion):\n  - DELETE /admin/posts/{post}/thumbnail → posts_thumbnail.destroy (handled by PostThumbnailController::destroy)\n\nNotes:\n- The show method is not implemented in PostController, so the GET /admin/posts/{post} endpoint would not work correctly at runtime (it would either 500 or 405 depending on framework behavior). All other resource routes map to methods that are implemented in the controller.\n\n2) Are all HTTP methods acceptable?\n- No. Because the resource controller does not implement the show method, not all RESTful HTTP methods are fully supported by PostController. So “All HTTP methods acceptable” = false.\n\n3) HEAD method\n- In Laravel (and most frameworks), HEAD requests are typically served for routes that also have a GET handler. PostController implements GET for index (/admin/posts) and other GET endpoints like /admin/posts/create and /admin/posts/{post}/edit, but it does not implement GET for /admin/posts/{post} (show). Given that:\n  - HEAD would be acceptable for endpoints that have a corresponding GET method implemented (e.g., /admin/posts, /admin/posts/create, /admin/posts/{post}/edit).\n  - HEAD would not be reliably acceptable for /admin/posts/{post} because its GET handler (show) is not implemented.\n- Overall answer: HEAD is acceptable in general for the existing GET-enabled endpoints, but not for the missing show endpoint. If you must give a single boolean for the controller as a whole, you could mark HEAD as true for the controller’s capabilities on the implemented routes, with the caveat above.\n\n4) POST method\n- POST /admin/posts (store) is implemented via PostController::store. Therefore, POST is acceptable. Yes.\n\n5) OPTIONS method\n- The code does not implement an explicit OPTIONS handler. Laravel (and most HTTP servers) will respond to OPTIONS for defined routes, but since there is no explicit OPTIONS method in the controller, and you asked to base on the code, you should treat OPTIONS as not explicitly implemented here. So, OPTIONS = false.\n\n6) TRACE method\n- Not implemented anywhere in the code. TRACE = false.\n\n7) GET method\n- GET is implemented for the endpoints that have a GET method in the resource:\n  - GET /admin/posts (index) is implemented.\n  - GET /admin/posts/create (create) is implemented.\n  - GET /admin/posts/{post}/edit (edit) is implemented.\n  - GET /admin/posts/{post} (show) is not implemented.\n- If you’re asking for a single global yes/no: GET is partially acceptable (only for the endpoints that have actual methods). For the controller as a whole, the answer would be true for the implemented GET handlers, but false for the missing show GET. I’ll state: GET is acceptable for the implemented routes (index, create, edit); not acceptable for the show route (which is missing).\n\n8) PUT method\n- PUT /admin/posts/{post} maps to update, and update is implemented. So PUT is acceptable. Yes.\n\n9) DELETE method\n- DELETE /admin/posts/{post} maps to destroy, and destroy is implemented. So DELETE is acceptable. Yes.\n\n10) PATCH method\n- PATCH /admin/posts/{post} also maps to update, and update is implemented. So PATCH is acceptable. Yes.\n\nExplanation summary\n- The PostController implements the main RESTful methods for a resource: index, create, store, edit, update, and destroy. It does not implement show. Therefore the standard resource routes exist under /admin/posts, with the above HTTP methods. The missing show method means not all HTTP methods are fully supported; HEAD is generally usable for the GET-enabled routes, POST/PUT/PATCH/DELETE are supported, OPTIONS/TRACE are not explicitly handled in the code. A separate route for deleting a post thumbnail also exists at /admin/posts/{post}/thumbnail with DELETE.\n\nIf you want a concise mapping:\n\n- Endpoints and methods that work (based on implemented methods):\n  - GET /admin/posts\n  - GET /admin/posts/create\n  - POST /admin/posts\n  - GET /admin/posts/{post}/edit\n  - PUT/PATCH /admin/posts/{post}\n  - DELETE /admin/posts/{post}\n  - DELETE /admin/posts/{post}/thumbnail\n\n- Endpoint that does not have a working GET method implemented:\n  - GET /admin/posts/{post} (show)\n\n- All-methods-acceptable: false\n- HEAD: acceptable for GET-enabled endpoints; not reliable for /admin/posts/{post} (show)\n- POST: acceptable\n- OPTIONS: not explicitly implemented in code\n- TRACE: not implemented\n- GET: acceptable for implemented GET routes (index, create, edit)\n- PUT: acceptable\n- DELETE: acceptable\n- PATCH: acceptable\n\nThis should help you generate the appropriate OpenAPI paths and method declarations for the backend sidebar that uses the PostController."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "EndpointMethodExtractResult",
+        "schema": {
+          "properties": {
+            "path": {
+              "description": "The full HTTP request path for the endpoint.",
+              "title": "Path",
+              "type": "string"
+            },
+            "arbitrary": {
+              "description": "Whether all HTTP methods are acceptable.",
+              "title": "Arbitrary",
+              "type": "boolean"
+            },
+            "head": {
+              "description": "Whether the HEAD method is acceptable.",
+              "title": "Head",
+              "type": "boolean"
+            },
+            "post": {
+              "description": "Whether the POST method is acceptable.",
+              "title": "Post",
+              "type": "boolean"
+            },
+            "options": {
+              "description": "Whether the OPTIONS method is acceptable.",
+              "title": "Options",
+              "type": "boolean"
+            },
+            "trace": {
+              "description": "Whether the TRACE method is acceptable.",
+              "title": "Trace",
+              "type": "boolean"
+            },
+            "get": {
+              "description": "Whether the GET method is acceptable.",
+              "title": "Get",
+              "type": "boolean"
+            },
+            "put": {
+              "description": "Whether the PUT method is acceptable.",
+              "title": "Put",
+              "type": "boolean"
+            },
+            "delete": {
+              "description": "Whether the DELETE method is acceptable.",
+              "title": "Delete",
+              "type": "boolean"
+            },
+            "patch": {
+              "description": "Whether the PATCH method is acceptable.",
+              "title": "Patch",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "arbitrary",
+            "head",
+            "post",
+            "options",
+            "trace",
+            "get",
+            "put",
+            "delete",
+            "patch"
+          ],
+          "title": "EndpointMethodExtractResult",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"arbitrary\":false,\"delete\":false,\"get\":true,\"head\":true,\"options\":false,\"patch\":false,\"path\":\"/admin/posts\",\"post\":true,\"put\":false,\"trace\":false}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766914857,
+    "id": "chatcmpl-CrhYfrCXFkJa8yNFKSYqZxgE9Gub8",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1916,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1856,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1429,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3345
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "timestamp": 1766912251132,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@index` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Events\\CommentPosted;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Api\\CommentsRequest;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Return the post's comments.\n     */\n    public function index(Request $request, Post $post): ResourceCollection\n    {\n        return CommentResource::collection(\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request, Post $post): CommentResource\n    {\n        $comment = new CommentResource(\n            Auth::user()->comments()->create([\n                'post_id' => $post->id,\n                'content' => $request->input('content')\n            ])\n        );\n\n        broadcast(new CommentPosted($comment, $post))->toOthers();\n\n        return $comment;\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_MKUUlutk9E1GP9bQEt0m9PPB",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Requests/Api/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Api;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_MKUUlutk9E1GP9bQEt0m9PPB"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_g4czW3ndoBykmVzSTo5dpnK8",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_g4czW3ndoBykmVzSTo5dpnK8"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_eLJBBhPqAJ5plwc0OjC1jQUg",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_eLJBBhPqAJ5plwc0OjC1jQUg"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_AoYh3Zdd849nc5SmsHfcTXoq",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Controllers/Api/V1/PostCommentController.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Controllers\\\\Api\\\\V1;\\n\\nuse App\\\\Events\\\\CommentPosted;\\nuse App\\\\Http\\\\Controllers\\\\Controller;\\nuse App\\\\Http\\\\Requests\\\\Api\\\\CommentsRequest;\\nuse App\\\\Http\\\\Resources\\\\Comment as CommentResource;\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Http\\\\Request;\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass PostCommentController extends Controller\\n{\\n    /**\\n     * Return the post's comments.\\n     */\\n    public function index(Request $request, Post $post): ResourceCollection\\n    {\\n        return CommentResource::collection(\\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\\n        );\\n    }\\n\\n    /**\\n     * Store a newly created resource in storage.\\n     */\\n    public function store(CommentsRequest $request, Post $post): CommentResource\\n    {\\n        $comment = new CommentResource(\\n            Auth::user()->comments()->create([\\n                'post_id' => $post->id,\\n                'content' => $request->input('content')\\n            ])\\n        );\\n\\n        broadcast(new CommentPosted($comment, $post))->toOthers();\\n\\n        return $comment;\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_AoYh3Zdd849nc5SmsHfcTXoq"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_hI3F5a8SaBqdEKk8ZIp5ZsHj",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_hI3F5a8SaBqdEKk8ZIp5ZsHj"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CrgsJZZmn4iWkyXHxanEHkDyYySu0",
+    "object": "chat.completion",
+    "created": 1766912231,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation and reasoning\n\n- Controller and route discovery:\n  - The POST handler for /v1/posts/{post}/comments is implemented by App\\Http\\Controllers\\Api\\V1\\PostCommentController::store (file provided).\n  - The route registration (routes/api.php) places the posts.comments store route inside a group with middleware auth:sanctum and verified, so the endpoint requires authentication for the POST action.\n- Request validation:\n  - The store action type-hints CommentsRequest. The request rules (app/Http/Requests/Api/CommentsRequest.php) require the content field ('content' => 'required'), so a missing/invalid content will trigger Laravel's validation error response (422).\n- Behavior and returned resource:\n  - store() creates a comment via Auth::user()->comments()->create([...]) and returns a CommentResource (app/Http/Resources/Comment.php).\n  - The Comment Resource serializes the created comment into the following JSON structure (fields and inferred types taken from the resource implementation):\n    - id: integer\n    - content: string\n    - posted_at: string (ISO 8601) — resource uses toIso8601String()\n    - humanized_posted_at: string\n    - author_id: integer\n    - post_id: integer\n    - author_name: string\n    - author_url: string (URL returned by route('users.show', ...))\n    - can_delete: boolean\n  - Note: the controller returns a JsonResource instance without explicitly setting an HTTP status code. In Laravel, returning a Resource defaults to HTTP 200 OK unless changed. Therefore the successful response is represented as HTTP 200.\n- Other possible responses:\n  - 401 Unauthorized: the auth:sanctum middleware will return a 401 JSON response when the request is unauthenticated.\n  - 422 Unprocessable Entity: produced by the FormRequest validation when 'content' is missing or invalid. Typical Laravel JSON validation error format is an object with \"message\" and \"errors\" where \"errors\" maps field names to an array of messages.\n  - 404 Not Found: route model binding will return a 404 when the Post model is not found for the given {post} path parameter.\n- Output requirement:\n  - The output below is exactly the value that would be placed under paths[\"/v1/posts/{post}/comments\"].post.responses in a Swagger 2.0 document: a dictionary keyed by status codes with Response Objects. It contains no $ref references and uses concrete schemas built from the resource and Laravel default error shapes.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"Successful creation and return of the Comment resource (JSON representation generated by CommentResource). Note: controller returns a JsonResource instance (defaults to HTTP 200).\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"id\": {\n          \"type\": \"integer\",\n          \"format\": \"int64\"\n        },\n        \"content\": {\n          \"type\": \"string\"\n        },\n        \"posted_at\": {\n          \"type\": \"string\",\n          \"format\": \"date-time\",\n          \"description\": \"ISO 8601 formatted datetime\"\n        },\n        \"humanized_posted_at\": {\n          \"type\": \"string\",\n          \"description\": \"Human friendly representation of posted_at\"\n        },\n        \"author_id\": {\n          \"type\": \"integer\",\n          \"format\": \"int64\"\n        },\n        \"post_id\": {\n          \"type\": \"integer\",\n          \"format\": \"int64\"\n        },\n        \"author_name\": {\n          \"type\": \"string\"\n        },\n        \"author_url\": {\n          \"type\": \"string\",\n          \"format\": \"uri\"\n        },\n        \"can_delete\": {\n          \"type\": \"boolean\"\n        }\n      }\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthenticated. The endpoint is protected by auth:sanctum middleware.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Unauthenticated.\"\n        }\n      }\n    }\n  },\n  \"422\": {\n    \"description\": \"Validation error. Returned when the request fails the CommentsRequest validation (e.g. missing 'content').\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"The given data was invalid.\"\n        },\n        \"errors\": {\n          \"type\": \"object\",\n          \"additionalProperties\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          },\n          \"description\": \"An object mapping field names to an array of validation error messages.\"\n        }\n      }\n    }\n  },\n  \"404\": {\n    \"description\": \"Not Found. Returned when the Post resource identified by the {post} path parameter does not exist.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"No query results for model [App\\\\\\\\Models\\\\\\\\Post] 123\"\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2818,
+      "completion_tokens": 2449,
+      "total_tokens": 5267,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1344,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

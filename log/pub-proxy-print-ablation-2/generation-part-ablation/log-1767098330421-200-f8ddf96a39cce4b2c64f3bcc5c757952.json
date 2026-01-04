@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767098330421,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/paypal/ipn/consumer/{consumerID}` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java`, `io.github.proxyprint.kitchen.controllers.consumer.PayPalController.consumerLoadUpConfirmation` is implemented to process HTTP requests to `/paypal/ipn/consumer/{consumerID}` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.consumer;\n\nimport com.google.gson.Gson;\nimport com.paypal.core.LoggingManager;\nimport com.paypal.ipn.IPNMessage;\nimport io.github.proxyprint.kitchen.Configuration;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.PrintRequest;\nimport io.github.proxyprint.kitchen.models.notifications.Notification;\nimport io.github.proxyprint.kitchen.models.repositories.*;\nimport io.github.proxyprint.kitchen.utils.NotificationManager;\nimport io.github.proxyprint.kitchen.utils.PayPalWrapper;\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport javax.servlet.ServletException;\nimport javax.servlet.http.HttpServletRequest;\nimport javax.servlet.http.HttpServletResponse;\nimport java.io.IOException;\nimport java.util.Map;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 20-05-2016.\n */\n@RestController \n@Transactional\npublic class PayPalController {\n    @Autowired\n    private UserDAO users;\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private EmployeeDAO employees;\n    @Autowired\n    private PrintRequestDAO printRequests;\n    @Autowired\n    private PrintShopDAO printShops;\n    @Autowired\n    private ManagerDAO managers;\n    @Autowired\n    private Gson GSON;\n    @Autowired\n    private NotificationManager notificationManager;\n\n    @ApiOperation(value = \"Returns nothing\", notes = \"This method implements the payment check mechanism given by PayPal. This method acts as callback, it reacts to the change of status of a transaction to Completed (eCheck - complete).\")\n    @RequestMapping(value = \"/paypal/ipn/{printRequestID}\", method = RequestMethod.POST)\n    protected void someRequestPaymentConfirmationFromPaylPal(@PathVariable(value = \"printRequestID\") long prid, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {\n        Map<String,String> configurationMap =  Configuration.getConfig();\n        IPNMessage ipnlistener = new IPNMessage(request,configurationMap);\n        boolean isIpnVerified = ipnlistener.validate();\n        String transactionType = ipnlistener.getTransactionType();\n        Map<String,String> map = ipnlistener.getIpnMap();\n\n        // Parse content of interest from the IPN notification JSON Body -- :D\n        String payerEmail = map.get(\"payer_email\");\n        Double quantity = Double.valueOf(map.get(\"mc_gross\"));\n        String paymentStatus = map.get(\"payment_status\");\n        String transactionID = map.get(\"txn_id\");\n\n\n        if(payerEmail!=null && quantity!=null && paymentStatus!=null) {\n            PrintRequest pr = printRequests.findOne(prid);\n\n            if (pr != null) {\n                LoggingManager.info(this.getClass(), \"******* IPN (name:value) pair : \" + map + \"  \" +\n                        \"######### TransactionType : \" + transactionType + \"  ======== IPN verified : \" + isIpnVerified);\n\n                Consumer c = pr.getConsumer();\n\n                // Divine Condition for secure request background check\n                if(c!=null && c.getPrintRequests().contains(pr) && pr.getCost()==quantity && paymentStatus.equals(PayPalWrapper.PAYPAL_COMPLETED_PAYMENT)) {\n                    // The print request may now go to the printshop\n                    pr.setStatus(PrintRequest.Status.PENDING);\n                    pr.setPayPalSaleID(transactionID);\n                    printRequests.save(pr);\n                    String message = \"O pagamento via PayPal do seu pedido nº #\"+pr.getId()+\" foi confirmado. Obrigado!\";\n                    notificationManager.sendNotification(c.getUsername(), new Notification(message));\n                    return;\n                }\n            } else {\n                LoggingManager.info(this.getClass(), \"PayPal transaction ERROR: consumer with email <\" + payerEmail + \"> is not registred in ProxyPrint.\");\n                return;\n            }\n        } else {\n            LoggingManager.info(this.getClass(), \"PayPal transaction ERROR: bad IPN JSON body for values payerEmail, quantity, paymentStatus, paymentData\");\n        }\n    }\n\n    @ApiOperation(value = \"It confirms that a certain consumer has pay its load up on ProxyPrint.\", notes = \"Its a route for being remotely called by PayPal servers.\")\n    @RequestMapping(value = \"paypal/ipn/consumer/{consumerID}\", method = RequestMethod.POST)\n    protected void consumerLoadUpConfirmation(@PathVariable(value = \"consumerID\") long cid, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {\n        Map<String,String> configurationMap =  Configuration.getConfig();\n        IPNMessage ipnlistener = new IPNMessage(request,configurationMap);\n        boolean isIpnVerified = ipnlistener.validate();\n        String transactionType = ipnlistener.getTransactionType();\n        Map<String,String> map = ipnlistener.getIpnMap();\n\n\n        String payerEmail = map.get(\"payer_email\");\n        Double quantity = Double.valueOf(map.get(\"mc_gross\"));\n        String paymentStatus = map.get(\"payment_status\");\n        Consumer consumer = consumers.findOne(cid);\n\n        if(consumer!=null) {\n            if(paymentStatus.equals(PayPalWrapper.PAYPAL_COMPLETED_PAYMENT)) {\n                LoggingManager.info(this.getClass(), \"******* IPN (name:value) pair : \" + map + \"  Load Balance Confirmation for Consumer #\"+consumer.getId());\n\n                // Payment is completed\n                consumer.getBalance().addDoubleQuantity(quantity);\n\n                // Send notification to user informing its balance was updated\n                String message = \"O seu carregamento de \"+quantity+\" € via PayPal foi confirmado. Obrigado!\";\n                notificationManager.sendNotification(consumer.getUsername(), new Notification(message));\n                return;\n            }\n            // Send notification to user informing something went wrong\n            String message = \"O seu carregamento de \"+quantity+\" € não pode ser confirmado. Por favor contacte proxyprint.pt@gmail.com indicando o seu username e quantia para que lhe possámos devolver o dinheiro.\";\n            notificationManager.sendNotification(consumer.getUsername(), new Notification(message));\n        }\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsTHceZgiIWkbVu2cqD7dhyzRpIgG",
+    "object": "chat.completion",
+    "created": 1767098312,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\nI inspected the PayPalController.consumerLoadUpConfirmation method. From the code and annotations I inferred the following facts to include in the OpenAPI Operation object:\n\n- The ApiOperation annotation provides a short summary (\"It confirms that a certain consumer has pay its load up on ProxyPrint.\") and a longer note (\"Its a route for being remotely called by PayPal servers.\") which map to summary and description.\n- The endpoint uses a path variable named consumerID of type long (primitive long in Java), so I represent it as a required path parameter with type integer and format int64.\n- The method reads the incoming HTTP request body via IPNMessage and looks up typical PayPal IPN form fields from the ipnMap: payer_email, mc_gross, payment_status, and also uses txn_id/txn_id in the other method. PayPal IPN is posted as form-encoded key/value pairs (application/x-www-form-urlencoded), so I modeled the requestBody as form data containing those fields. The controller does not return any body (void), so I provide a simple 200 response description indicating IPN processed.\n\nI included only fields that can be directly inferred from the source (summary, description, operationId, the consumerID path parameter, the expected form fields in the request body, and a 200 response). I did not add unrelated OpenAPI fields.\n\nthe final generated result begins\n{\n  \"summary\": \"It confirms that a certain consumer has pay its load up on ProxyPrint.\",\n  \"description\": \"Its a route for being remotely called by PayPal servers.\",\n  \"operationId\": \"consumerLoadUpConfirmation\",\n  \"parameters\": [\n    {\n      \"name\": \"consumerID\",\n      \"in\": \"path\",\n      \"required\": true,\n      \"schema\": {\n        \"type\": \"integer\",\n        \"format\": \"int64\"\n      },\n      \"description\": \"ID of the consumer whose balance is being updated\"\n    }\n  ],\n  \"requestBody\": {\n    \"description\": \"PayPal IPN POST body (form-urlencoded). Fields referenced by the controller: payer_email, mc_gross, payment_status, txn_id.\",\n    \"content\": {\n      \"application/x-www-form-urlencoded\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"payer_email\": {\n              \"type\": \"string\",\n              \"description\": \"Payer email as provided by PayPal IPN (map key 'payer_email')\"\n            },\n            \"mc_gross\": {\n              \"type\": \"number\",\n              \"format\": \"double\",\n              \"description\": \"Amount posted by PayPal (map key 'mc_gross')\"\n            },\n            \"payment_status\": {\n              \"type\": \"string\",\n              \"description\": \"Payment status posted by PayPal (map key 'payment_status')\"\n            },\n            \"txn_id\": {\n              \"type\": \"string\",\n              \"description\": \"PayPal transaction id (map key 'txn_id')\"\n            }\n          }\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"No response body (IPN processed).\"\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1709,
+      "completion_tokens": 2011,
+      "total_tokens": 3720,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1344,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

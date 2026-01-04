@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766736349115,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript (Node.js runtime) and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/users/reset` with method POST, and here is the relevant information I found:\n\n1. In `controllers/user.js`, `resetPassword` is implemented to process HTTP requests to `/users/reset` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/user.js`:\n\n```\nimport jwt from \"jsonwebtoken\"\nimport nodemailer from 'nodemailer'\nimport crypto from 'crypto'\nimport bcrypt from 'bcryptjs'\nimport dotenv from 'dotenv'\n\ndotenv.config()\nconst SECRET = process.env.SECRET;\nconst HOST =  process.env.SMTP_HOST\nconst PORT =  process.env.SMTP_PORT\nconst USER =  process.env.SMTP_USER\nconst PASS =  process.env.SMTP_PASS\n\nimport User from '../models/userModel.js'\nimport ProfileModel from '../models/ProfileModel.js';\n\n\nexport const signin = async (req, res)=> {\n    const { email, password } = req.body //Coming from formData\n\n    try {\n        const existingUser = await User.findOne({ email })\n        \n        //get userprofile and append to login auth detail\n        const userProfile = await ProfileModel.findOne({ userId: existingUser?._id })\n\n        if(!existingUser) return res.status(404).json({ message: \"User doesn't exist\" })\n\n        const isPasswordCorrect  = await bcrypt.compare(password, existingUser.password)\n\n        if(!isPasswordCorrect) return res.status(400).json({message: \"Invalid credentials\"})\n\n        //If crednetials are valid, create a token for the user\n        const token = jwt.sign({ email: existingUser.email, id: existingUser._id }, SECRET, { expiresIn: \"1h\" })\n        \n        //Then send the token to the client/frontend\n        res.status(200).json({ result: existingUser, userProfile, token })\n\n    } catch (error) {\n        res.status(500).json({ message: \"Something went wrong\"})\n    }\n}\n\n\n\nexport const signup = async (req, res)=> {\n    const { email, password, confirmPassword, firstName, lastName, bio } = req.body\n\n    try {\n        const existingUser = await User.findOne({ email })\n        const userProfile = await ProfileModel.findOne({ userId: existingUser?._id })\n\n        if(existingUser) return res.status(400).json({ message: \"User already exist\" })\n\n        if(password !== confirmPassword) return res.status(400).json({ message: \"Password don't match\" })\n        \n        const hashedPassword = await bcrypt.hash(password, 12)\n\n        const result = await User.create({ email, password: hashedPassword, name: `${firstName} ${lastName}`, bio })\n\n        const token = jwt.sign({ email: result.email, id: result._id }, SECRET, { expiresIn: \"1h\" })\n        \n        res.status(200).json({ result, userProfile, token })\n\n    } catch (error) {\n        res.status(500).json({ message: \"Something went wrong\"}) \n    }\n}\n\n\n// export const updateProfile = async (req, res) => {\n//     const formData = req.body\n//     const { id: _id } = req.params\n//     console.log(formData)\n\n//     if(!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send('No user with this id found')\n\n//     const updatedUser = await User.findByIdAndUpdate(_id, formData, {new: true})\n//     res.json(updatedUser)\n// }\n\n\n\n\nexport const forgotPassword = (req,res)=>{\n\n    const { email } = req.body\n  \n       // NODEMAILER TRANSPORT FOR SENDING POST NOTIFICATION VIA EMAIL\n        const transporter = nodemailer.createTransport({\n            host: HOST,\n            port : PORT,\n            auth: {\n            user: USER,\n            pass: PASS\n            },\n            tls:{\n                rejectUnauthorized:false\n            }\n        })\n  \n  \n    crypto.randomBytes(32,(err,buffer)=>{\n        if(err){\n            console.log(err)\n        }\n        const token = buffer.toString(\"hex\")\n        User.findOne({email : email})\n        .then(user=>{\n            if(!user){\n                return res.status(422).json({error:\"User does not exist in our database\"})\n            }\n            user.resetToken = token\n            user.expireToken = Date.now() + 3600000\n            user.save().then((result)=>{\n                transporter.sendMail({\n                    to:user.email,\n                    from:\"Accountill <hello@accountill.com>\",\n                    subject:\"Password reset request\",\n                    html:`\n                    <p>You requested for password reset from Arc Invoicing application</p>\n                    <h5>Please click this <a href=\"https://accountill.com/reset/${token}\">link</a> to reset your password</h5>\n                    <p>Link not clickable?, copy and paste the following url in your address bar.</p>\n                    <p>https://accountill.com/reset/${token}</p>\n                    <P>If this was a mistake, just ignore this email and nothing will happen.</P>\n                    `\n                })\n                res.json({message:\"check your email\"})\n            }).catch((err) => console.log(err))\n  \n        })\n    })\n  }\n  \n  \n  \n  export const resetPassword = (req,res)=>{\n    const newPassword = req.body.password\n    const sentToken = req.body.token\n    User.findOne({resetToken:sentToken,expireToken:{$gt:Date.now()}})\n    .then(user=>{\n        if(!user){\n            return res.status(422).json({error:\"Try again session expired\"})\n        }\n        bcrypt.hash(newPassword,12).then(hashedpassword=>{\n           user.password = hashedpassword\n           user.resetToken = undefined\n           user.expireToken = undefined\n           user.save().then((saveduser)=>{\n               res.json({message:\"password updated success\"})\n           })\n        })\n    }).catch(err=>{\n        console.log(err)\n    })\n  }\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-20251226160417952626499kivdZlzA",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766736262,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The `resetPassword` function in `controllers/user.js` handles the POST request to `/users/reset`. It expects two parameters in the request body: `password` (the new password) and `token` (the reset token).\n\nHere's the breakdown of the parameters:\n\n*   **password**: This is a required field in the request body. It's the new password the user is setting.\n*   **token**: This is a required field in the request body. It's the token that was sent to the user's email for password reset verification.\n\nTherefore, the generated result will be a list of Parameter Objects with `name`, `in`, `description`, `required`, and `type` fields.\n\nthe final generated result begins\n```json\n[\n  {\n    \"name\": \"password\",\n    \"in\": \"body\",\n    \"description\": \"The new password for the user.\",\n    \"required\": true,\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"token\",\n    \"in\": \"body\",\n    \"description\": \"The reset token sent to the user's email.\",\n    \"required\": true,\n    \"type\": \"string\"\n  }\n]\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1696,
+      "completion_tokens": 273,
+      "total_tokens": 1969,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1696,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

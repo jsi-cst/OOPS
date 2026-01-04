@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766912068142,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `app/Http/Controllers/Api/V1/PostCommentController.php`, I found that `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/api.php`:\n\n```\n<?php\n\nuse App\\Http\\Controllers\\Api\\V1\\Auth\\AuthenticateController;\nuse App\\Http\\Controllers\\Api\\V1\\CommentController;\nuse App\\Http\\Controllers\\Api\\V1\\MediaController;\nuse App\\Http\\Controllers\\Api\\V1\\PostCommentController;\nuse App\\Http\\Controllers\\Api\\V1\\PostController;\nuse App\\Http\\Controllers\\Api\\V1\\PostLikeController;\nuse App\\Http\\Controllers\\Api\\V1\\UserCommentController;\nuse App\\Http\\Controllers\\Api\\V1\\UserController;\nuse App\\Http\\Controllers\\Api\\V1\\UserPostController;\nuse Illuminate\\Support\\Facades\\Route;\n\n/*\n|--------------------------------------------------------------------------\n| API Routes\n|--------------------------------------------------------------------------\n|\n| Here is where you can register API routes for your application. These\n| routes are loaded by the RouteServiceProvider within a group which\n| is assigned the \"api\" middleware group. Enjoy building your API!\n|\n*/\n\nRoute::prefix('v1')->name('api')->group(function () {\n    Route::middleware(['auth:sanctum', 'verified'])->group(function () {\n        // Comments\n        Route::apiResource('comments', CommentController::class)->only('destroy');\n        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\n\n        // Posts\n        Route::apiResource('posts', PostController::class)->only(['update', 'store', 'destroy']);\n        Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\n        Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\n\n        // Users\n        Route::apiResource('users', UserController::class)->only('update');\n\n        // Media\n        Route::apiResource('media', MediaController::class)->only(['store', 'destroy']);\n    });\n\n    Route::post('/authenticate', [AuthenticateController::class, 'authenticate'])->name('authenticate');\n\n    // Comments\n    Route::apiResource('posts.comments', PostCommentController::class)->only('index');\n    Route::apiResource('users.comments', UserCommentController::class)->only('index');\n    Route::apiResource('comments', CommentController::class)->only(['index', 'show']);\n\n    // Posts\n    Route::apiResource('posts', PostController::class)->only(['index', 'show']);\n    Route::apiResource('users.posts', UserPostController::class)->only('index');\n\n    // Users\n    Route::apiResource('users', UserController::class)->only(['index', 'show']);\n\n    // Media\n    Route::apiResource('media', MediaController::class)->only('index');\n});\n```\n\nContents of file `app/Http/Controllers/Api/V1/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Events\\CommentPosted;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Api\\CommentsRequest;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Return the post's comments.\n     */\n    public function index(Request $request, Post $post): ResourceCollection\n    {\n        return CommentResource::collection(\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request, Post $post): CommentResource\n    {\n        $comment = new CommentResource(\n            Auth::user()->comments()->create([\n                'post_id' => $post->id,\n                'content' => $request->input('content')\n            ])\n        );\n\n        broadcast(new CommentPosted($comment, $post))->toOthers();\n\n        return $comment;\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "- Full HTTP request path:\n  /v1/posts/{post}/comments\n\n- All HTTP methods acceptable:\n  false\n\n- HEAD:\n  false\n\n- POST:\n  true\n\n- OPTIONS:\n  false\n\n- TRACE:\n  false\n\n- GET:\n  true\n\n- PUT:\n  false\n\n- DELETE:\n  false\n\n- PATCH:\n  false\n\nExplanation\n- routes/api.php wraps routes in Route::prefix('v1')->group(...), so the route path is prefixed with /v1.\n- The nested resource declaration Route::apiResource('posts.comments', PostCommentController::class) generates routes on the URI posts/{post}/comments. Combined with the prefix, that yields /v1/posts/{post}/comments.\n- There are two separate registrations for posts.comments:\n  - Inside the authenticated middleware group: ->only('store') — this registers POST /v1/posts/{post}/comments (handled by PostCommentController@store).\n  - Outside the middleware group: ->only('index') — this registers GET /v1/posts/{post}/comments (handled by PostCommentController@index).\n  Therefore the path /v1/posts/{post}/comments accepts GET and POST as implemented in the routes.\n- No route registration in the provided code explicitly allows HEAD, OPTIONS, TRACE, PUT, DELETE, or PATCH for that path; therefore those methods are marked false. (Per your instruction, this determination is based only on the code shown, not on framework runtime behaviors such as implicit HEAD handling.)",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912056,
+    "id": "chatcmpl-CrgpUhQwnSPQg9MCXjhRBIlfKhDG6",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1405,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1088,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1168,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2573
+    }
+  }
+}
