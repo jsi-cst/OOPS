@@ -1,0 +1,65 @@
+{# ------------------------------------------------ #}
+
+{# parameter role: str #}
+
+{# parameter files: dict[str, str] #}
+
+{# parameter plang: str #}
+
+{# parameter frame: str #}
+
+{# parameter apiurl: str #}
+
+{# parameter method: str #}
+
+{# parameter depend: list[Any] #}
+
+{# ------------------------------------------------ #}
+
+{% if role | lower == 'sys' %}
+
+You are an AI assistant specialized in analyzing web projects developed using {{ plang }} and the {{ frame }} framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `{{ apiurl }}` with method {{ method }}, and here is the relevant information I found:
+
+{% for item in depend -%}
+
+{{ loop.index }}. In `{{ item.file }}`, `{{ item.handler }}` is implemented to process HTTP requests to `{{ apiurl }}` with HTTP method {{ method }}.
+
+{% endfor -%}
+
+I'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly "the final generated result begins", followed by the Operation Object in JSON format. Do not include fields not mentioned above.
+
+{% endif %}
+
+{# ------------------------------------------------ #}
+
+{% if role | lower == 'usr' %}
+
+{% for item in depend | map(attribute='file') | unique -%}
+
+Contents of file `{{ item }}`:
+
+```
+{{ files[item] }}
+```
+
+{% endfor -%}
+
+{% endif %}
+
+{# ------------------------------------------------ #}
+
+{% if role | lower == 'nil' %}
+
+{% for item in depend | map(attribute='file') | unique -%}
+
+Contents of file `{{ item }}`:
+
+```
+{{ files[item] }}
+```
+
+{% endfor -%}
+
+{% endif %}
+
+{# ------------------------------------------------ #}

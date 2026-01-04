@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097650784,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript (Node.js) and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/profiles` with method GET, and here is the relevant information I found:\n\n1. In `controllers/profile.js`, `profile` is implemented to process HTTP requests to `/profiles` with HTTP method GET.\n\n2. In `routes/profile.js`, `profile` is implemented to process HTTP requests to `/profiles` with HTTP method GET.\n\n3. In `controllers/profile.js`, `getProfilesByUser` is implemented to process HTTP requests to `/profiles` with HTTP method GET.\n\n4. In `controllers/profile.js`, `createProfile` is implemented to process HTTP requests to `/profiles` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/profile.js`:\n\n```\nimport express from 'express';\nimport mongoose from 'mongoose';\n\nimport ProfileModel from '../models/ProfileModel.js';\n\nconst router = express.Router();\n\nexport const getProfiles = async (req, res) => { \n  try {\n      const allProfiles = await ProfileModel.find().sort({ _id: -1 });\n              \n      res.status(200).json(allProfiles);\n  } catch (error) {\n      res.status(404).json({ message: error.message });\n  }\n}\n\nexport const getProfile = async (req, res) => { \n  const { id } = req.params;\n\n  try {\n      const profile = await ProfileModel.findById(id);\n      \n      res.status(200).json(profile);\n  } catch (error) {\n      res.status(404).json({ message: error.message });\n  }\n}\n\nexport const createProfile = async (req, res) => {\n  const {\n    name,\n    email,\n    phoneNumber,\n    businessName,\n    contactAddress, \n    logo,\n    website,\n    userId,\n   } = req.body;\n  \n  \n  const newProfile = new ProfileModel({\n    name,\n    email,\n    phoneNumber,\n    businessName,\n    contactAddress, \n    logo,\n    website,\n    userId,\n    createdAt: new Date().toISOString() \n  })\n\n  try {\n    const existingUser = await ProfileModel.findOne({ email })\n\n    if(existingUser) return res.status(404).json({ message: \"Profile already exist\" })\n      await newProfile.save();\n\n      res.status(201).json(newProfile );\n  } catch (error) {\n      res.status(409).json({ message: error.message });\n  }\n}\n\n\n\nexport const getProfilesByUser = async (req, res) => {\n  const { searchQuery } = req.query;\n\n  try {\n      // const email = new RegExp(searchQuery, \"i\");\n\n      const profile = await ProfileModel.findOne({ userId: searchQuery });\n\n      res.json({ data: profile });\n  } catch (error) {    \n      res.status(404).json({ message: error.message });\n  }\n}\n\n\n\nexport const getProfilesBySearch = async (req, res) => {\n  const { searchQuery } = req.query;\n\n  try {\n      const name = new RegExp(searchQuery, \"i\");\n      const email = new RegExp(searchQuery, \"i\");\n\n      const profiles = await ProfileModel.find({ $or: [ { name }, { email } ] });\n\n      res.json({ data: profiles });\n  } catch (error) {    \n      res.status(404).json({ message: error.message });\n  }\n}\n\n\nexport const updateProfile = async (req, res) => {\n  const { id: _id } = req.params\n  const profile = req.body\n\n  if(!mongoose.Types.ObjectId.isValid(_id)) return res.status(404).send('No client with that id')\n\n  const updatedProfile = await ProfileModel.findByIdAndUpdate(_id, {...profile, _id}, { new: true})\n\n  res.json(updatedProfile)\n}\n\n\n  export const deleteProfile = async (req, res) => {\n    const { id } = req.params;\n\n    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No profile with id: ${id}`);\n\n    await ProfileModel.findByIdAndRemove(id);\n\n    res.json({ message: \"Profile deleted successfully.\" });\n}\n\n\n\n// // Function call\n// ProfileModel.insertMany([\n//   { name: 'Gourav', age: 20},\n//   { name: 'Kartik', age: 20},\n//   { name: 'Niharika', age: 20}\n// ]).then(function(){\n//   console.log(\"Data inserted\")  // Success\n// }).catch(function(error){\n//   console.log(error)      // Failure\n// });\n```\n\nContents of file `routes/profile.js`:\n\n```\nimport express from 'express'\nimport { getProfiles, createProfile, updateProfile, deleteProfile, getProfile, getProfilesByUser } from '../controllers/profile.js'\n\nconst router = express.Router()\n\nrouter.get('/:id', getProfile)\n// router.get('/', getProfiles)\nrouter.get('/', getProfilesByUser)\nrouter.post('/', createProfile)\nrouter.patch('/:id', updateProfile)\nrouter.delete('/:id', deleteProfile)\n\n\nexport default router\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The Express route file (routes/profile.js) maps GET /profiles to the controller getProfilesByUser.\n- getProfilesByUser reads req.query.searchQuery and performs ProfileModel.findOne({ userId: searchQuery }) and responds with res.json({ data: profile }) on success. On error it responds with status 404 and JSON { message: error.message }.\n- Based on the createProfile and other controller code, profile documents include fields: name, email, phoneNumber, businessName, contactAddress, logo, website, userId, createdAt (and Mongo-generated _id).\n- The Operation Object models:\n  - one optional query parameter \"searchQuery\" (string),\n  - a 200 response returning application/json with an object { data: profile } where data may be null or an object containing the profile properties,\n  - a 404 response returning application/json with { message: string } as the error shape.\n- No authentication, request body, headers or other fields are present for this endpoint in the provided code, so they are omitted.\n\nthe final generated result begins\n{\n  \"summary\": \"Retrieve a profile by user\",\n  \"description\": \"Retrieve a single profile by user id supplied in the query parameter 'searchQuery'. The controller performs ProfileModel.findOne({ userId: searchQuery }) and returns { data: profile } on success.\",\n  \"parameters\": [\n    {\n      \"name\": \"searchQuery\",\n      \"in\": \"query\",\n      \"description\": \"User id to search profiles by (matched against the userId field).\",\n      \"required\": false,\n      \"schema\": {\n        \"type\": \"string\"\n      }\n    }\n  ],\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Successful response with the matched profile (data is null if no match).\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"data\": {\n                \"nullable\": true,\n                \"type\": \"object\",\n                \"properties\": {\n                  \"_id\": {\n                    \"type\": \"string\"\n                  },\n                  \"name\": {\n                    \"type\": \"string\"\n                  },\n                  \"email\": {\n                    \"type\": \"string\"\n                  },\n                  \"phoneNumber\": {\n                    \"type\": \"string\"\n                  },\n                  \"businessName\": {\n                    \"type\": \"string\"\n                  },\n                  \"contactAddress\": {\n                    \"type\": \"string\"\n                  },\n                  \"logo\": {\n                    \"type\": \"string\"\n                  },\n                  \"website\": {\n                    \"type\": \"string\"\n                  },\n                  \"userId\": {\n                    \"type\": \"string\"\n                  },\n                  \"createdAt\": {\n                    \"type\": \"string\",\n                    \"format\": \"date-time\"\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"404\": {\n      \"description\": \"Error response when an exception occurs.\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\"\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097632,
+    "id": "chatcmpl-CsT6eL8Uojh4mzY4rRa6w3S1RR7bY",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2148,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1472,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1350,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3498
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766997830565,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot 2.x framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/com/urcodebin/api/controllers/UserAccountController.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":\"/api/account/{account_id}\",\"handler\":\"UserAccountController#getUserAccountById\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 2: `{\"path\":\"/api/account/signup\",\"handler\":\"UserAccountController#signupForNewAccount\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/urcodebin/api/controllers/UserAccountController.java`:\n\n```\npackage com.urcodebin.api.controllers;\n\nimport com.urcodebin.api.controllers.requestbody.SignupRequestBody;\nimport com.urcodebin.api.dto.UserAccountDTO;\nimport com.urcodebin.api.entities.UserAccount;\nimport com.urcodebin.api.error.exception.AccountInformationTakenException;\nimport com.urcodebin.api.error.exception.UserAccountNotFoundException;\nimport com.urcodebin.api.services.interfaces.UserAccountService;\nimport org.modelmapper.ModelMapper;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.beans.factory.annotation.Qualifier;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.util.Optional;\nimport java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\n@RestController\n@RequestMapping(\"/api/account\")\npublic class UserAccountController {\n\n    private final UserAccountService userAccountService;\n\n    private final ModelMapper modelMapper;\n\n    @Autowired\n    public UserAccountController(@Qualifier(\"AccountService\") UserAccountService userAccountService,\n                                 ModelMapper modelMapper) {\n        this.userAccountService = userAccountService;\n        this.modelMapper = modelMapper;\n    }\n\n    @GetMapping(\"/{account_id}\")\n    public UserAccountDTO getUserAccountById(@PathVariable(\"account_id\") Long accountId) {\n        Optional<UserAccount> foundUserAccount = userAccountService.getUserAccountById(accountId);\n        if(!foundUserAccount.isPresent())\n            throw new UserAccountNotFoundException(\"User Account with given id was not found.\");\n        return convertToDTO(foundUserAccount.get());\n    }\n\n    @PostMapping(\"/signup\")\n    public UserAccountDTO signupForNewAccount(@RequestBody SignupRequestBody signupAccount) {\n        boolean isEmailValidFormat = validateEmailFormat(signupAccount.getEmail());\n        if(!isEmailValidFormat)\n            throw new IllegalArgumentException(\"Email is not in the correct format. Make sure email is valid.\");\n\n        boolean usernameIsTaken = userAccountService.isAccountUsernameTaken(signupAccount.getUsername());\n        if(usernameIsTaken)\n            throw new AccountInformationTakenException(\"Username provided is already in use. Please use another username.\");\n\n        boolean emailIsTaken = userAccountService.isAccountEmailTaken(signupAccount.getEmail());\n        if(emailIsTaken)\n            throw new AccountInformationTakenException(\"Email provided is already in use. Please use another email.\");\n\n        final UserAccount signedUpAccount = userAccountService.signupNewUserAccount(signupAccount);\n        return convertToDTO(signedUpAccount);\n    }\n\n    private boolean validateEmailFormat(String email) {\n        String emailRegex = \"^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^-]+(?:\\\\.[a-zA-Z0-9_!#$%&'*+/=?`{|}~^-]+↵\\n\" +\n                \")*@[a-zA-Z0-9-]+(?:\\\\.[a-zA-Z0-9-]+)*$\";\n        Pattern emailPattern = Pattern.compile(emailRegex);\n\n        Matcher matcher = emailPattern.matcher(email);\n        return matcher.matches();\n    }\n\n    private UserAccountDTO convertToDTO(UserAccount userAccount) {\n        return modelMapper.map(userAccount, UserAccountDTO.class);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[]\n\nExplanation:\n- The file defines two API endpoints via Spring annotations:\n  - GET /api/account/{account_id} handled by UserAccountController#getUserAccountById\n  - POST /api/account/signup handled by UserAccountController#signupForNewAccount\n- Both endpoints are already captured in the previously provided entries (Entry 1 and Entry 2), including:\n  - Paths derived from literal strings in annotations\n  - Handlers implemented in the same source file\n  - RESTful API nature and non-testing usage\n- Since these entries are duplicates of the ones already reported, there are no new API entries to output.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766997821,
+    "id": "chatcmpl-Cs38nrOwIFvCo8ianhuiR734axuUm",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1290,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1152,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1304,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2594
+    }
+  }
+}

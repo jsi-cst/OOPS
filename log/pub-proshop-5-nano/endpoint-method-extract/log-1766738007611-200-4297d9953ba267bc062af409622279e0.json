@@ -1,0 +1,131 @@
+{
+  "timestamp": 1766738007611,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "Analysis summary\n\n- Endpoint path for the listOrders function\n  - Full HTTP request path: /api/orders\n  - This is derived from how the routes are mounted and defined:\n    - In server.js: app.use('/api/orders', orderRoutes);\n    - In routes/orderRoutes.js: router.route('/').post(...).get(...);\n    - Therefore the listOrders handler (getOrders) is invoked for GET requests to /api/orders and also there is a POST handler for /api/orders (addOrderItems). The path has no dynamic parameters, so no curly-brace placeholders are needed.\n\n- Which HTTP methods are acceptable for this endpoint (/api/orders)\n  - Are all HTTP methods acceptable? No. The code defines only POST and GET for this path.\n  - Reason: router.route('/').post(protect, addOrderItems).get(protect, admin, getOrders); There are no explicit handlers for PUT, DELETE, PATCH, etc. on '/api/orders'.\n\n- Per-method acceptability (based on the code)\n\n  - HEAD: Acceptable\n    - Reason: Express automatically handles HEAD for routes that have a GET handler by using the same GET logic but without a response body. This behavior is part of Express routing (not an explicit HANDLER in the code), but it is enabled by the presence of the GET route for this path.\n\n  - POST: Acceptable\n    - Reason: There is a POST handler defined for '/api/orders' (addOrderItems), with protect middleware.\n\n  - OPTIONS: Acceptable\n    - Reason: Express automatically answers OPTIONS requests for defined routes, reflecting the allowed methods (the route defines POST and GET). So OPTIONS is effectively supported by the framework for this path.\n\n  - TRACE: Not acceptable\n    - Reason: There is no TRACE handler defined for this path, and TRACE is not provided by the code or by the route definitions.\n\n  - GET: Acceptable\n    - Reason: There is a GET handler defined for '/api/orders' (getOrders). This is the listOrders functionality.\n\n  - PUT: Not acceptable\n    - Reason: There is no PUT handler defined for '/api/orders' itself. PUT is used for '/api/orders/:id/pay' and '/api/orders/:id/deliver', but not for the base '/api/orders' path.\n\n  - DELETE: Not acceptable\n    - Reason: There is no DELETE handler defined for '/api/orders'.\n\n  - PATCH: Not acceptable\n    - Reason: There is no PATCH handler defined for '/api/orders'.\n\nNotes and reasoning\n\n- The “listOrders” functionality corresponds to getOrders, which is mounted on GET /api/orders and requires authentication with admin privileges (protect, admin). The POST on the same path is for adding items to a new order (addOrderItems) and is protected (requires authentication) but not admin-restricted.\n- The path parameters in this endpoint are none (no id or other variables in the route for listing orders). If you were to document a specific order by ID, that would be the /api/orders/{id} path with GET, etc., but that’s a separate endpoint defined as router.route('/:id') in the same file.\n- The HEAD and OPTIONS behavior is based on Express conventions (HEAD for GET routes is handled automatically; OPTIONS is typically handled to report allowed methods). The code does not explicitly define these methods, but their acceptance is inferred from the framework behavior and the presence of the GET and POST handlers.\n\nExplanation recap\n\n- Endpoint: /api/orders\n- Methods explicitly supported by code on this path: GET (list orders), POST (create order)\n- Other methods (PUT, DELETE, PATCH) are not defined on this path\n- HEAD is effectively supported due to the GET route\n- OPTIONS is effectively supported by Express for defined routes\n- TRACE is not supported by the code on this path\n\nIf you want this represented in an OpenAPI-like summary:\n\n- Path: /api/orders\n  - GET: List orders (requires admin, protected)\n  - POST: Create an order (requires authentication, protected)\n  - HEAD: allowed (inferred from GET)\n  - OPTIONS: allowed (inferred from route definitions)\n  - PUT: not allowed\n  - DELETE: not allowed\n  - PATCH: not allowed\n  - TRACE: not allowed\n\nThis aligns with the actual route definitions in routes/orderRoutes.js and the controller implementations in controllers/orderController.js."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "EndpointMethodExtractResult",
+        "schema": {
+          "properties": {
+            "path": {
+              "description": "The full HTTP request path for the endpoint.",
+              "title": "Path",
+              "type": "string"
+            },
+            "arbitrary": {
+              "description": "Whether all HTTP methods are acceptable.",
+              "title": "Arbitrary",
+              "type": "boolean"
+            },
+            "head": {
+              "description": "Whether the HEAD method is acceptable.",
+              "title": "Head",
+              "type": "boolean"
+            },
+            "post": {
+              "description": "Whether the POST method is acceptable.",
+              "title": "Post",
+              "type": "boolean"
+            },
+            "options": {
+              "description": "Whether the OPTIONS method is acceptable.",
+              "title": "Options",
+              "type": "boolean"
+            },
+            "trace": {
+              "description": "Whether the TRACE method is acceptable.",
+              "title": "Trace",
+              "type": "boolean"
+            },
+            "get": {
+              "description": "Whether the GET method is acceptable.",
+              "title": "Get",
+              "type": "boolean"
+            },
+            "put": {
+              "description": "Whether the PUT method is acceptable.",
+              "title": "Put",
+              "type": "boolean"
+            },
+            "delete": {
+              "description": "Whether the DELETE method is acceptable.",
+              "title": "Delete",
+              "type": "boolean"
+            },
+            "patch": {
+              "description": "Whether the PATCH method is acceptable.",
+              "title": "Patch",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "arbitrary",
+            "head",
+            "post",
+            "options",
+            "trace",
+            "get",
+            "put",
+            "delete",
+            "patch"
+          ],
+          "title": "EndpointMethodExtractResult",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"arbitrary\":false,\"delete\":false,\"get\":true,\"head\":true,\"options\":true,\"patch\":false,\"path\":\"/api/orders\",\"post\":true,\"put\":false,\"trace\":false}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766738003,
+    "id": "chatcmpl-CqxYBngjZr5yEnQJh4xQIZugVjOL4",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 764,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 704,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1164,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1928
+    }
+  }
+}

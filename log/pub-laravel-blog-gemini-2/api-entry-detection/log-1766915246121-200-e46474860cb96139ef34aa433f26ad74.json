@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766915246121,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Controllers/CommentController.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":null,\"handler\":\"App\\\\Http\\\\Controllers\\\\CommentController::store\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 2: `{\"path\":null,\"handler\":\"App\\\\Http\\\\Controllers\\\\CommentController::destroy\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251228174941170292179A6z6VDeQ",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766915384,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Here's the analysis of the provided `CommentController.php` file, focusing on API entries, building upon the previous findings:\n\nBased on the provided code, I've identified the following API entries:\n\nEntry 3: `{\"path\":null,\"handler\":\"App\\\\Http\\\\Controllers\\\\CommentController::store\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 4: `{\"path\":null,\"handler\":\"App\\\\Http\\\\Controllers\\\\CommentController::destroy\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\n**Explanation:**\n\nThe `CommentController` class defines two methods: `store` and `destroy`.  These methods are likely part of a RESTful API, but the specific routes (paths) are not explicitly defined within this file. Laravel's resource controllers often rely on implicit routing based on the controller's name and the methods defined.  Since the paths are not defined in this file, the `path` is set to `null`, and `path_from_naming_convention` is set to `false`. The `is_restful_api` flag is set to `true` because the methods align with standard RESTful conventions (store for creating, destroy for deleting). The `handler_in_same_file` flag is set to `true` because the implementation is present in the same file. The `is_testing_purposes` flag is set to `false` because the methods are part of the application's core logic.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 990,
+      "completion_tokens": 404,
+      "total_tokens": 1394,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 990,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

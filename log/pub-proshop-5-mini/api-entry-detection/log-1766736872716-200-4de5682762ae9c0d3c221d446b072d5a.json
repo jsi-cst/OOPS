@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766736872716,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `server.js`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": \"/api/products\",\n    \"handler\": \"productRoutes\",\n    \"implementationPresent\": false,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/api/users\",\n    \"handler\": \"userRoutes\",\n    \"implementationPresent\": false,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/api/orders\",\n    \"handler\": \"orderRoutes\",\n    \"implementationPresent\": false,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/api/upload\",\n    \"handler\": \"uploadRoutes\",\n    \"implementationPresent\": false,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/api/config/paypal\",\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/uploads\",\n    \"handler\": \"express.static\",\n    \"implementationPresent\": false,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": false,\n    \"isTest\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": false,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/uploads\",\n    \"handler\": \"express.static\",\n    \"implementationPresent\": false,\n    \"isPrefix\": true,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": false,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/\",\n    \"handler\": \"anonymous\",\n    \"implementationPresent\": true,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRest\": false,\n    \"isTest\": false\n  }\n]\n\nExplanation of results:\n\n- I scanned server.js for all Express routing and mounting calls that include explicit path strings or obvious framework conventions. I included only routes where the path is given as a literal string in this file (or a literal that is clearly used as the route). I did not include middleware invocations that were mounted without a path string (for example the app.use(express.static(...)) call that has no explicit mount path was omitted).\n- Each object corresponds to one app.use(...) or app.get(...) call in server.js:\n  - The four /api/* app.use(...) entries mount routers imported from other files; their handler values are the imported names, and implementationPresent is false because the handling code lives in other modules.\n  - The /api/config/paypal route is an inline arrow function (anonymous) defined in this file, so implementationPresent is true.\n  - The /uploads app.use(...) appears twice in the file (production and non-production branches). Both are static middleware created by express.static; they are represented with handler \"express.static\" and implementationPresent false because the static middleware is provided by the express package, not implemented inline here.\n  - The app.get('*', ...) catch-all used in production is present as a literal '*' route in the source. Because the required output path must begin with a forward slash and the string in the code is '*' (no leading slash), I set path to null to avoid guessing or rewriting the literal. I kept fromLiteral true because '*' is a literal in the source. This route's handler is an inline anonymous function, so implementationPresent is true.\n  - The root GET (\"/\") in the non-production branch is an inline anonymous handler returning a simple string; it is included with path \"/\" and implementationPresent true.\n- Field meanings and how I set them:\n  - implementationPresent: true when the request handling logic (a function) is defined inline in server.js; false when the router/middleware is imported or provided by express.\n  - isPrefix: true for app.use mounts and static middleware (they handle the given path and all subpaths); false for explicit full-path GET routes.\n  - fromLiteral: true for all entries because each included route uses a literal string in server.js (the catch-all '*' is a literal too, even though it doesn't start with '/').\n  - fromConvention: left false for all entries — none of the routes rely on a framework naming convention (they're explicit mounts).\n  - isRest: true for routes under /api which are REST API endpoints; false for static file serving, the SPA catch-all, and the root health message.\n  - isTest: false for all entries — none appear to be testing-only routes.\n\nNotes and decisions:\n- I omitted any middleware mounts that have no explicit path literal in server.js.\n- For the app.get('*', ...) route I did not invent a leading slash; instead I set path to null because the literal in code is '*' and the output specification requires path values to begin with '/'. If you prefer it represented differently (for example '/*'), tell me and I can adjust accordingly.\n- If you want me to include routes defined in the imported route modules (productRoutes, userRoutes, etc.), I will need the contents of those files to extract their path-level routes and methods.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766736843,
+    "id": "chatcmpl-CqxFT0NAOp5cyJu0ZLH16mWGmSpLw",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2963,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1728,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 811,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3774
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767097755175,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments/{comment}` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::destroy` is implemented to process HTTP requests to `/comments/{comment}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The controller method is CommentController::destroy(Comment $comment) which is bound to DELETE /comments/{comment}.\n- It calls $this->authorize('delete', $comment) so unauthorized requests will be forbidden (403); unauthenticated clients may receive 401; missing model binding will yield 404.\n- The method deletes the comment and returns response()->turboStream([...]) — a MultiplePendingTurboStreamResponse containing Turbo Stream fragments. Turbo Streams are sent with the MIME type typically \"text/vnd.turbo-stream.html\" and carry HTML fragment payloads. The response status is the normal OK response with body content.\n- The path parameter is \"comment\" (the route-model-bound Comment); the typical primary key is an integer id, so the path parameter schema is integer (int64).\n\nthe final generated result begins\n{\n  \"summary\": \"Delete a comment\",\n  \"description\": \"Delete the specified Comment resource. Requires authorization ('delete' policy); returns a Turbo Stream response with fragments to remove the deleted comment and update the comments count.\",\n  \"parameters\": [\n    {\n      \"name\": \"comment\",\n      \"in\": \"path\",\n      \"required\": true,\n      \"description\": \"ID of the Comment resource (route-model-bound)\",\n      \"schema\": {\n        \"type\": \"integer\",\n        \"format\": \"int64\"\n      }\n    }\n  ],\n  \"responses\": {\n    \"200\": {\n      \"description\": \"OK - Turbo Stream response containing fragments (HTML) to remove the deleted comment and update comments count.\",\n      \"content\": {\n        \"text/vnd.turbo-stream.html\": {\n          \"schema\": {\n            \"type\": \"string\",\n            \"format\": \"html\"\n          }\n        }\n      }\n    },\n    \"401\": {\n      \"description\": \"Unauthorized - authentication is required.\"\n    },\n    \"403\": {\n      \"description\": \"Forbidden - the current user is not authorized to delete this comment.\"\n    },\n    \"404\": {\n      \"description\": \"Not Found - the specified comment was not found.\"\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097739,
+    "id": "chatcmpl-CsT8NzJ5rKoBCrhaWYIJ4nmUynmzX",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1461,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1024,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 686,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2147
+    }
+  }
+}

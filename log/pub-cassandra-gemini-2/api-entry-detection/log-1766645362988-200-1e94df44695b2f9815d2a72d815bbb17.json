@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766645362988,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the RESTEasy framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/com/datastax/mgmtapi/ManagementApplication.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/ManagementApplication.java`:\n\n```\n/**\n * Copyright DataStax, Inc.\n *\n * Please see the included license file for details.\n */\npackage com.datastax.mgmtapi;\n\nimport java.io.File;\nimport java.util.Collection;\nimport java.util.Set;\nimport java.util.concurrent.atomic.AtomicReference;\nimport javax.ws.rs.ApplicationPath;\nimport javax.ws.rs.core.Application;\nimport javax.ws.rs.core.Response;\n\nimport com.datastax.mgmtapi.resources.AuthResources;\nimport com.datastax.mgmtapi.resources.KeyspaceOpsResources;\nimport com.datastax.mgmtapi.resources.MetadataResources;\nimport com.datastax.mgmtapi.resources.NodeOpsResources;\nimport com.datastax.mgmtapi.resources.TableOpsResources;\nimport com.google.common.collect.ImmutableSet;\n\nimport org.slf4j.Logger;\nimport org.slf4j.LoggerFactory;\n\nimport com.datastax.mgmtapi.resources.K8OperatorResources;\nimport com.datastax.mgmtapi.resources.LifecycleResources;\nimport io.swagger.v3.jaxrs2.SwaggerSerializers;\nimport io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;\n\n\n@ApplicationPath(\"/\")\npublic class ManagementApplication extends Application\n{\n    private static final Logger logger = LoggerFactory.getLogger(ManagementApplication.class);\n\n    public final File dbUnixSocketFile;\n    public final File dbHome;\n    public final File dbExe;\n    public final Collection<String> dbExtraJvmArgs;\n    public final CqlService cqlService;\n\n\n    private final LifecycleResources lifecycle;\n    private final Set<Object> resources;\n    private final AtomicReference<STATE> requestedState = new AtomicReference<>(STATE.UNKNOWN);\n    private final AtomicReference<String> activeProfile = new AtomicReference<>(null);\n\n    public ManagementApplication(File dbHome, File dbExe, File dbUnixSocketFile, CqlService cqlService, Collection<String> dbExtraJvmArgs)\n    {\n        this.dbUnixSocketFile = dbUnixSocketFile;\n        this.dbHome = dbHome;\n        this.dbExe = dbExe;\n        this.dbExtraJvmArgs = dbExtraJvmArgs;\n        this.lifecycle = new LifecycleResources(this);\n        this.cqlService = cqlService;\n\n        resources = ImmutableSet.of(\n                lifecycle,\n                new K8OperatorResources(this),\n                new KeyspaceOpsResources(this),\n                new com.datastax.mgmtapi.resources.v1.KeyspaceOpsResources(this),\n                new MetadataResources(this),\n                new NodeOpsResources(this),\n                new com.datastax.mgmtapi.resources.v1.NodeOpsResources(this),\n                new TableOpsResources(this),\n                new com.datastax.mgmtapi.resources.v1.TableOpsResources(this),\n                new AuthResources(this),\n                new OpenApiResource(),\n                new SwaggerSerializers()\n        );\n    }\n\n    @Override\n    public Set<Object> getSingletons()\n    {\n        return resources;\n    }\n\n    public boolean checkState()\n    {\n        try\n        {\n            STATE currentState = getRequestedState();\n            logger.debug(\"Current Requested State is {}\", currentState);\n            if (currentState != STATE.STOPPED)\n            {\n                Response r = lifecycle.startNode(getActiveProfile(), null);\n                return r.getStatus() >= 200 && r.getStatus() < 300;\n            }\n\n            return true;\n        }\n        catch (Throwable t)\n        {\n            logger.error(\"Error checking state\", t);\n            return false;\n        }\n    }\n\n    public STATE getRequestedState()\n    {\n        return requestedState.get();\n    }\n\n    public void setRequestedState(STATE state)\n    {\n        requestedState.set(state);\n    }\n\n    public String getActiveProfile()\n    {\n        return activeProfile.get();\n    }\n\n    public void setActiveProfile(String profile)\n    {\n        activeProfile.set(profile);\n    }\n\n    public enum STATE {\n        UNKNOWN,\n        STARTED,\n        STOPPED\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-202512251447534131730924ID5loRL",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766645276,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": \"/\",\n    \"handler\": \"ManagementApplication\",\n    \"implementationPresent\": true,\n    \"pathPrefix\": false,\n    \"literalString\": true,\n    \"namingConvention\": false,\n    \"restfulApi\": true,\n    \"testing\": false\n  }\n]\n```\n\n**Explanation:**\n\nThe `ManagementApplication` class is annotated with `@ApplicationPath(\"/\")`. This annotation, provided by the JAX-RS framework (RESTEasy in this case), defines the base path for all resources within the application.  Therefore, the root path `/` is associated with the `ManagementApplication` class itself.  The implementation is present in the same file, the path is derived from a literal string, and it is for a RESTful API.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1459,
+      "completion_tokens": 173,
+      "total_tokens": 1632,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1459,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

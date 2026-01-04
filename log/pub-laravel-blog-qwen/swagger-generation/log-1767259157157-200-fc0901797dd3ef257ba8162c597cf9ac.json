@@ -1,0 +1,278 @@
+{
+  "timestamp": 1767259157157,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@index` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\n3. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@store` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\n4. In `app/Http/Controllers/Api/V1/PostCommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController@index` is implemented to process HTTP requests to `/v1/posts/{post}/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Events\\CommentPosted;\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Api\\CommentsRequest;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Return the post's comments.\n     */\n    public function index(Request $request, Post $post): ResourceCollection\n    {\n        return CommentResource::collection(\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request, Post $post): CommentResource\n    {\n        $comment = new CommentResource(\n            Auth::user()->comments()->create([\n                'post_id' => $post->id,\n                'content' => $request->input('content')\n            ])\n        );\n\n        broadcast(new CommentPosted($comment, $post))->toOthers();\n\n        return $comment;\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the provided controller to understand the `/v1/posts/{post}/comments` endpoint with POST method. Let me first clarify the information provided, as there seems to be some confusion in the initial description.\n\nThe description mentions both `index` and `store` methods handling POST requests to the same endpoint, which is incorrect. The `index` method typically handles GET requests, while `store` handles POST requests. Let me investigate further to understand the actual route configuration.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_014a01d6406f42c78e456244",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.php\\\" -exec grep -l \\\"posts.*comments\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './routes/web.php\\n./routes/api.php\\n./tests/Feature/Api/V1/CommentTest.php\\n./app/Http/Controllers/Admin/PostController.php\\n./app/Http/Controllers/UserController.php\\n./resources/views/comments/_list.blade.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_014a01d6406f42c78e456244"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the API routes file to understand how the routes are configured:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_2119195dc2ff4ad3866d527a",
+            "function": {
+              "arguments": "{\"command\": \"cat routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_2119195dc2ff4ad3866d527a"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I can see the route configuration clearly. The route `Route::apiResource('posts.comments', PostCommentController::class)` is configured with different methods in different middleware groups:\n\n1. `->only('store')` within the auth middleware group (for POST requests)\n2. `->only('index')` outside the auth middleware group (for GET requests)\n\nSo the POST method for `/v1/posts/{post}/comments` is handled by the `store` method in `PostCommentController`. Let me also check the request validation class to understand the expected input:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_be0cd0a07b5d4d06bfb791ce",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Http/Requests/Api/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Api;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_be0cd0a07b5d4d06bfb791ce"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the Comment resource to understand the response structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_9e39bebb5dc0424c8ea3ef30",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_9e39bebb5dc0424c8ea3ef30"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the Comment model to understand the database structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_68e40289fad042969f3ff98f",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*Comment.php\\\" -path \\\"./app/Models/*\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Models/Comment.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_68e40289fad042969f3ff98f"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_00c0badc957541dfa3173765",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_00c0badc957541dfa3173765"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the Post model to understand the relationship:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_4e8b110866364597a26687a1",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_4e8b110866364597a26687a1"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check if there's a helper function for humanize_date:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_91b91c5f36d1473f80b660ea",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.php\\\" -exec grep -l \\\"humanize_date\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './tests/Unit/DateHelperTest.php\\n./tests/Feature/PostTest.php\\n./tests/Feature/Admin/PostTest.php\\n./tests/Feature/Admin/CommentTest.php\\n./app/Http/Resources/Comment.php\\n./app/Providers/AppServiceProvider.php\\n./app/Helpers/date.php\\n./resources/views/posts/_post.blade.php\\n./resources/views/posts/show.blade.php\\n./resources/views/comments/_comment.blade.php\\n./resources/views/admin/posts/_list.blade.php\\n./resources/views/admin/comments/_list.blade.php\\n./resources/views/admin/media/_list.blade.php\\n./resources/views/admin/users/_list.blade.php\\n./resources/views/users/_post.blade.php\\n./resources/views/users/_comment.blade.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_91b91c5f36d1473f80b660ea"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_dd55e7c4b7e5461b95d4a9b5",
+            "function": {
+              "arguments": "{\"command\": \"cat app/Helpers/date.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nuse Illuminate\\\\Support\\\\Carbon;\\n\\n/**\\n * Return a Carbon instance.\\n */\\nfunction carbon(string $parseString = '', ?string $tz = null): Carbon\\n{\\n    return new Carbon($parseString, $tz);\\n}\\n\\n/**\\n * Return a formatted Carbon date.\\n */\\nfunction humanize_date(Carbon $date, string $format = 'd F Y, H:i'): string\\n{\\n    return $date->format($format);\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_dd55e7c4b7e5461b95d4a9b5"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I have all the information I need to analyze the POST endpoint `/v1/posts/{post}/comments`. Let me think through the response objects:\n\n1. The `store` method in `PostCommentController` handles POST requests to `/v1/posts/{post}/comments`\n2. It uses `CommentsRequest` validation which requires a 'content' field\n3. It creates a new comment and returns it as a `CommentResource`\n4. The `CommentResource` contains fields like id, content, posted_at, humanized_posted_at, author_id, post_id, author_name, author_url, and can_delete\n5. The endpoint is protected by `auth:sanctum` and `verified` middleware\n\nBased on this analysis, I can determine the possible responses:\n\n- 201 Created: When the comment is successfully created\n- 401 Unauthorized: When the user is not authenticated (due to auth:sanctum middleware)\n- 403 Forbidden: When the user is not verified (due to verified middleware) or lacks permissions\n- 422 Unprocessable Entity: When validation fails (content is required)\n\nLet me also check if there are any other potential responses by looking at the tests:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_94f82e0b313641e99b9fa4c5",
+            "function": {
+              "arguments": "{\"command\": \"grep -A 20 -B 5 \\\"posts.*comments\\\" tests/Feature/Api/V1/CommentTest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '    {\\n        $post = Post::factory()->create();\\n        Comment::factory()->count(10)->create([\\'post_id\\' => $post->id]);\\n        Comment::factory()->count(10)->create();\\n\\n        $this->json(\\'GET\\', \"/api/v1/posts/{$post->id}/comments\")\\n            ->assertOk()\\n            ->assertJsonStructure([\\n                \\'data\\' => [[\\n                    \\'id\\',\\n                    \\'content\\',\\n                    \\'posted_at\\',\\n                    \\'author_id\\',\\n                    \\'post_id\\',\\n                ]],\\n                \\'links\\' => [\\n                    \\'first\\',\\n                    \\'last\\',\\n                    \\'prev\\',\\n                    \\'next\\',\\n                ],\\n                \\'meta\\' => [\\n                    \\'current_page\\',\\n                    \\'from\\',\\n                    \\'last_page\\',\\n                    \\'path\\',\\n--\\n    public function testStore()\\n    {\\n        $post = Post::factory()->create();\\n\\n        $this->actingAsUser(\\'sanctum\\')\\n            ->json(\\'POST\\', \"/api/v1/posts/{$post->id}/comments\", $this->validParams())\\n            ->assertCreated();\\n    }\\n\\n    public function testStoreFail()\\n    {\\n        $this->actingAsUser(\\'sanctum\\')\\n            ->json(\\'POST\\', \\'/api/v1/posts/31415/comments\\', $this->validParams())\\n            ->assertNotFound()\\n            ->assertJson([\\n                \\'message\\' => sprintf(\\'No query results for model [%s] 31415\\', Post::class)\\n            ]);\\n    }\\n\\n    public function testCommentShow()\\n    {\\n        $comment = Comment::factory()->create([\\n            \\'content\\' => \\'The Empire Strikes Back\\'\\n        ]);\\n\\n        $this->json(\\'GET\\', \"/api/v1/comments/{$comment->id}\")\\n            ->assertOk()\\n            ->assertJsonStructure([\\n                \\'data\\' => [\\n                    \\'id\\',\\n                    \\'content\\',\\n                    \\'posted_at\\',\\n                    \\'humanized_posted_at\\',\\n', 'stderr': ''}",
+        "tool_call_id": "call_94f82e0b313641e99b9fa4c5"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-3e0dca64-717d-9bd0-8cd5-9114bd0745a9",
+    "choices": [
+      {
+        "message": {
+          "content": "Based on my analysis of the code, I can now determine the response objects for the POST endpoint `/v1/posts/{post}/comments`:\n\n1. The `store` method processes POST requests to create a new comment on a post\n2. It returns a `CommentResource` when successful (201 Created)\n3. It requires authentication and verification (401/403 responses possible)\n4. It validates the content field (422 response possible)\n5. It may return 404 if the post doesn't exist\n\nLet me also check the User model to understand the relationship:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_652b6d53b334482e97c601ff",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"cat app/Models/User.php | grep -A 10 -B 10 comment\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259152,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 5502,
+      "completion_tokens": 165,
+      "prompt_tokens": 5337,
+      "prompt_tokens_details": {
+        "cached_tokens": 3968
+      }
+    }
+  }
+}

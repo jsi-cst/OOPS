@@ -1,0 +1,118 @@
+{
+  "timestamp": 1767254291951,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v1/ops/node/rebuild` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, `com.datastax.mgmtapi.resources.v1.NodeOpsResources.rebuild` is implemented to process HTTP requests to `/api/v1/ops/node/rebuild` with HTTP method POST.\n\n2. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, `anonymous` is implemented to process HTTP requests to `/api/v1/ops/node/rebuild` with HTTP method POST.\n\n3. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, `com.datastax.mgmtapi.resources.v1.NodeOpsResources#rebuild` is implemented to process HTTP requests to `/api/v1/ops/node/rebuild` with HTTP method POST.\n\n4. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, `com.datastax.mgmtapi.resources.v1.NodeOpsResources.rebuild` is implemented to process HTTP requests to `/api/v1/ops/node/rebuild` with HTTP method POST.\n\n5. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, `anonymous` is implemented to process HTTP requests to `/api/v1/ops/node/rebuild` with HTTP method POST.\n\n6. In `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, `com.datastax.mgmtapi.resources.v1.NodeOpsResources#rebuild` is implemented to process HTTP requests to `/api/v1/ops/node/rebuild` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.oss.driver.api.core.cql.Row;\nimport com.datastax.oss.driver.api.core.type.reflect.GenericType;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\n\nimport javax.ws.rs.*;\nimport javax.ws.rs.client.Entity;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\n\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\n\n@Path(\"/api/v1/ops/node\")\npublic class NodeOpsResources {\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public NodeOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/decommission\")\n    @Operation(summary = \"Decommission the *node I am connecting to*. This invocation returns immediately and returns a job id.\", operationId = \"decommission_v1\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node decommission request\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(implementation = String.class),\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\n        )\n    )\n    public Response decommission(@QueryParam(value=\"force\")boolean force)\n    {\n        return handle(() ->\n                Response.accepted(\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\"CALL NodeOps.decommission(?, ?)\", force, true)\n                        ).build());\n    }\n\n    @POST\n    @Path(\"/rebuild\")\n    @Operation(summary = \"Rebuild data by streaming data from other nodes. This operation returns immediately with a job id.\", operationId = \"rebuild_v1\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node rebuild request\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(implementation = String.class),\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\n        )\n    )\n    public Response rebuild(@QueryParam(\"src_dc\") String srcDatacenter)\n    {\n        return handle(() ->\n                Response.accepted(\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.rebuild(?)\", srcDatacenter)\n                ).build());\n    }\n\n    @GET\n    @Path(\"/schema/versions\")\n    @Produces(MediaType.APPLICATION_JSON)\n    @ApiResponse(\n            responseCode = \"200\",\n            description = \"Gets the schema versions for each node. Useful for checking schema agreement\",\n            content = @Content(\n                    mediaType = MediaType.APPLICATION_JSON,\n                    examples = @ExampleObject(value = \"{2207c2a9-f598-3971-986b-2926e09e239d: [10.244.1.4, 10.244.2.3, 10.244.3.3]}\")))\n    @Operation(summary = \"Get schema versions.\", operationId = \"getSchemaVersions\")\n    public Response schemaVersions()\n    {\n        return handle(() ->\n        {\n            Row row = cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.getSchemaVersions()\").one();\n\n            Map<String, List> schemaVersions = Collections.emptyMap();\n            if (row != null)\n            {\n                schemaVersions = row.getMap(0, String.class, List.class);\n            }\n            return Response.ok(schemaVersions).build();\n        });\n    }\n\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the `/api/v1/ops/node/rebuild` endpoint with HTTP method POST to generate the response objects for the OpenAPI specification.\n\nLooking at the code in `NodeOpsResources.java`, I can see that the `rebuild` method is annotated with:\n- `@POST` and `@Path(\"/rebuild\")` making it handle POST requests to `/api/v1/ops/node/rebuild`\n- `@Operation` with summary \"Rebuild data by streaming data from other nodes. This operation returns immediately with a job id.\"\n- `@Produces(MediaType.TEXT_PLAIN)`\n- `@ApiResponse` with responseCode \"202\" for \"Job ID for successfully scheduled Cassandra node rebuild request\"\n\nThe method takes a query parameter `@QueryParam(\"src_dc\") String srcDatacenter` and returns a Response with a job ID.\n\nLet me check if there are any other response codes defined for this endpoint by looking for exception handling or other response codes in the codebase.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_d7704269161d41c8ae3eee69",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"rebuild\\\" src/main/java/ --include=\\\"*.java\\\" -A 10 -B 10\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    )\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    public Response decommission(@QueryParam(value=\"force\")boolean force)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    {\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-        return handle(() ->\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-                Response.accepted(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\"CALL NodeOps.decommission(?, ?)\", force, true)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-                        ).build());\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    }\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    @POST\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java:    @Path(\"/rebuild\")\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java:    @Operation(summary = \"Rebuild data by streaming data from other nodes. This operation returns immediately with a job id.\", operationId = \"rebuild_v1\")\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    @Produces(MediaType.TEXT_PLAIN)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java:    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node rebuild request\",\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-        content = @Content(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-            mediaType = MediaType.TEXT_PLAIN,\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-            schema = @Schema(implementation = String.class),\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-        )\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    )\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java:    public Response rebuild(@QueryParam(\"src_dc\") String srcDatacenter)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    {\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-        return handle(() ->\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-                Response.accepted(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java:                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.rebuild(?)\", srcDatacenter)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-                ).build());\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    }\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    @GET\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    @Path(\"/schema/versions\")\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    @Produces(MediaType.APPLICATION_JSON)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-    @ApiResponse(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-            responseCode = \"200\",\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-            description = \"Gets the schema versions for each node. Useful for checking schema agreement\",\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java-            content = @Content(\\n--\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-            content = @Content(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                    mediaType = MediaType.TEXT_PLAIN,\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                    schema = @Schema(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                            implementation = String.class\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                    ),\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                    examples = @ExampleObject(\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                    )\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-            )\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-    )\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java:    @Operation(summary = \"Scrub (rebuild sstables for) one or more tables. This operation is asynchronous and returns immediately.\", operationId = \"scrub\")\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-    public Response scrub(ScrubRequest scrubRequest)\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-    {\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-        return handle(() ->\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-        {\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-            List<String> tables = scrubRequest.tables;\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-            if (CollectionUtils.isEmpty(tables)) {\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-                tables = new ArrayList<>();\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-            }\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java-            String keyspaceName = scrubRequest.keyspaceName;\\n--\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-    @Consumes(MediaType.APPLICATION_JSON)\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-    @Produces(MediaType.TEXT_PLAIN)\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-    @ApiResponse(responseCode = \"200\", description = \"Table scrub successful\",\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-        content = @Content(\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            mediaType = MediaType.TEXT_PLAIN,\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            examples = @ExampleObject(\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-                value = \"OK\"\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            )\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-        )\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-    )\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java:    @Operation(summary = \"Scrub (rebuild sstables for) one or more tables\", operationId = \"scrub\")\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-    public Response scrub(ScrubRequest scrubRequest)\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-    {\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-        return handle(() ->\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-        {\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            List<String> tables = scrubRequest.tables;\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            if (CollectionUtils.isEmpty(tables)) {\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-                tables = new ArrayList<>();\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            }\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java-            String keyspaceName = scrubRequest.keyspaceName;\\n--\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-import java.io.Serializable;\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-import java.util.Arrays;\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-import java.util.List;\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-public class FeatureSet implements Serializable {\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-    public enum Feature {\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        ASYNC_SSTABLE_TASKS(\"async_sstable_tasks\"),\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        FULL_QUERY_LOGGING(\"full_query_logging\"),\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java:        REBUILD(\"rebuild\"),\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        ASYNC_UPGRADE_SSTABLE_TASK(\"async_upgrade_sstable_task\"),\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        ASYNC_COMPACTION_TASKS(\"async_compaction_task\"),\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        ASYNC_SCRUB_TASK(\"async_scrub_task\"),\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        ASYNC_MOVE_TASK(\"async_move_task\");\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        @JsonValue\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        private String featureName;\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-        Feature(String name) {\\nsrc/main/java/com/datastax/mgmtapi/resources/models/FeatureSet.java-            this.featureName = name;\\n', 'stderr': ''}",
+        "tool_call_id": "call_d7704269161d41c8ae3eee69"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I need to look at the `handle` method to understand what other response codes might be possible. The `handle` method is imported from `NodeOpsResources` and might handle exceptions that result in different HTTP response codes.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_d2406b687ac746e3aa469b03",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.java\\\" -exec grep -l \\\"handle\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/K8OperatorResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/NodeOpsResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/AuthResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/MetadataResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/TableOpsResources.java\\n./src/main/java/com/datastax/mgmtapi/resources/KeyspaceOpsResources.java\\n./src/main/java/com/datastax/mgmtapi/NettyJaxrsTLSServer.java\\n./src/main/java/com/datastax/mgmtapi/UnixSocketCQLAccess.java\\n./src/main/java/com/datastax/mgmtapi/Cli.java\\n./src/main/java/com/datastax/mgmtapi/NettyJaxrsIPCServer.java\\n./src/test/java/com/datastax/mgmtapi/helpers/NettyHttpIPCClient.java\\n./src/test/java/com/datastax/mgmtapi/helpers/NettyHttpClient.java\\n./src/test/java/com/datastax/mgmtapi/NettyHttpOverIPCTest.java\\n./src/test/java/com/datastax/mgmtapi/NonDestructiveOpsIT.java\\n./src/test/java/com/datastax/mgmtapi/NettyTlsClientAuthTest.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_d2406b687ac746e3aa469b03"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-8ffc5342-a8d0-974d-aee7-bc5b9858439f",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me check the import statement in the file to see where the `handle` method comes from:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_68547fcedc2146e38a03dafc",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"grep -n \\\"import.*handle\\\" src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767254289,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 5276,
+      "completion_tokens": 67,
+      "prompt_tokens": 5209,
+      "prompt_tokens_details": {
+        "cached_tokens": 4608
+      }
+    }
+  }
+}

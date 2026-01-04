@@ -1,0 +1,652 @@
+[
+    [
+        {
+            "method": "POST",
+            "apiurl": "/api/paste",
+            "feat": "/api/paste"
+        },
+        {
+            "req": [
+                {
+                    "name": "paste",
+                    "in": "body",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "required": [
+                            "source_code"
+                        ],
+                        "properties": {
+                            "paste_title": {
+                                "type": "string",
+                                "default": "Untitled Paste",
+                                "minLength": 1,
+                                "maxLength": 50
+                            },
+                            "paste_syntax": {
+                                "type": "string",
+                                "default": "NONE",
+                                "enum": [
+                                    "NONE",
+                                    "JAVA",
+                                    "CSHARP",
+                                    "Python",
+                                    "JAVASCRIPT",
+                                    "GO",
+                                    "CLANG",
+                                    "CPLUSPLUS",
+                                    "PHP",
+                                    "SWIFT",
+                                    "LUA",
+                                    "RUBY",
+                                    "MYSQL",
+                                    "POSTGRESQL"
+                                ]
+                            },
+                            "paste_visibility": {
+                                "type": "string",
+                                "default": "PRIVATE",
+                                "enum": [
+                                    "PUBLIC",
+                                    "PRIVATE"
+                                ]
+                            },
+                            "paste_expiration": {
+                                "type": "string",
+                                "default": "ONEHOUR",
+                                "enum": [
+                                    "TENMINUTES",
+                                    "THIRTYMINUTES",
+                                    "ONEHOUR",
+                                    "FIVEHOURS",
+                                    "ONEDAY",
+                                    "THREEDAYS",
+                                    "FIVEDAYS",
+                                    "ONEWEEK"
+                                ]
+                            },
+                            "source_code": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "paste_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            "source_code": {
+                                "type": "string"
+                            },
+                            "paste_title": {
+                                "type": "string"
+                            },
+                            "paste_syntax": {
+                                "type": "string"
+                            },
+                            "paste_expiration_date": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "paste_visibility": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "400": {
+                    "description": "Bad Request",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "DELETE",
+            "apiurl": "/api/paste/{paste_id}",
+            "feat": "/api/paste/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "paste_id",
+                    "in": "path",
+                    "description": "UUID of the paste to delete. Must be a valid UUID string (invalid format will cause an IllegalArgumentException).",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "OK"
+                },
+                "400": {
+                    "description": "Bad Request - invalid UUID format or other client error",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "pattern": "yyyy-MM-dd HH:mm:ss",
+                                "description": "Timestamp of the error in format yyyy-MM-dd HH:mm:ss"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "HTTP status code"
+                            },
+                            "error": {
+                                "type": "string",
+                                "description": "HTTP status reason phrase"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "Detailed error message"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Not Found - no CodePaste has been found with the given id",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "pattern": "yyyy-MM-dd HH:mm:ss",
+                                "description": "Timestamp of the error in format yyyy-MM-dd HH:mm:ss"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "HTTP status code"
+                            },
+                            "error": {
+                                "type": "string",
+                                "description": "HTTP status reason phrase"
+                            },
+                            "message": {
+                                "type": "string",
+                                "description": "Detailed error message"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/api/paste/{paste_id}",
+            "feat": "/api/paste/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "paste_id",
+                    "in": "path",
+                    "description": "Identifier of the CodePaste as a UUID string. Must be a valid UUID (UUID.fromString will be used).",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response returning the CodePasteDTO object.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "paste_id": {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            "source_code": {
+                                "type": "string"
+                            },
+                            "paste_title": {
+                                "type": "string"
+                            },
+                            "paste_syntax": {
+                                "type": "string",
+                                "enum": [
+                                    "NONE",
+                                    "JAVA",
+                                    "CSHARP",
+                                    "Python",
+                                    "JAVASCRIPT",
+                                    "GO",
+                                    "CLANG",
+                                    "CPLUSPLUS",
+                                    "PHP",
+                                    "SWIFT",
+                                    "LUA",
+                                    "RUBY",
+                                    "MYSQL",
+                                    "POSTGRESQL"
+                                ]
+                            },
+                            "paste_expiration_date": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "paste_visibility": {
+                                "type": "string",
+                                "enum": [
+                                    "PUBLIC",
+                                    "PRIVATE"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "400": {
+                    "description": "Bad Request - invalid input (e.g., malformed UUID or missing required fields).",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Not Found - no paste exists with the given ID.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/api/paste/public",
+            "feat": "/api/paste/public"
+        },
+        {
+            "req": [
+                {
+                    "name": "paste_title",
+                    "in": "query",
+                    "description": "Filter public pastes by title (substring match).",
+                    "required": false,
+                    "type": "string",
+                    "default": ""
+                },
+                {
+                    "name": "paste_syntax",
+                    "in": "query",
+                    "description": "Filter public pastes by syntax. Must be one of the PasteSyntax enum names.",
+                    "required": false,
+                    "type": "string",
+                    "enum": [
+                        "NONE",
+                        "JAVA",
+                        "CSHARP",
+                        "Python",
+                        "JAVASCRIPT",
+                        "GO",
+                        "CLANG",
+                        "CPLUSPLUS",
+                        "PHP",
+                        "SWIFT",
+                        "LUA",
+                        "RUBY",
+                        "MYSQL",
+                        "POSTGRESQL"
+                    ]
+                },
+                {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "Maximum number of results to return (between 1 and 20 inclusive).",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32",
+                    "default": 5,
+                    "minimum": 1,
+                    "maximum": 20
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "A list of public code pastes matching the query.",
+                    "schema": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "paste_id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "source_code": {
+                                    "type": "string"
+                                },
+                                "paste_title": {
+                                    "type": "string"
+                                },
+                                "paste_syntax": {
+                                    "type": "string",
+                                    "enum": [
+                                        "NONE",
+                                        "JAVA",
+                                        "CSHARP",
+                                        "Python",
+                                        "JAVASCRIPT",
+                                        "GO",
+                                        "CLANG",
+                                        "CPLUSPLUS",
+                                        "PHP",
+                                        "SWIFT",
+                                        "LUA",
+                                        "RUBY",
+                                        "MYSQL",
+                                        "POSTGRESQL"
+                                    ]
+                                },
+                                "paste_expiration_date": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "Formatted as 'yyyy-MM-dd HH:mm:ss'"
+                                },
+                                "paste_visibility": {
+                                    "type": "string",
+                                    "enum": [
+                                        "PUBLIC",
+                                        "PRIVATE"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "400": {
+                    "description": "Bad Request - invalid request parameters (e.g., limit out of range or invalid paste_syntax).",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error - unexpected error.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/api/account/{account_id}",
+            "feat": "/api/account/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "account_id",
+                    "in": "path",
+                    "description": "ID of the user account",
+                    "required": true,
+                    "type": "integer",
+                    "format": "int64"
+                }
+            ],
+            "res": {
+                "405": {
+                    "description": "Method Not Allowed. No POST operation is implemented for /api/account/{account_id} (supported method(s): GET)."
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/api/account/{account_id}",
+            "feat": "/api/account/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "account_id",
+                    "in": "path",
+                    "required": true,
+                    "type": "integer",
+                    "format": "int64"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "OK - successful response returning UserAccountDTO",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "account_id": {
+                                "type": "integer",
+                                "format": "int64"
+                            },
+                            "account_username": {
+                                "type": "string"
+                            },
+                            "account_email": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "account_id",
+                            "account_username",
+                            "account_email"
+                        ]
+                    }
+                },
+                "404": {
+                    "description": "Not Found - User account with given id was not found",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "formatted as yyyy-MM-dd HH:mm:ss"
+                            },
+                            "status": {
+                                "type": "integer"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/api/account/signup",
+            "feat": "/api/account/signup"
+        },
+        {
+            "req": [
+                {
+                    "name": "signupAccount",
+                    "in": "body",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "account_username": {
+                                "type": "string"
+                            },
+                            "account_email": {
+                                "type": "string"
+                            },
+                            "account_password": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "account_username",
+                            "account_email",
+                            "account_password"
+                        ]
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful signup — returns the created user account.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "account_id": {
+                                "type": "integer",
+                                "format": "int64"
+                            },
+                            "account_username": {
+                                "type": "string"
+                            },
+                            "account_email": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "account_id",
+                            "account_username",
+                            "account_email"
+                        ]
+                    }
+                },
+                "400": {
+                    "description": "Bad Request — invalid input (e.g. email format invalid) or malformed JSON.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "description": "Timestamp formatted as 'yyyy-MM-dd HH:mm:ss'"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "timestamp",
+                            "status",
+                            "error",
+                            "message"
+                        ]
+                    }
+                },
+                "409": {
+                    "description": "Conflict — account username or email already taken.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "timestamp": {
+                                "type": "string",
+                                "description": "Timestamp formatted as 'yyyy-MM-dd HH:mm:ss'"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "error": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "timestamp",
+                            "status",
+                            "error",
+                            "message"
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+]

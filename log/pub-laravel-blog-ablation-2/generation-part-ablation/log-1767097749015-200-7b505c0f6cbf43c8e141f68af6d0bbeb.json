@@ -1,0 +1,173 @@
+{
+  "timestamp": 1767097749015,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/posts/{post}` with method PATCH, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/PostController.php`, `App\\\\Http\\\\Controllers\\\\Admin\\\\PostController` is implemented to process HTTP requests to `/admin/posts/{post}` with HTTP method PATCH.\n\n2. In `app/Http/Controllers/Admin/PostController.php`, `PostController` is implemented to process HTTP requests to `/admin/posts/{post}` with HTTP method PATCH.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Models\\MediaLibrary;\nuse App\\Models\\Post;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\View\\View;\n\nclass PostController extends Controller\n{\n    /**\n     * Show the application posts index.\n     */\n    public function index(): View\n    {\n        return view('admin.posts.index', [\n            'posts' => Post::withCount('comments', 'likes')->with('author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Post $post): View\n    {\n        return view('admin.posts.edit', [\n            'post' => $post,\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Show the form for creating a new resource.\n     */\n    public function create(Request $request): View\n    {\n        return view('admin.posts.create', [\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): RedirectResponse\n    {\n        $post = Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.created'));\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): RedirectResponse\n    {\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post)\n    {\n        $post->delete();\n\n        return redirect()->route('admin.posts.index')->withSuccess(__('posts.deleted'));\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Wn4WTJYBa206mXOUcsCJzpW2",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Requests/Admin/PostsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Admin;\\n\\nuse App\\\\Rules\\\\CanBeAuthor;\\nuse Carbon\\\\Carbon;\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass PostsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Prepare the data for validation.\\n     */\\n    protected function prepareForValidation(): void\\n    {\\n        $this->merge([\\n            'slug' => Str::slug($this->input('title'))\\n        ]);\\n\\n        $this->merge([\\n            'posted_at' => Carbon::parse($this->input('posted_at'))\\n        ]);\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'title' => 'required',\\n            'content' => 'required',\\n            'posted_at' => 'required|date',\\n            'thumbnail_id' => 'nullable|exists:media,id',\\n            'author_id' => ['required', 'exists:users,id', new CanBeAuthor],\\n            'slug' => 'unique:posts,slug,' . (optional($this->post)->id ?: 'NULL'),\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_Wn4WTJYBa206mXOUcsCJzpW2"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_qMfQL4JUvdXPuBSE3Dthr9un",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' routes/web.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\PostFeedController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Web Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register web routes for your application. These\\n| routes are loaded by the RouteServiceProvider and all of them will\\n| be assigned to the \"web\" middleware group. Make something great!\\n|\\n*/\\n\\nRoute::get(\\'/\\', [PostController::class, \\'index\\'])->name(\\'home\\');\\nRoute::get(\\'/posts/feed\\', [PostFeedController::class, \\'index\\'])->name(\\'posts.feed\\');\\nRoute::resource(\\'posts\\', PostController::class)->only(\\'show\\');\\nRoute::resource(\\'users\\', UserController::class)->only(\\'show\\');\\nRoute::resource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n\\nRoute::get(\\'newsletter-subscriptions/unsubscribe\\', [NewsletterSubscriptionController::class, \\'unsubscribe\\'])->name(\\'newsletter-subscriptions.unsubscribe\\');\\n', 'stderr': ''}",
+        "tool_call_id": "call_qMfQL4JUvdXPuBSE3Dthr9un"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_t2ekUHRRAYi47LxdKvkLMzEI",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"admin.posts\\\" -n .. | sed -n '1,200p'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '../pub-laravel-blog/tests/Feature/Admin/PostTest.php:22:            ->get(\\'/admin/posts\\')\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:34:            ->get(\\'/admin/posts/create\\')\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:49:            ->post(\\'/admin/posts\\', $params)\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:64:            ->post(\\'/admin/posts\\', $params)\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:75:            ->get(\"/admin/posts/{$post->slug}/edit\")\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:91:        $response = $this->actingAsAdmin()->patch(\"/admin/posts/{$post->slug}\", $params);\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:95:        $response->assertRedirect(\"/admin/posts/{$post->slug}/edit\");\\n../pub-laravel-blog/tests/Feature/Admin/PostTest.php:113:            ->delete(\"/admin/posts/{$post->slug}\")\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostThumbnailController.php:18:        return redirect()->route(\\'admin.posts.edit\\', $post)->withSuccess(__(\\'posts.updated\\'));\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostController.php:21:        return view(\\'admin.posts.index\\', [\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostController.php:31:        return view(\\'admin.posts.edit\\', [\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostController.php:43:        return view(\\'admin.posts.create\\', [\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostController.php:56:        return redirect()->route(\\'admin.posts.edit\\', $post)->withSuccess(__(\\'posts.created\\'));\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostController.php:66:        return redirect()->route(\\'admin.posts.edit\\', $post)->withSuccess(__(\\'posts.updated\\'));\\n../pub-laravel-blog/app/Http/Controllers/Admin/PostController.php:76:        return redirect()->route(\\'admin.posts.index\\')->withSuccess(__(\\'posts.deleted\\'));\\n../pub-laravel-blog/resources/views/admin/posts/_thumbnail.blade.php:4:    <form action=\"{{ route(\\'admin.posts_thumbnail.destroy\\', $post) }}\" method=\"POST\" data-confirm=\"@lang(\\'forms.posts.delete_thumbnail\\')\">\\n../pub-laravel-blog/resources/views/admin/posts/create.blade.php:6:    <form action=\"{{ route(\\'admin.posts.store\\') }}\" method=\"POST\">\\n../pub-laravel-blog/resources/views/admin/posts/create.blade.php:9:        @include(\\'admin/posts/_form\\')\\n../pub-laravel-blog/resources/views/admin/posts/create.blade.php:11:        <a href=\"{{ route(\\'admin.posts.index\\') }}\" class=\"btn btn-light\">\\n../pub-laravel-blog/resources/views/admin/posts/edit.blade.php:12:    @include(\\'admin/posts/_thumbnail\\')\\n../pub-laravel-blog/resources/views/admin/posts/edit.blade.php:14:    <form action=\"{{ route(\\'admin.posts.update\\', $post) }}\" method=\"POST\">\\n../pub-laravel-blog/resources/views/admin/posts/edit.blade.php:18:        @include(\\'admin/posts/_form\\')\\n../pub-laravel-blog/resources/views/admin/posts/edit.blade.php:21:            <a href=\"{{ route(\\'admin.posts.index\\') }}\" class=\"btn btn-light\">\\n../pub-laravel-blog/resources/views/admin/posts/index.blade.php:6:      <a href=\"{{ route(\\'admin.posts.create\\') }}\" class=\"btn btn-primary btn-sm align-self-center\">\\n../pub-laravel-blog/resources/views/admin/posts/index.blade.php:13:    @include (\\'admin/posts/_list\\')\\n../pub-laravel-blog/resources/views/admin/posts/_list.blade.php:17:                    <a href=\"{{ route(\\'admin.posts.edit\\', $post) }}\">\\n../pub-laravel-blog/resources/views/admin/posts/_list.blade.php:30:                    <a href=\"{{ route(\\'admin.posts.edit\\', $post) }}\" class=\"btn btn-primary btn-sm\">\\n../pub-laravel-blog/resources/views/admin/posts/_list.blade.php:34:                    <form action=\"{{ route(\\'admin.posts.destroy\\', $post) }}\" method=\"POST\" class=\"form-inline\" data-confirm=\"@lang(\\'forms.posts.delete\\')\">\\n../pub-laravel-blog/resources/views/admin/dashboard/_posts.blade.php:12:        <a href=\"{{ route(\\'admin.posts.index\\') }}\" class=\"d-flex justify-content-between text-light\">\\n../pub-laravel-blog/resources/views/admin/comments/_list.blade.php:21:                    <a href=\"{{ route(\\'admin.posts.edit\\', $comment->post) }}\">\\n../pub-laravel-blog/resources/views/admin/shared/sidebar.blade.php:10:        <a @class([\\'nav-link\\', \\'active\\' => request()->route()->named(\\'admin.posts.*\\')]) href=\"{{ route(\\'admin.posts.index\\') }}\">\\n', 'stderr': 'grep: ../state/pub-laravel-blog/states.pickle: binary file matches\\n'}",
+        "tool_call_id": "call_t2ekUHRRAYi47LxdKvkLMzEI"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_ZIW3VUGWz2IoZ8bFZe7hfMun",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,220p' ../pub-laravel-blog/routes/web.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\PostFeedController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Web Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register web routes for your application. These\\n| routes are loaded by the RouteServiceProvider and all of them will\\n| be assigned to the \"web\" middleware group. Make something great!\\n|\\n*/\\n\\nRoute::get(\\'/\\', [PostController::class, \\'index\\'])->name(\\'home\\');\\nRoute::get(\\'/posts/feed\\', [PostFeedController::class, \\'index\\'])->name(\\'posts.feed\\');\\nRoute::resource(\\'posts\\', PostController::class)->only(\\'show\\');\\nRoute::resource(\\'users\\', UserController::class)->only(\\'show\\');\\nRoute::resource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n\\nRoute::get(\\'newsletter-subscriptions/unsubscribe\\', [NewsletterSubscriptionController::class, \\'unsubscribe\\'])->name(\\'newsletter-subscriptions.unsubscribe\\');\\n', 'stderr': ''}",
+        "tool_call_id": "call_ZIW3VUGWz2IoZ8bFZe7hfMun"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_l2qCV3VXXREgJJADSIRCTsnu",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' ../pub-laravel-blog/tests/Feature/Admin/PostTest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace Tests\\\\Feature\\\\Admin;\\n\\nuse App\\\\Models\\\\Comment;\\nuse App\\\\Models\\\\Post;\\nuse App\\\\Models\\\\User;\\nuse Illuminate\\\\Foundation\\\\Testing\\\\RefreshDatabase;\\nuse Tests\\\\TestCase;\\n\\nclass PostTest extends TestCase\\n{\\n    use RefreshDatabase;\\n\\n    public function testIndex()\\n    {\\n        $anakin = User::factory()->anakin()->create();\\n        Post::factory()->create([\\'author_id\\' => $anakin->id]);\\n        Post::factory()->count(3)->create();\\n\\n        $this->actingAsAdmin()\\n            ->get(\\'/admin/posts\\')\\n            ->assertOk()\\n            ->assertSee(\\'4 posts\\')\\n            ->assertSee(\\'Anakin\\')\\n            ->assertSee(\\'Author\\')\\n            ->assertSee(\\'Posted at\\')\\n            ->assertSee(\\'Title\\');\\n    }\\n\\n    public function testCreate()\\n    {\\n        $this->actingAsAdmin()\\n            ->get(\\'/admin/posts/create\\')\\n            ->assertOk()\\n            ->assertSee(\\'Create post\\')\\n            ->assertSee(\\'Title\\')\\n            ->assertSee(\\'Author\\')\\n            ->assertSee(\\'Posted at\\')\\n            ->assertSee(\\'Content\\')\\n            ->assertSee(\\'Save\\');\\n    }\\n\\n    public function testStore()\\n    {\\n        $params = $this->validParams();\\n\\n        $this->actingAsAdmin()\\n            ->post(\\'/admin/posts\\', $params)\\n            ->assertStatus(302);\\n\\n        $params[\\'posted_at\\'] = now()->second(0)->toDateTimeString();\\n\\n        $post = Post::first();\\n\\n        $this->assertDatabaseHas(\\'posts\\', $params);\\n    }\\n\\n    public function testStoreFail()\\n    {\\n        $params = $this->validParams([\\'content\\' => null]);\\n\\n        $this->actingAsAdmin()\\n            ->post(\\'/admin/posts\\', $params)\\n            ->assertStatus(302)\\n            ->assertSessionHas(\\'errors\\');\\n    }\\n\\n    public function testEdit()\\n    {\\n        $anakin = $this->admin([\\'name\\' => \\'Anakin\\', \\'email\\' => \\'anakin@skywalker.st\\']);\\n        $post = Post::factory()->create([\\'author_id\\' => $anakin->id]);\\n\\n        $this->actingAs($anakin)\\n            ->get(\"/admin/posts/{$post->slug}/edit\")\\n            ->assertOk()\\n            ->assertSee(\\'Anakin\\')\\n            ->assertSee(\\'Show post\\')\\n            ->assertSee($post->title)\\n            ->assertSee($post->content)\\n            ->assertSee(humanize_date($post->posted_at, \\'Y-m-d\\\\TH:i\\'))\\n            ->assertSee(\\'Update\\')\\n            ->assertSee(\\'Posted at\\');\\n    }\\n\\n    public function testUpdate()\\n    {\\n        $post = Post::factory()->create();\\n        $params = $this->validParams();\\n\\n        $response = $this->actingAsAdmin()->patch(\"/admin/posts/{$post->slug}\", $params);\\n\\n        $post->refresh();\\n\\n        $response->assertRedirect(\"/admin/posts/{$post->slug}/edit\");\\n\\n        $this->assertDatabaseHas(\\'posts\\', $params);\\n        $this->assertEquals($params[\\'content\\'], $post->content);\\n    }\\n\\n    public function testDelete()\\n    {\\n        $post = Post::factory()->create();\\n        Comment::factory()\\n            ->count(2)\\n            ->create()\\n            ->each(function ($comment) use ($post) {\\n                $comment->post_id = $post->id;\\n                $comment->save();\\n            });\\n\\n        $this->actingAsAdmin()\\n            ->delete(\"/admin/posts/{$post->slug}\")\\n            ->assertStatus(302);\\n\\n        $this->assertDatabaseMissing(\\'posts\\', $post->toArray());\\n        $this->assertTrue(Comment::all()->isEmpty());\\n    }\\n\\n    /**\\n     * Valid params for updating or creating a resource\\n     *\\n     * @param  array  $overrides  new params\\n     */\\n    private function validParams(array $overrides = []): array\\n    {\\n        return array_merge([\\n            \\'title\\' => \\'hello world\\',\\n            \\'content\\' => \"I\\'m a content\",\\n            \\'posted_at\\' => now()->format(\\'Y-m-d\\\\TH:i\\'),\\n            \\'author_id\\' => $this->admin()->id,\\n        ], $overrides);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_l2qCV3VXXREgJJADSIRCTsnu"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation — how I derived the Operation object\n\n- Controller and route behavior:\n  - The PATCH /admin/posts/{post} route is handled by App\\Http\\Controllers\\Admin\\PostController::update(PostRequest $request, Post $post).\n  - In update(), the controller updates the post using $request->only(['title','content','posted_at','author_id','thumbnail_id']) and then redirects to the edit route for the post with a success flash message. In a typical Laravel web request this yields an HTTP 302 redirect on success.\n\n- Validation and request fields:\n  - The PostsRequest validation rules define the fields and constraints:\n    - title: required\n    - content: required\n    - posted_at: required and date (the application expects an ISO-like datetime string; tests use 'Y-m-d\\TH:i')\n    - author_id: required (exists:users,id)\n    - thumbnail_id: nullable (exists:media,id)\n    - slug: computed from title by prepareForValidation(); the request merges a slug automatically, but the controller only persists title/content/posted_at/author_id/thumbnail_id.\n  - Because the controller accepts form submissions (tests send form data), I include both application/x-www-form-urlencoded and application/json content types so the operation is usable for both web and JSON clients.\n\n- Path parameter:\n  - The route parameter {post} is used in the tests as the post's slug (they call /admin/posts/{post->slug}). I include a path parameter named \"post\" of type string; description notes it is the post slug or id used to locate the resource.\n\n- Responses:\n  - On successful update, the controller issues a redirect to the edit page — modelled as HTTP 302 with a Location header pointing to the edit URL.\n  - The controller (as a web controller) performs validation via PostsRequest. In standard Laravel behavior:\n    - For form submissions the framework redirects back with a 302 on validation failure (the test-suite asserts session errors and 302). To keep the Operation object concise and aligned with controller behavior I document the successful 302 response and include a generic 400/422-style validation response for JSON clients (application/json) — since Laravel returns 422 JSON validation errors for JSON requests.\n  - The 302 response includes a Location header (string) to indicate the redirect target.\n\n- OpenAPI version:\n  - The Operation object is produced for OpenAPI 3.1.0; for nullable fields I used JSON Schema 3.1-compatible typing (e.g., \"type\": [\"integer\",\"null\"] for thumbnail_id).\n\nNote: I only included fields that are directly relevant to this controller method and its validation (path parameter, request body, and the responses that follow from the controller's behavior).\n\nthe final generated result begins\n{\n  \"summary\": \"Update an existing post (admin)\",\n  \"tags\": [\n    \"admin.posts\"\n  ],\n  \"parameters\": [\n    {\n      \"name\": \"post\",\n      \"in\": \"path\",\n      \"required\": true,\n      \"schema\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Identifier for the post (slug or id) used to locate the post to update\"\n    }\n  ],\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"application/x-www-form-urlencoded\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"title\": {\n              \"type\": \"string\"\n            },\n            \"content\": {\n              \"type\": \"string\"\n            },\n            \"posted_at\": {\n              \"type\": \"string\",\n              \"format\": \"date-time\",\n              \"description\": \"Posted at timestamp (e.g. YYYY-MM-DDTHH:mm)\"\n            },\n            \"author_id\": {\n              \"type\": \"integer\"\n            },\n            \"thumbnail_id\": {\n              \"type\": [\n                \"integer\",\n                \"null\"\n              ],\n              \"description\": \"Optional media id for the thumbnail\"\n            },\n            \"slug\": {\n              \"type\": \"string\",\n              \"description\": \"Optional slug (normally generated from title by the server)\"\n            }\n          },\n          \"required\": [\n            \"title\",\n            \"content\",\n            \"posted_at\",\n            \"author_id\"\n          ]\n        }\n      },\n      \"application/json\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"title\": {\n              \"type\": \"string\"\n            },\n            \"content\": {\n              \"type\": \"string\"\n            },\n            \"posted_at\": {\n              \"type\": \"string\",\n              \"format\": \"date-time\"\n            },\n            \"author_id\": {\n              \"type\": \"integer\"\n            },\n            \"thumbnail_id\": {\n              \"type\": [\n                \"integer\",\n                \"null\"\n              ]\n            },\n            \"slug\": {\n              \"type\": \"string\"\n            }\n          },\n          \"required\": [\n            \"title\",\n            \"content\",\n            \"posted_at\",\n            \"author_id\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"302\": {\n      \"description\": \"Post updated successfully; redirect to the post edit page\",\n      \"headers\": {\n        \"Location\": {\n          \"description\": \"URL of the edit page for the updated post\",\n          \"schema\": {\n            \"type\": \"string\",\n            \"format\": \"uri\"\n          }\n        }\n      }\n    },\n    \"422\": {\n      \"description\": \"Validation errors (returned as JSON for JSON requests)\",\n      \"content\": {\n        \"application/json\": {\n          \"schema\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"message\": {\n                \"type\": \"string\"\n              },\n              \"errors\": {\n                \"type\": \"object\",\n                \"additionalProperties\": {\n                  \"type\": \"array\",\n                  \"items\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767097727,
+    "id": "chatcmpl-CsT8Bn1ItOw0NyPNGJlXJhT7YXB0E",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2660,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1408,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 4343,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 7003
+    }
+  }
+}

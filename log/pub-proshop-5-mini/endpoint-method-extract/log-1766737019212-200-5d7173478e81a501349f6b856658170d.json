@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766737019212,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `routes/orderRoutes.js`, I found that `orderRoutes` is implemented to process HTTP requests. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `server.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport dotenv from 'dotenv';\nimport cookieParser from 'cookie-parser';\ndotenv.config();\nimport connectDB from './config/db.js';\nimport productRoutes from './routes/productRoutes.js';\nimport userRoutes from './routes/userRoutes.js';\nimport orderRoutes from './routes/orderRoutes.js';\nimport uploadRoutes from './routes/uploadRoutes.js';\nimport { notFound, errorHandler } from './middleware/errorMiddleware.js';\n\nconst port = process.env.PORT || 5000;\n\nconnectDB();\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\napp.use(cookieParser());\n\napp.use('/api/products', productRoutes);\napp.use('/api/users', userRoutes);\napp.use('/api/orders', orderRoutes);\napp.use('/api/upload', uploadRoutes);\n\napp.get('/api/config/paypal', (req, res) =>\n  res.send({ clientId: process.env.PAYPAL_CLIENT_ID })\n);\n\nif (process.env.NODE_ENV === 'production') {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static('/var/data/uploads'));\n  app.use(express.static(path.join(__dirname, '/frontend/build')));\n\n  app.get('*', (req, res) =>\n    res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'))\n  );\n} else {\n  const __dirname = path.resolve();\n  app.use('/uploads', express.static(path.join(__dirname, '/uploads')));\n  app.get('/', (req, res) => {\n    res.send('API is running....');\n  });\n}\n\napp.use(notFound);\napp.use(errorHandler);\n\napp.listen(port, () =>\n  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${port}`)\n);\n```\n\nContents of file `routes/orderRoutes.js`:\n\n```\nimport express from 'express';\nconst router = express.Router();\nimport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n} from '../controllers/orderController.js';\nimport { protect, admin } from '../middleware/authMiddleware.js';\n\nrouter.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);\nrouter.route('/mine').get(protect, getMyOrders);\nrouter.route('/:id').get(protect, getOrderById);\nrouter.route('/:id/pay').put(protect, updateOrderToPaid);\nrouter.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CqxI5JaGdkliAe6xnpZEWk3x5FnYR",
+    "object": "chat.completion",
+    "created": 1766737005,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "I examined server.js (which mounts the router at /api/orders) and routes/orderRoutes.js. Below are the full paths (with path parameters wrapped in {}) and, for each path, which HTTP methods are registered in the code.\n\n1) Path: /api/orders\n- allMethods: false\n- HEAD: false\n- POST: true\n- OPTIONS: false\n- TRACE: false\n- GET: true\n- PUT: false\n- DELETE: false\n- PATCH: false\n\n2) Path: /api/orders/mine\n- allMethods: false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: true\n- PUT: false\n- DELETE: false\n- PATCH: false\n\n3) Path: /api/orders/{id}\n- allMethods: false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: true\n- PUT: false\n- DELETE: false\n- PATCH: false\n\n4) Path: /api/orders/{id}/pay\n- allMethods: false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: false\n- PUT: true\n- DELETE: false\n- PATCH: false\n\n5) Path: /api/orders/{id}/deliver\n- allMethods: false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: false\n- PUT: true\n- DELETE: false\n- PATCH: false\n\nExplanation\n- server.js mounts orderRoutes with app.use('/api/orders', orderRoutes), so every route in orderRoutes is prefixed by /api/orders.\n- orderRoutes defines router.route('/').post(...).get(...), router.route('/mine').get(...), router.route('/:id').get(...), router.route('/:id/pay').put(...), router.route('/:id/deliver').put(...). Converting :id to {id} yields the paths above.\n- The method flags reflect only methods explicitly registered in the router code. I did not assume implicit Express behavior (e.g., automatic HEAD for GET) — per your instruction I only marked a method true if it appears in the code.\n- Middleware (protect, admin) is present on many routes but does not change which HTTP methods are registered; it only affects authorization/handling at runtime.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 857,
+      "completion_tokens": 1344,
+      "total_tokens": 2201,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 832,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

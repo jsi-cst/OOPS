@@ -1,0 +1,67 @@
+{
+  "timestamp": 1767333803333,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Resources/Post.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\n2. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\n3. In `app/Http/Requests/Admin/PostsRequest.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Resources/Post.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Resources;\n\nuse Illuminate\\Http\\Resources\\Json\\JsonResource;\n\nclass Post extends JsonResource\n{\n    /**\n     * Transform the resource into an array.\n     */\n    public function toArray($request): array\n    {\n        return [\n            'id' => $this->id,\n            'title' => $this->title,\n            'slug' => $this->slug,\n            'content' => $this->content,\n            'posted_at' => $this->posted_at->toIso8601String(),\n            'author_id' => $this->author_id,\n            'comments_count' => $this->comments_count ?? $this->comments()->count(),\n            'thumbnail_url' => $this->when($this->hasThumbnail(), url(optional($this->thumbnail)->getUrl())),\n            'thumb_thumbnail_url' => $this->when($this->hasThumbnail(), url(optional($this->thumbnail)->getUrl('thumb')))\n        ];\n    }\n}\n```\n\nContents of file `app/Http/Controllers/Api/V1/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Http\\Resources\\Post as PostResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass PostController extends Controller\n{\n    /**\n     * Return the posts.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return PostResource::collection(\n            Post::search($request->input('q'))->withCount('comments')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): PostResource\n    {\n        $this->authorize('update', $post);\n\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return new PostResource($post);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): PostResource\n    {\n        $this->authorize('store', Post::class);\n\n        return new PostResource(\n            Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(Post $post): PostResource\n    {\n        return new PostResource($post);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): Response\n    {\n        $this->authorize('delete', $post);\n\n        $post->delete();\n\n        return response()->noContent();\n    }\n}\n```\n\nContents of file `app/Http/Requests/Admin/PostsRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse App\\Rules\\CanBeAuthor;\nuse Carbon\\Carbon;\nuse Illuminate\\Foundation\\Http\\FormRequest;\nuse Illuminate\\Support\\Str;\n\nclass PostsRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Prepare the data for validation.\n     */\n    protected function prepareForValidation(): void\n    {\n        $this->merge([\n            'slug' => Str::slug($this->input('title'))\n        ]);\n\n        $this->merge([\n            'posted_at' => Carbon::parse($this->input('posted_at'))\n        ]);\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'title' => 'required',\n            'content' => 'required',\n            'posted_at' => 'required|date',\n            'thumbnail_id' => 'nullable|exists:media,id',\n            'author_id' => ['required', 'exists:users,id', new CanBeAuthor],\n            'slug' => 'unique:posts,slug,' . (optional($this->post)->id ?: 'NULL'),\n        ];\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-75c209d247ac4b519093a5e04fc721cd",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333803,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "To generate the Response Objects for the `POST /v1/posts` endpoint, I analyzed the `PostController@store` method, the `PostsRequest` validation, and the `Post` Resource.\n\n### Analysis:\n1.  **201 Created**: When a post is successfully created, the controller returns a `PostResource`. In Laravel, returning a resource from a store method typically results in a `201 Created` HTTP status code. The resource wraps the post data in a `data` object (default Laravel behavior).\n    *   **Fields in `data`**:\n        *   `id`: Integer.\n        *   `title`: String.\n        *   `slug`: String.\n        *   `content`: String.\n        *   `posted_at`: String (ISO8601 format).\n        *   `author_id`: Integer.\n        *   `comments_count`: Integer.\n        *   `thumbnail_url`: String (optional, present if the post has a thumbnail).\n        *   `thumb_thumbnail_url`: String (optional, present if the post has a thumbnail).\n\n2.  **422 Unprocessable Entity**: This response is triggered when validation in `PostsRequest` fails. It usually contains the validation error messages.\n\n3.  **403 Forbidden**: Triggered by `$this->authorize('store', Post::class)`. This happens if the authenticated user does not have permission to create a post.\n\n4.  **401 Unauthorized**: Although not explicitly in the controller code, Laravel's API routes typically require authentication (likely via middleware), which would return a 401 if the user is not logged in.\n\n### Response Objects:\n\nthe final generated result begins\n```json\n{\n  \"201\": {\n    \"description\": \"Post created successfully\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"data\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"id\": {\n              \"type\": \"integer\",\n              \"example\": 1\n            },\n            \"title\": {\n              \"type\": \"string\",\n              \"example\": \"My first post\"\n            },\n            \"slug\": {\n              \"type\": \"string\",\n              \"example\": \"my-first-post\"\n            },\n            \"content\": {\n              \"type\": \"string\",\n              \"example\": \"This is the content of the post.\"\n            },\n            \"posted_at\": {\n              \"type\": \"string\",\n              \"format\": \"date-time\",\n              \"example\": \"2023-10-27T10:00:00+00:00\"\n            },\n            \"author_id\": {\n              \"type\": \"integer\",\n              \"example\": 1\n            },\n            \"comments_count\": {\n              \"type\": \"integer\",\n              \"example\": 0\n            },\n            \"thumbnail_url\": {\n              \"type\": \"string\",\n              \"format\": \"uri\",\n              \"example\": \"http://localhost/storage/1/thumbnail.jpg\"\n            },\n            \"thumb_thumbnail_url\": {\n              \"type\": \"string\",\n              \"format\": \"uri\",\n              \"example\": \"http://localhost/storage/1/conversions/thumb.jpg\"\n            }\n          }\n        }\n      }\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthenticated\"\n  },\n  \"403\": {\n    \"description\": \"Forbidden\"\n  },\n  \"422\": {\n    \"description\": \"Validation failed\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"The given data was invalid.\"\n        },\n        \"errors\": {\n          \"type\": \"object\",\n          \"additionalProperties\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1514,
+      "completion_tokens": 2103,
+      "total_tokens": 3617,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1162
+      }
+    }
+  }
+}

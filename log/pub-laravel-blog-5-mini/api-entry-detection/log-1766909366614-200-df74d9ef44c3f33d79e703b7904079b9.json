@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766909366614,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Controllers/PostLikeController.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Str;\n\nuse function HotwiredLaravel\\TurboLaravel\\dom_id;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->like();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->dislike();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[]\nExplanation:\n\n- I examined app/Http/Controllers/PostLikeController.php. It defines a controller class App\\Http\\Controllers\\PostLikeController with two public methods:\n  - store(Post $post): handles liking a Post.\n  - destroy(Post $post): handles un-liking a Post.\n\n- However, this source file does not contain any route declarations (no literal route strings such as '/posts/{post}/likes' or similar). It only contains controller method implementations. According to your instructions, an API entry's path must be extracted from a literal string in the source code or from a naming convention explicitly supported by the framework. This file does not contain literal route strings, and it does not by itself declare any resource name that would let us derive a full path from Laravel's resource-controller naming conventions.\n\n- Because the actual HTTP request paths are defined elsewhere (typically in routes/web.php or routes/api.php) and are not present in this file, I cannot deterministically produce the path values. Making guesses (for example, inferring POST /posts/{post}/likes or POST /posts/{post}/like) would violate the requirement \"Do not make guesses\" when the path is not explicitly defined in this file.\n\n- Notes for context (not included as API entries):\n  - The handler implementations are present in this file (the methods contain the request-processing code).\n  - If routes elsewhere register this controller as a resource or with explicit paths, those route definitions would be the correct source for extracting API entry paths. For example, common possibilities (not included because they are guesses) include:\n    - A nested resource registration might map store to POST /posts/{post}/likes and destroy to DELETE /posts/{post}/likes/{like}.\n    - A singular \"like\" route pattern sometimes used would map store to POST /posts/{post}/like and destroy to DELETE /posts/{post}/like.\n  - To produce concrete API entries you can either provide the corresponding routes file contents or confirm the exact route naming convention and resource name used in this project.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766909351,
+    "id": "chatcmpl-Crg7r2SOtfSD9rEdxGuVg1RJgBIbU",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1575,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1152,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 736,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2311
+    }
+  }
+}

@@ -1,0 +1,2931 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Ground Truth OAS of ProShop",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/config/paypal": {
+            "get": {
+                "operationId": "apiConfigPaypalGet",
+                "responses": {
+                    "200": {
+                        "description": "PayPal client ID retrieved successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "clientId": {
+                                            "type": "string",
+                                            "description": "The PayPal client ID taken from the server environment (process.env.PAYPAL_CLIENT_ID). May be empty or omitted if not configured."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error message describing the problem"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (returned only when NODE_ENV is not 'production')"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Not Found message including the original URL"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (returned only when NODE_ENV is not 'production')"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/upload": {
+            "post": {
+                "operationId": "apiUploadPost",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "image": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "Image file to upload. Accepted formats: jpeg, jpg, png, webp. Must be sent as multipart/form-data."
+                                    }
+                                },
+                                "type": "object",
+                                "required": ["image"]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful image upload",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "image": {
+                                            "type": "string",
+                                            "description": "Path to the uploaded image (prefixed with a slash)"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["image", "message"]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - file upload error (for example invalid file type or multer error)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products": {
+            "get": {
+                "operationId": "apiProductsGet",
+                "parameters": [
+                    {
+                        "description": "Page number for pagination (optional). Parsed as an integer and defaults to 1 if not provided.",
+                        "required": false,
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 1
+                        },
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Search keyword to match product name (case-insensitive). Optional; used as a regex for name field.",
+                        "required": false,
+                        "style": "form",
+                        "explode": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A paginated list of products",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "products": {
+                                            "items": {
+                                                "properties": {
+                                                    "user": {
+                                                        "type": "string",
+                                                        "description": "User ObjectId referencing the user who created the product"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "image": {
+                                                        "type": "string"
+                                                    },
+                                                    "brand": {
+                                                        "type": "string"
+                                                    },
+                                                    "category": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": {
+                                                        "type": "string"
+                                                    },
+                                                    "reviews": {
+                                                        "items": {
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string"
+                                                                },
+                                                                "rating": {
+                                                                    "type": "number"
+                                                                },
+                                                                "comment": {
+                                                                    "type": "string"
+                                                                },
+                                                                "user": {
+                                                                    "type": "string",
+                                                                    "description": "User ObjectId who wrote the review"
+                                                                },
+                                                                "createdAt": {
+                                                                    "type": "string",
+                                                                    "format": "date-time"
+                                                                },
+                                                                "updatedAt": {
+                                                                    "type": "string",
+                                                                    "format": "date-time"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "type": "array"
+                                                    },
+                                                    "rating": {
+                                                        "type": "number"
+                                                    },
+                                                    "numReviews": {
+                                                        "type": "integer"
+                                                    },
+                                                    "price": {
+                                                        "type": "number"
+                                                    },
+                                                    "countInStock": {
+                                                        "type": "integer"
+                                                    },
+                                                    "createdAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "updatedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "page": {
+                                            "type": "integer"
+                                        },
+                                        "pages": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {}
+                    }
+                }
+            },
+            "post": {
+                "operationId": "apiProductsPost",
+                "parameters": [
+                    {
+                        "description": "Authentication cookie containing the JWT. Must include the 'jwt' cookie, e.g. 'Cookie: jwt=<token>'",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created - product successfully created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "image": {
+                                            "type": "string"
+                                        },
+                                        "brand": {
+                                            "type": "string"
+                                        },
+                                        "category": {
+                                            "type": "string"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "reviews": {
+                                            "items": {
+                                                "properties": {
+                                                    "_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "rating": {
+                                                        "type": "number"
+                                                    },
+                                                    "comment": {
+                                                        "type": "string"
+                                                    },
+                                                    "user": {
+                                                        "type": "string"
+                                                    },
+                                                    "createdAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "updatedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "rating": {
+                                            "type": "number"
+                                        },
+                                        "numReviews": {
+                                            "type": "number"
+                                        },
+                                        "price": {
+                                            "type": "number"
+                                        },
+                                        "countInStock": {
+                                            "type": "number"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products/{id}": {
+            "get": {
+                "operationId": "apiProductsIdGet",
+                "parameters": [
+                    {
+                        "description": "MongoDB ObjectId of the product to fetch. The checkObjectId middleware validates the format; an invalid id results in a 404.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response - product object",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "image": {
+                                            "type": "string"
+                                        },
+                                        "brand": {
+                                            "type": "string"
+                                        },
+                                        "category": {
+                                            "type": "string"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "reviews": {
+                                            "items": {
+                                                "properties": {
+                                                    "_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "rating": {
+                                                        "type": "number"
+                                                    },
+                                                    "comment": {
+                                                        "type": "string"
+                                                    },
+                                                    "user": {
+                                                        "type": "string"
+                                                    },
+                                                    "createdAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "updatedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "rating": {
+                                            "type": "number"
+                                        },
+                                        "numReviews": {
+                                            "type": "number"
+                                        },
+                                        "price": {
+                                            "type": "number"
+                                        },
+                                        "countInStock": {
+                                            "type": "number"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found or invalid ObjectId",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "apiProductsIdPut",
+                "parameters": [
+                    {
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "image": {
+                                        "type": "string"
+                                    },
+                                    "brand": {
+                                        "type": "string"
+                                    },
+                                    "category": {
+                                        "type": "string"
+                                    },
+                                    "countInStock": {
+                                        "type": "integer",
+                                        "format": "int32"
+                                    }
+                                },
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "price",
+                                    "description",
+                                    "image",
+                                    "brand",
+                                    "category",
+                                    "countInStock"
+                                ]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Product updated",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string",
+                                            "description": "Product unique identifier"
+                                        },
+                                        "user": {
+                                            "type": "string",
+                                            "description": "Creator user id (ObjectId as string)"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "image": {
+                                            "type": "string"
+                                        },
+                                        "brand": {
+                                            "type": "string"
+                                        },
+                                        "category": {
+                                            "type": "string"
+                                        },
+                                        "description": {
+                                            "type": "string"
+                                        },
+                                        "reviews": {
+                                            "items": {
+                                                "properties": {
+                                                    "_id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "rating": {
+                                                        "type": "number"
+                                                    },
+                                                    "comment": {
+                                                        "type": "string"
+                                                    },
+                                                    "user": {
+                                                        "type": "string",
+                                                        "description": "Reviewer user id (ObjectId as string)"
+                                                    },
+                                                    "createdAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "updatedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "rating": {
+                                            "type": "number"
+                                        },
+                                        "numReviews": {
+                                            "type": "number"
+                                        },
+                                        "price": {
+                                            "type": "number"
+                                        },
+                                        "countInStock": {
+                                            "type": "number"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            },
+            "delete": {
+                "operationId": "apiProductsIdDelete",
+                "parameters": [
+                    {
+                        "description": "Product id (MongoDB ObjectId). Invalid ObjectId will return 404 via middleware.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Product successfully deleted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product removed"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products/{id}/reviews": {
+            "post": {
+                "operationId": "apiProductsIdReviewsPost",
+                "parameters": [
+                    {
+                        "description": "Product ID",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "Review payload containing rating and comment",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "rating": {
+                                        "type": "number",
+                                        "format": "int32",
+                                        "description": "Rating value (e.g. 1-5)"
+                                    },
+                                    "comment": {
+                                        "type": "string",
+                                        "description": "Review text"
+                                    }
+                                },
+                                "type": "object",
+                                "required": ["comment", "rating"]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Review created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Review added"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Product already reviewed",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product already reviewed"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Product not found"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            }
+        },
+        "/api/products/top": {
+            "get": {
+                "operationId": "apiProductsTopGet",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "items": {
+                                        "properties": {
+                                            "_id": {
+                                                "type": "string"
+                                            },
+                                            "user": {
+                                                "type": "string",
+                                                "description": "User ObjectId"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "image": {
+                                                "type": "string"
+                                            },
+                                            "brand": {
+                                                "type": "string"
+                                            },
+                                            "category": {
+                                                "type": "string"
+                                            },
+                                            "description": {
+                                                "type": "string"
+                                            },
+                                            "reviews": {
+                                                "items": {
+                                                    "properties": {
+                                                        "_id": {
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "rating": {
+                                                            "type": "number"
+                                                        },
+                                                        "comment": {
+                                                            "type": "string"
+                                                        },
+                                                        "user": {
+                                                            "type": "string",
+                                                            "description": "User ObjectId"
+                                                        },
+                                                        "createdAt": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        },
+                                                        "updatedAt": {
+                                                            "type": "string",
+                                                            "format": "date-time"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "required": ["comment", "name", "rating", "user"]
+                                                },
+                                                "type": "array"
+                                            },
+                                            "rating": {
+                                                "type": "number"
+                                            },
+                                            "numReviews": {
+                                                "type": "integer",
+                                                "format": "int32"
+                                            },
+                                            "price": {
+                                                "type": "number"
+                                            },
+                                            "countInStock": {
+                                                "type": "integer",
+                                                "format": "int32"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "updatedAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        },
+                                        "type": "object",
+                                        "required": [
+                                            "brand",
+                                            "category",
+                                            "countInStock",
+                                            "description",
+                                            "image",
+                                            "name",
+                                            "numReviews",
+                                            "price",
+                                            "rating",
+                                            "user"
+                                        ]
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/auth": {
+            "post": {
+                "operationId": "apiUsersAuthPost",
+                "requestBody": {
+                    "description": "User credentials for authentication",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object",
+                                "required": ["email", "password"]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "User authenticated successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "isAdmin": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["_id", "email", "isAdmin", "name"]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid email or password",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            }
+        },
+        "/api/users": {
+            "get": {
+                "operationId": "apiUsersGet",
+                "parameters": [
+                    {
+                        "description": "HTTP Cookie header containing the authentication JWT (format: jwt=<token>). Endpoint requires authentication as an admin user.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - an array of user objects",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "items": {
+                                        "properties": {
+                                            "_id": {
+                                                "type": "string",
+                                                "description": "User id (MongoDB ObjectId as string)"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "isAdmin": {
+                                                "type": "boolean"
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "description": "Hashed password (included because controller returns full documents)"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "updatedAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        },
+                                        "type": "object",
+                                        "required": ["_id", "email", "isAdmin", "name"]
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token, or user is not an admin",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (null in production)"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (null in production)"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "apiUsersPost",
+                "requestBody": {
+                    "description": "User object that needs to be added. Must include name, email and password.",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object",
+                                "required": ["email", "name", "password"]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created - user registered successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string"
+                                        },
+                                        "isAdmin": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["_id", "email", "isAdmin", "name"]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - user already exists or invalid user data",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            }
+        },
+        "/api/users/logout": {
+            "post": {
+                "operationId": "apiUsersLogoutPost",
+                "parameters": [
+                    {
+                        "description": "Optional Cookie header containing the 'jwt' cookie to be cleared (e.g., 'jwt=<token>').",
+                        "required": false,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Logged out successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Internal Server Error"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/profile": {
+            "get": {
+                "operationId": "apiUsersProfileGet",
+                "parameters": [
+                    {
+                        "description": "JWT token MUST be provided in the 'jwt' cookie (send as Cookie header, e.g. \"Cookie: jwt=<token>\"). Endpoint is protected and requires a valid JWT.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response — returns user profile",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string",
+                                            "description": "User ID"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "isAdmin": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["_id", "email", "isAdmin", "name"]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized — missing or invalid authentication token",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "apiUsersProfilePut",
+                "parameters": [
+                    {
+                        "description": "HTTP Cookie header containing the JWT token. Example: \"jwt=<token>\". This endpoint requires authentication.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "description": "User object with fields to update. Provide only the fields to change.",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "john@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string",
+                                            "description": "User ID"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "User's name"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "description": "User's email"
+                                        },
+                                        "isAdmin": {
+                                            "type": "boolean",
+                                            "description": "Whether the user has admin privileges"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["_id", "email", "isAdmin", "name"]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized (no token or token failed)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error message explaining the authorization failure"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (null in production)"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error message",
+                                            "example": "User not found"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (null in production)"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        },
+                                        "stack": {
+                                            "type": "string",
+                                            "description": "Error stack trace (null in production)"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            }
+        },
+        "/api/users/{id}": {
+            "get": {
+                "operationId": "apiUsersIdGet",
+                "parameters": [
+                    {
+                        "description": "ID of the user to retrieve (req.params.id)",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    },
+                    {
+                        "description": "HTTP Cookie header containing the JWT cookie named 'jwt' used for authentication (required for protect/admin middleware). Example: \"jwt=<token>\"",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response - returns the user object (password excluded)",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "format": "email"
+                                        },
+                                        "isAdmin": {
+                                            "type": "boolean"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["_id", "email", "isAdmin", "name"]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized - missing/invalid token or not an admin",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object",
+                                    "required": ["message"]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "apiUsersIdPut",
+                "parameters": [
+                    {
+                        "description": "User ID",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    },
+                    {
+                        "description": "Authentication cookie containing JWT (cookie name 'jwt'). Example: Cookie: jwt=<token>",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "description": "User fields to update. Any omitted field will remain unchanged.",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "User's name"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "description": "User's email address"
+                                    },
+                                    "isAdmin": {
+                                        "type": "boolean",
+                                        "description": "Admin flag for the user"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string"
+                                        },
+                                        "isAdmin": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            },
+            "delete": {
+                "operationId": "apiUsersIdDelete",
+                "parameters": [
+                    {
+                        "description": "ID of the user to delete",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User removed",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User removed"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - cannot delete admin user",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Can not delete admin user"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/orders": {
+            "get": {
+                "operationId": "apiOrdersGet",
+                "parameters": [
+                    {
+                        "description": "JWT authentication cookie named 'jwt'. Include the token in the Cookie header as: 'jwt=<token>'",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of orders",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "items": {
+                                        "properties": {
+                                            "_id": {
+                                                "type": "string"
+                                            },
+                                            "user": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "orderItems": {
+                                                "items": {
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "qty": {
+                                                            "type": "number"
+                                                        },
+                                                        "image": {
+                                                            "type": "string"
+                                                        },
+                                                        "price": {
+                                                            "type": "number"
+                                                        },
+                                                        "product": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "type": "array"
+                                            },
+                                            "shippingAddress": {
+                                                "properties": {
+                                                    "address": {
+                                                        "type": "string"
+                                                    },
+                                                    "city": {
+                                                        "type": "string"
+                                                    },
+                                                    "postalCode": {
+                                                        "type": "string"
+                                                    },
+                                                    "country": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "paymentMethod": {
+                                                "type": "string"
+                                            },
+                                            "paymentResult": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "status": {
+                                                        "type": "string"
+                                                    },
+                                                    "update_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "email_address": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "itemsPrice": {
+                                                "type": "number"
+                                            },
+                                            "taxPrice": {
+                                                "type": "number"
+                                            },
+                                            "shippingPrice": {
+                                                "type": "number"
+                                            },
+                                            "totalPrice": {
+                                                "type": "number"
+                                            },
+                                            "isPaid": {
+                                                "type": "boolean"
+                                            },
+                                            "paidAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "isDelivered": {
+                                                "type": "boolean"
+                                            },
+                                            "deliveredAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "updatedAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "operationId": "apiOrdersPost",
+                "parameters": [
+                    {
+                        "description": "Bearer token for authentication (e.g. 'Bearer <token>'). Endpoint is private; a valid JWT must be provided.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Authorization",
+                        "in": "header"
+                    }
+                ],
+                "requestBody": {
+                    "description": "Order payload containing orderItems, shippingAddress and paymentMethod.",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "orderItems": {
+                                        "items": {
+                                            "properties": {
+                                                "_id": {
+                                                    "type": "string",
+                                                    "description": "Product id (string). Server uses this to look up authoritative product data."
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "description": "Product name (client-provided, server stores alongside product reference)."
+                                                },
+                                                "qty": {
+                                                    "type": "integer",
+                                                    "format": "int32",
+                                                    "description": "Quantity ordered."
+                                                },
+                                                "image": {
+                                                    "type": "string",
+                                                    "description": "Image URL for the product (client-provided)."
+                                                }
+                                            },
+                                            "type": "object",
+                                            "required": ["_id", "image", "name", "qty"]
+                                        },
+                                        "type": "array",
+                                        "minItems": 1
+                                    },
+                                    "shippingAddress": {
+                                        "properties": {
+                                            "address": {
+                                                "type": "string"
+                                            },
+                                            "city": {
+                                                "type": "string"
+                                            },
+                                            "postalCode": {
+                                                "type": "string"
+                                            },
+                                            "country": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object",
+                                        "required": ["address", "city", "country", "postalCode"]
+                                    },
+                                    "paymentMethod": {
+                                        "type": "string",
+                                        "description": "Payment method identifier (e.g. 'PayPal')."
+                                    }
+                                },
+                                "type": "object",
+                                "required": ["orderItems", "paymentMethod", "shippingAddress"]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created - order successfully created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string",
+                                            "description": "Order id"
+                                        },
+                                        "user": {
+                                            "type": "string",
+                                            "description": "User id who placed the order"
+                                        },
+                                        "orderItems": {
+                                            "items": {
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "qty": {
+                                                        "type": "integer"
+                                                    },
+                                                    "image": {
+                                                        "type": "string"
+                                                    },
+                                                    "price": {
+                                                        "type": "number"
+                                                    },
+                                                    "product": {
+                                                        "type": "string",
+                                                        "description": "Product id"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "shippingAddress": {
+                                            "properties": {
+                                                "address": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string"
+                                                },
+                                                "postalCode": {
+                                                    "type": "string"
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "paymentResult": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "update_time": {
+                                                    "type": "string"
+                                                },
+                                                "email_address": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "itemsPrice": {
+                                            "type": "number"
+                                        },
+                                        "taxPrice": {
+                                            "type": "number"
+                                        },
+                                        "shippingPrice": {
+                                            "type": "number"
+                                        },
+                                        "totalPrice": {
+                                            "type": "number"
+                                        },
+                                        "isPaid": {
+                                            "type": "boolean"
+                                        },
+                                        "paidAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "isDelivered": {
+                                            "type": "boolean"
+                                        },
+                                        "deliveredAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - no order items",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No order items"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            }
+        },
+        "/api/orders/mine": {
+            "get": {
+                "operationId": "apiOrdersMineGet",
+                "parameters": [
+                    {
+                        "description": "JWT stored in a cookie named 'jwt'. Send as header: 'Cookie: jwt=<token>'. Required for authentication.",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of orders for the authenticated user",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "items": {
+                                        "properties": {
+                                            "_id": {
+                                                "type": "string",
+                                                "description": "Order id"
+                                            },
+                                            "user": {
+                                                "type": "string",
+                                                "description": "User id who created the order"
+                                            },
+                                            "orderItems": {
+                                                "items": {
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "qty": {
+                                                            "type": "integer",
+                                                            "format": "int32"
+                                                        },
+                                                        "image": {
+                                                            "type": "string"
+                                                        },
+                                                        "price": {
+                                                            "type": "number",
+                                                            "format": "float"
+                                                        },
+                                                        "product": {
+                                                            "type": "string",
+                                                            "description": "Product id"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "required": ["image", "name", "price", "product", "qty"]
+                                                },
+                                                "type": "array"
+                                            },
+                                            "shippingAddress": {
+                                                "properties": {
+                                                    "address": {
+                                                        "type": "string"
+                                                    },
+                                                    "city": {
+                                                        "type": "string"
+                                                    },
+                                                    "postalCode": {
+                                                        "type": "string"
+                                                    },
+                                                    "country": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object",
+                                                "required": ["address", "city", "country", "postalCode"]
+                                            },
+                                            "paymentMethod": {
+                                                "type": "string"
+                                            },
+                                            "paymentResult": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "status": {
+                                                        "type": "string"
+                                                    },
+                                                    "update_time": {
+                                                        "type": "string"
+                                                    },
+                                                    "email_address": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "itemsPrice": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "taxPrice": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "shippingPrice": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "totalPrice": {
+                                                "type": "number",
+                                                "format": "float"
+                                            },
+                                            "isPaid": {
+                                                "type": "boolean"
+                                            },
+                                            "paidAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "isDelivered": {
+                                                "type": "boolean"
+                                            },
+                                            "deliveredAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "createdAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "updatedAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized - missing or invalid token",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "stack": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/orders/{id}": {
+            "get": {
+                "operationId": "apiOrdersIdGet",
+                "parameters": [
+                    {
+                        "description": "Order ID (MongoDB ObjectId)",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    },
+                    {
+                        "description": "JWT access token in the form 'Bearer {token}' (required for private endpoints)",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Authorization",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order retrieved successfully",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "orderItems": {
+                                            "items": {
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "qty": {
+                                                        "type": "integer",
+                                                        "format": "int32"
+                                                    },
+                                                    "image": {
+                                                        "type": "string"
+                                                    },
+                                                    "price": {
+                                                        "type": "number",
+                                                        "format": "double"
+                                                    },
+                                                    "product": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "shippingAddress": {
+                                            "properties": {
+                                                "address": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string"
+                                                },
+                                                "postalCode": {
+                                                    "type": "string"
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "paymentResult": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "update_time": {
+                                                    "type": "string"
+                                                },
+                                                "email_address": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "itemsPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "taxPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "shippingPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "totalPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "isPaid": {
+                                            "type": "boolean"
+                                        },
+                                        "paidAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "isDelivered": {
+                                            "type": "boolean"
+                                        },
+                                        "deliveredAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/orders/{id}/pay": {
+            "put": {
+                "operationId": "apiOrdersIdPayPut",
+                "parameters": [
+                    {
+                        "description": "Order ID",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "PayPal payment result payload used to verify and record the payment",
+                    "content": {
+                        "*/*": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "description": "PayPal transaction id"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "Payment status returned by PayPal"
+                                    },
+                                    "update_time": {
+                                        "type": "string",
+                                        "description": "Timestamp of the PayPal payment update"
+                                    },
+                                    "payer": {
+                                        "properties": {
+                                            "email_address": {
+                                                "type": "string",
+                                                "description": "Payer email address"
+                                            }
+                                        },
+                                        "type": "object",
+                                        "required": ["email_address"]
+                                    }
+                                },
+                                "type": "object",
+                                "required": ["id", "payer", "status", "update_time"]
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Order updated and marked as paid.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "type": "string"
+                                        },
+                                        "orderItems": {
+                                            "items": {
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "qty": {
+                                                        "type": "integer",
+                                                        "format": "int32"
+                                                    },
+                                                    "image": {
+                                                        "type": "string"
+                                                    },
+                                                    "price": {
+                                                        "type": "number",
+                                                        "format": "double"
+                                                    },
+                                                    "product": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "shippingAddress": {
+                                            "properties": {
+                                                "address": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string"
+                                                },
+                                                "postalCode": {
+                                                    "type": "string"
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "paymentResult": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "update_time": {
+                                                    "type": "string"
+                                                },
+                                                "email_address": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "itemsPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "taxPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "shippingPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "totalPrice": {
+                                            "type": "number",
+                                            "format": "double"
+                                        },
+                                        "isPaid": {
+                                            "type": "boolean"
+                                        },
+                                        "paidAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "isDelivered": {
+                                            "type": "boolean"
+                                        },
+                                        "deliveredAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - payment verification failed or incorrect amount paid.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - authentication required.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - transaction has been used before.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error.",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-codegen-request-body-name": "body"
+            }
+        },
+        "/api/orders/{id}/deliver": {
+            "put": {
+                "operationId": "apiOrdersIdDeliverPut",
+                "parameters": [
+                    {
+                        "description": "Order ID",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "id",
+                        "in": "path"
+                    },
+                    {
+                        "description": "JWT authentication cookie. Include the 'jwt' cookie value, e.g. 'Cookie: jwt=<token>'",
+                        "required": true,
+                        "style": "simple",
+                        "explode": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "name": "Cookie",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order updated to delivered",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "type": "string"
+                                        },
+                                        "orderItems": {
+                                            "items": {
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "qty": {
+                                                        "type": "number"
+                                                    },
+                                                    "image": {
+                                                        "type": "string"
+                                                    },
+                                                    "price": {
+                                                        "type": "number"
+                                                    },
+                                                    "product": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "type": "array"
+                                        },
+                                        "shippingAddress": {
+                                            "properties": {
+                                                "address": {
+                                                    "type": "string"
+                                                },
+                                                "city": {
+                                                    "type": "string"
+                                                },
+                                                "postalCode": {
+                                                    "type": "string"
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "paymentResult": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                },
+                                                "update_time": {
+                                                    "type": "string"
+                                                },
+                                                "email_address": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "itemsPrice": {
+                                            "type": "number"
+                                        },
+                                        "taxPrice": {
+                                            "type": "number"
+                                        },
+                                        "shippingPrice": {
+                                            "type": "number"
+                                        },
+                                        "totalPrice": {
+                                            "type": "number"
+                                        },
+                                        "isPaid": {
+                                            "type": "boolean"
+                                        },
+                                        "paidAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "isDelivered": {
+                                            "type": "boolean"
+                                        },
+                                        "deliveredAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updatedAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

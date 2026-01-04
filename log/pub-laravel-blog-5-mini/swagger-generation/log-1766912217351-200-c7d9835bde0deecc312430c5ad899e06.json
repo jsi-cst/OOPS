@@ -1,0 +1,202 @@
+{
+  "timestamp": 1766912217351,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/PostCommentController.php`, `App\\Http\\Controllers\\PostCommentController::index` is implemented to process HTTP requests to `/posts/{post}/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse Illuminate\\View\\View;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Show the post's comments.\n     */\n    public function index(Post $post): View\n    {\n        return view('comments.index', [\n            'comments' => $post->comments()->with('author')->latest()->get()\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_6NQWr4hlqjZ9AQCnWiSWvrkQ",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"PostCommentController\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/web.php:4:use App\\\\Http\\\\Controllers\\\\PostCommentController;\\nroutes/web.php:25:Route::resource('posts.comments', PostCommentController::class)->only('index');\\nroutes/api.php:6:use App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nroutes/api.php:29:        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\\nroutes/api.php:46:    Route::apiResource('posts.comments', PostCommentController::class)->only('index');\\napp/Http/Controllers/Api/V1/PostCommentController.php:14:class PostCommentController extends Controller\\napp/Http/Controllers/PostCommentController.php:8:class PostCommentController extends Controller\\n\", 'stderr': ''}",
+        "tool_call_id": "call_6NQWr4hlqjZ9AQCnWiSWvrkQ"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_1ZUSDLn1MzyYScKlmhwsAb9d",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/web.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\PostFeedController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Web Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register web routes for your application. These\\n| routes are loaded by the RouteServiceProvider and all of them will\\n| be assigned to the \"web\" middleware group. Make something great!\\n|\\n*/\\n\\nRoute::get(\\'/\\', [PostController::class, \\'index\\'])->name(\\'home\\');\\nRoute::get(\\'/posts/feed\\', [PostFeedController::class, \\'index\\'])->name(\\'posts.feed\\');\\nRoute::resource(\\'posts\\', PostController::class)->only(\\'show\\');\\nRoute::resource(\\'users\\', UserController::class)->only(\\'show\\');\\nRoute::resource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n\\nRoute::get(\\'newsletter-subscriptions/unsubscribe\\', [NewsletterSubscriptionController::class, \\'unsubscribe\\'])->name(\\'newsletter-subscriptions.unsubscribe\\');\\n', 'stderr': ''}",
+        "tool_call_id": "call_1ZUSDLn1MzyYScKlmhwsAb9d"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Swk5KVY7eQVbKLSHV5O9KiE3",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"comments.index\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'app/Http/Controllers/Admin/CommentController.php:15:     * Show the application comments index.\\napp/Http/Controllers/Admin/CommentController.php:19:        return view(\\'admin.comments.index\\', [\\napp/Http/Controllers/Admin/CommentController.php:52:        return redirect()->route(\\'admin.comments.index\\')->withSuccess(__(\\'comments.deleted\\'));\\napp/Http/Controllers/PostCommentController.php:15:        return view(\\'comments.index\\', [\\nresources/views/comments/_list.blade.php:5:<x-turbo::frame id=\"comments\" :src=\"route(\\'posts.comments.index\\', $post)\" loading=\"lazy\">\\nresources/views/admin/dashboard/_comments.blade.php:12:        <a href=\"{{ route(\\'admin.comments.index\\') }}\" class=\"d-flex justify-content-between text-light\">\\nresources/views/admin/comments/_form.blade.php:64:        <a href=\"{{ route(\\'admin.comments.index\\') }}\" class=\"btn btn-light\">\\nresources/views/admin/shared/sidebar.blade.php:17:        <a @class([\\'nav-link\\', \\'active\\' => request()->route()->named(\\'admin.comments.*\\')]) href=\"{{ route(\\'admin.comments.index\\') }}\">\\n', 'stderr': ''}",
+        "tool_call_id": "call_Swk5KVY7eQVbKLSHV5O9KiE3"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Arrq0ujLQYtCuTYtIxccHiBD",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_Arrq0ujLQYtCuTYtIxccHiBD"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_j1vhJDqKa5pVTOCl5luqHFiq",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_j1vhJDqKa5pVTOCl5luqHFiq"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_dJAKG2elOY9JhzKaKMYhzpF1",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Http/Controllers/Api/V1/PostCommentController.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Controllers\\\\Api\\\\V1;\\n\\nuse App\\\\Events\\\\CommentPosted;\\nuse App\\\\Http\\\\Controllers\\\\Controller;\\nuse App\\\\Http\\\\Requests\\\\Api\\\\CommentsRequest;\\nuse App\\\\Http\\\\Resources\\\\Comment as CommentResource;\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Http\\\\Request;\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\ResourceCollection;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass PostCommentController extends Controller\\n{\\n    /**\\n     * Return the post's comments.\\n     */\\n    public function index(Request $request, Post $post): ResourceCollection\\n    {\\n        return CommentResource::collection(\\n            $post->comments()->with('author')->latest()->paginate($request->input('limit', 20))\\n        );\\n    }\\n\\n    /**\\n     * Store a newly created resource in storage.\\n     */\\n    public function store(CommentsRequest $request, Post $post): CommentResource\\n    {\\n        $comment = new CommentResource(\\n            Auth::user()->comments()->create([\\n                'post_id' => $post->id,\\n                'content' => $request->input('content')\\n            ])\\n        );\\n\\n        broadcast(new CommentPosted($comment, $post))->toOthers();\\n\\n        return $comment;\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_dJAKG2elOY9JhzKaKMYhzpF1"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-Crgs1HY55uR4HANSkBevpBlbeNvxz",
+    "object": "chat.completion",
+    "created": 1766912213,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,240p' resources/views/comments/index.blade.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_WwIONjk6xIZQMjaB6asnsSZA",
+              "type": "function"
+            }
+          ],
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3214,
+      "completion_tokens": 423,
+      "total_tokens": 3637,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 384,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

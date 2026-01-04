@@ -1,0 +1,97 @@
+{
+  "timestamp": 1766644332218,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v1/ops/tables/scrub` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java`, `TableOpsResources.scrub` is implemented to process HTTP requests to `/api/v1/ops/tables/scrub` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.mgmtapi.resources.models.CompactRequest;\nimport com.datastax.mgmtapi.resources.models.KeyspaceRequest;\nimport com.datastax.mgmtapi.resources.models.ScrubRequest;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\nimport org.apache.commons.collections4.CollectionUtils;\nimport org.apache.commons.lang3.StringUtils;\nimport org.apache.http.HttpStatus;\n\nimport javax.ws.rs.Consumes;\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.Produces;\nimport javax.ws.rs.QueryParam;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\n\n@Path(\"/api/v1/ops/tables\")\npublic class TableOpsResources {\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public TableOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/scrub\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for table scrub process\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    schema = @Schema(\n                            implementation = String.class\n                    ),\n                    examples = @ExampleObject(\n                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n                    )\n            )\n    )\n    @Operation(summary = \"Scrub (rebuild sstables for) one or more tables. This operation is asynchronous and returns immediately.\", operationId = \"scrub\")\n    public Response scrub(ScrubRequest scrubRequest)\n    {\n        return handle(() ->\n        {\n            List<String> tables = scrubRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = scrubRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"ALL\";\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                    \"CALL NodeOps.scrub(?, ?, ?, ?, ?, ?, ?, ?)\", scrubRequest.disableSnapshot, scrubRequest.skipCorrupted,\n                    scrubRequest.checkData, scrubRequest.reinsertOverflowedTTL, scrubRequest.jobs, keyspaceName, tables, true)).build();\n        });\n    }\n\n    @POST\n    @Path(\"/sstables/upgrade\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace SSTable upgrade process\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    schema = @Schema(\n                            implementation = String.class\n                    ),\n                    examples = @ExampleObject(\n                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n                    )\n            )\n    )\n    @Operation(summary = \"Rewrite sstables (for the requested tables) that are not on the current version (thus upgrading them to said current version). This operation is asynchronous and returns immediately.\",\n            operationId = \"upgradeSSTables\")\n    public Response upgradeSSTables(@QueryParam(value=\"excludeCurrentVersion\")boolean excludeCurrentVersion, KeyspaceRequest keyspaceRequest)\n    {\n        return handle(() ->\n        {\n            List<String> tables = keyspaceRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = keyspaceRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"ALL\";\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                    \"CALL NodeOps.upgradeSSTables(?, ?, ?, ?, ?)\", keyspaceName, !excludeCurrentVersion, keyspaceRequest.jobs, tables, true)).build();\n        });\n    }\n\n    @POST\n    @Path(\"/compact\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace compaction process\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    schema = @Schema(\n                            implementation = String.class\n                    ),\n                    examples = @ExampleObject(\n                            value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n                    )\n            )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Invalid table compaction request\",\n            content = @Content(\n                    mediaType = MediaType.TEXT_PLAIN,\n                    examples = @ExampleObject(\n                            value = \"Invalid option combination: Can not use split-output here\"\n                    )\n            )\n    )\n    @Operation(summary = \"Force a (major) compaction on one or more tables or user-defined compaction on given SSTables\",\n            operationId = \"compact\")\n    public Response compact(CompactRequest compactRequest)\n    {\n        return handle(() ->\n        {\n            // Retaining logic from org.apache.cassandra.tools.nodetool.Compact\n            boolean tokenProvided = !(StringUtils.isBlank(compactRequest.startToken) && StringUtils.isBlank(compactRequest.endToken));\n            if (compactRequest.splitOutput && (compactRequest.userDefined || tokenProvided)) {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Invalid option combination: Can not use split-output here\").build();\n            }\n            if (compactRequest.userDefined && tokenProvided) {\n                return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Invalid option combination: Can not provide tokens when using user-defined\").build();\n            }\n\n            if (compactRequest.userDefined)\n            {\n                try\n                {\n                    if (CollectionUtils.isEmpty(compactRequest.userDefinedFiles))\n                    {\n                        return Response.status(HttpStatus.SC_BAD_REQUEST).entity(\"Must provide a file if setting userDefined to true\").build();\n                    }\n\n                    String userDefinedFiles = String.join(\",\", compactRequest.userDefinedFiles);\n                    return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                            \"CALL NodeOps.forceUserDefinedCompaction(?, ?)\", userDefinedFiles, true)).build();\n                } catch (Exception e) {\n                    throw new RuntimeException(\"Error occurred during user defined compaction\", e);\n                }\n            }\n\n            List<String> tables = compactRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = compactRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"ALL\";\n            }\n\n            if (tokenProvided) {\n                return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                        \"CALL NodeOps.forceKeyspaceCompactionForTokenRange(?, ?, ?, ?, ?)\", keyspaceName,\n                        compactRequest.startToken, compactRequest.endToken, tables, true)).build();\n            }\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\n                    \"CALL NodeOps.forceKeyspaceCompaction(?, ?, ?, ?)\", compactRequest.splitOutput, keyspaceName,\n                    compactRequest.tables, true)).build();\n        });\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_ICdhofay5dwYh9gJAPPFHSPI",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.datastax.mgmtapi.resources.v1;\\n\\nimport com.datastax.mgmtapi.CqlService;\\nimport com.datastax.mgmtapi.ManagementApplication;\\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\\nimport com.datastax.oss.driver.api.core.cql.Row;\\nimport com.datastax.oss.driver.api.core.type.reflect.GenericType;\\nimport io.swagger.v3.oas.annotations.Operation;\\nimport io.swagger.v3.oas.annotations.media.Content;\\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\\nimport io.swagger.v3.oas.annotations.media.Schema;\\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\\n\\nimport javax.ws.rs.*;\\nimport javax.ws.rs.client.Entity;\\nimport javax.ws.rs.core.MediaType;\\nimport javax.ws.rs.core.Response;\\n\\nimport java.util.Collections;\\nimport java.util.List;\\nimport java.util.Map;\\n\\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\\n\\n@Path(\"/api/v1/ops/node\")\\npublic class NodeOpsResources {\\n\\n    private final ManagementApplication app;\\n    private final CqlService cqlService;\\n\\n    public NodeOpsResources(ManagementApplication application) {\\n        this.app = application;\\n        this.cqlService = application.cqlService;\\n    }\\n\\n    @POST\\n    @Path(\"/decommission\")\\n    @Operation(summary = \"Decommission the *node I am connecting to*. This invocation returns immediately and returns a job id.\", operationId = \"decommission_v1\")\\n    @Produces(MediaType.TEXT_PLAIN)\\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node decommission request\",\\n        content = @Content(\\n            mediaType = MediaType.TEXT_PLAIN,\\n            schema = @Schema(implementation = String.class),\\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\\n        )\\n    )\\n    public Response decommission(@QueryParam(value=\"force\")boolean force)\\n    {\\n        return handle(() ->\\n                Response.accepted(\\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\"CALL NodeOps.decommission(?, ?)\", force, true)\\n                        ).build());\\n    }\\n\\n    @POST\\n    @Path(\"/rebuild\")\\n    @Operation(summary = \"Rebuild data by streaming data from other nodes. This operation returns immediately with a job id.\", operationId = \"rebuild_v1\")\\n    @Produces(MediaType.TEXT_PLAIN)\\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node rebuild request\",\\n        content = @Content(\\n            mediaType = MediaType.TEXT_PLAIN,\\n            schema = @Schema(implementation = String.class),\\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\\n        )\\n    )\\n    public Response rebuild(@QueryParam(\"src_dc\") String srcDatacenter)\\n    {\\n        return handle(() ->\\n                Response.accepted(\\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.rebuild(?)\", srcDatacenter)\\n                ).build());\\n    }\\n\\n    @GET\\n    @Path(\"/schema/versions\")\\n    @Produces(MediaType.APPLICATION_JSON)\\n    @ApiResponse(\\n            responseCode = \"200\",\\n            description = \"Gets the schema versions for each node. Useful for checking schema agreement\",\\n            content = @Content(\\n                    mediaType = MediaType.APPLICATION_JSON,\\n                    examples = @ExampleObject(value = \"{2207c2a9-f598-3971-986b-2926e09e239d: [10.244.1.4, 10.244.2.3, 10.244.3.3]}\")))\\n    @Operation(summary = \"Get schema versions.\", operationId = \"getSchemaVersions\")\\n    public Response schemaVersions()\\n    {\\n        return handle(() ->\\n        {\\n            Row row = cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.getSchemaVersions()\").one();\\n\\n            Map<String, List> schemaVersions = Collections.emptyMap();\\n            if (row != null)\\n            {\\n                schemaVersions = row.getMap(0, String.class, List.class);\\n            }\\n            return Response.ok(schemaVersions).build();\\n        });\\n    }\\n\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_ICdhofay5dwYh9gJAPPFHSPI"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- I inspected the TableOpsResources.scrub method in src/main/java/com/datastax/mgmtapi/resources/v1/TableOpsResources.java.\n- The method is annotated with an @ApiResponse for responseCode \"202\" with description \"Job ID for table scrub process\". The content is MediaType.TEXT_PLAIN and the schema implementation is String.class, with an example value \"d69d1d95-9348-4460-95d2-ae342870fade\".\n- The method returns Response.accepted(...), which corresponds to HTTP 202 Accepted and a plain-text job id string in the response body.\n- The task requests a dict of Response Objects in Swagger 2.0 format for the endpoint /api/v1/ops/tables/scrub POST and to avoid including fields not mentioned above. Therefore I include only the documented 202 response and model it in Swagger 2.0 Response Object form: a description, a schema indicating a string, and an examples object keyed by the media type \"text/plain\" with the provided example.\n\nthe final generated result begins\n{\n  \"202\": {\n    \"description\": \"Job ID for table scrub process\",\n    \"schema\": {\n      \"type\": \"string\"\n    },\n    \"examples\": {\n      \"text/plain\": \"d69d1d95-9348-4460-95d2-ae342870fade\"\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766644324,
+    "id": "chatcmpl-CqZBEOr9ACxzaSvYYuey52YuLAtIT",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 943,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 640,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3228,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4171
+    }
+  }
+}

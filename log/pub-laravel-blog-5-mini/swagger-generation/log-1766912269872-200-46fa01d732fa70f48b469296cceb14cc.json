@@ -1,0 +1,97 @@
+{
+  "timestamp": 1766912269872,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/users/{user}/posts` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/UserPostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController@index` is implemented to process HTTP requests to `/v1/users/{user}/posts` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/UserPostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Resources\\Post as PostResource;\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\n\nclass UserPostController extends Controller\n{\n    /**\n     * Return the user's posts.\n     */\n    public function index(Request $request, User $user): ResourceCollection\n    {\n        return PostResource::collection(\n            $user->posts()->latest()->paginate($request->input('limit', 20))\n        );\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_yPcEYrBXixGGg4k2uXOmZtBP",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' app/Http/Resources/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\n\\nclass Post extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        return [\\n            'id' => $this->id,\\n            'title' => $this->title,\\n            'slug' => $this->slug,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'author_id' => $this->author_id,\\n            'comments_count' => $this->comments_count ?? $this->comments()->count(),\\n            'thumbnail_url' => $this->when($this->hasThumbnail(), url(optional($this->thumbnail)->getUrl())),\\n            'thumb_thumbnail_url' => $this->when($this->hasThumbnail(), url(optional($this->thumbnail)->getUrl('thumb')))\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_yPcEYrBXixGGg4k2uXOmZtBP"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\nStep-by-step reasoning:\n- The controller App\\Http\\Controllers\\Api\\V1\\UserPostController@index returns PostResource::collection(...) of a paginated query: $user->posts()->latest()->paginate($request->input('limit', 20)).\n- When a JsonResource collection wraps a LengthAwarePaginator in Laravel, the usual JSON structure is an object with keys \"data\" (array of resource objects), \"links\" (pagination links), and \"meta\" (pagination metadata). I used that structure for the 200 response schema.\n- The Post resource (app/Http/Resources/Post.php) defines the fields returned for each post. I inspected that file and derived the properties and their basic types:\n  - id (integer)\n  - title (string)\n  - slug (string)\n  - content (string)\n  - posted_at (ISO 8601 datetime string)\n  - author_id (integer)\n  - comments_count (integer)\n  - thumbnail_url (string when present)\n  - thumb_thumbnail_url (string when present)\n- For the pagination \"links\" and \"meta\" objects I used the typical Laravel paginator response shape: links: {first,last,prev,next} and meta: {current_page,from,last_page,links (array of {url,label,active}), path, per_page, to, total}.\n- Because the controller type-hints User $user, route-model binding in Laravel will produce a 404 if the user does not exist; I included a 404 response object with a simple error message schema.\n- The output is a JSON dictionary of Response Objects (Swagger 2.0 style) for the GET /v1/users/{user}/posts endpoint. I did not use $ref references and kept all schemas inline.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"A paginated list of posts for the specified user.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"data\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"id\": {\n                \"type\": \"integer\"\n              },\n              \"title\": {\n                \"type\": \"string\"\n              },\n              \"slug\": {\n                \"type\": \"string\"\n              },\n              \"content\": {\n                \"type\": \"string\"\n              },\n              \"posted_at\": {\n                \"type\": \"string\",\n                \"format\": \"date-time\"\n              },\n              \"author_id\": {\n                \"type\": \"integer\"\n              },\n              \"comments_count\": {\n                \"type\": \"integer\"\n              },\n              \"thumbnail_url\": {\n                \"type\": \"string\"\n              },\n              \"thumb_thumbnail_url\": {\n                \"type\": \"string\"\n              }\n            },\n            \"required\": [\n              \"id\",\n              \"title\",\n              \"slug\",\n              \"content\",\n              \"posted_at\",\n              \"author_id\",\n              \"comments_count\"\n            ]\n          }\n        },\n        \"links\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"first\": {\n              \"type\": \"string\"\n            },\n            \"last\": {\n              \"type\": \"string\"\n            },\n            \"prev\": {\n              \"type\": \"string\"\n            },\n            \"next\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"meta\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"current_page\": {\n              \"type\": \"integer\"\n            },\n            \"from\": {\n              \"type\": \"integer\"\n            },\n            \"last_page\": {\n              \"type\": \"integer\"\n            },\n            \"links\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"url\": {\n                    \"type\": \"string\"\n                  },\n                  \"label\": {\n                    \"type\": \"string\"\n                  },\n                  \"active\": {\n                    \"type\": \"boolean\"\n                  }\n                }\n              }\n            },\n            \"path\": {\n              \"type\": \"string\"\n            },\n            \"per_page\": {\n              \"type\": \"integer\"\n            },\n            \"to\": {\n              \"type\": \"integer\"\n            },\n            \"total\": {\n              \"type\": \"integer\"\n            }\n          }\n        }\n      }\n    }\n  },\n  \"404\": {\n    \"description\": \"User not found.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912250,
+    "id": "chatcmpl-CrgscUTUO6gjRglSF5aWZgmHEV1Ji",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2560,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1600,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 852,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3412
+    }
+  }
+}

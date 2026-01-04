@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766915059877,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/comments/{comment}` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/CommentController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController@destroy` is implemented to process HTTP requests to `/v1/comments/{comment}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Comment;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass CommentController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return CommentResource::collection(\n            Comment::latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(Comment $comment): CommentResource\n    {\n        return new CommentResource($comment);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): Response\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "First, here is the reasoning behind the generated response objects:\n- The destroy method in CommentController applies an authorization check with $this->authorize('delete', $comment), then deletes the comment and returns a no-content response.\n- On success, the method returns response()->noContent(), which corresponds to HTTP status 204 with no response body.\n- Possible failure modes include:\n  - 401 Unauthorized when the user is not authenticated.\n  - 403 Forbidden when the authenticated user is not allowed to delete the resource (authorization failure).\n  - 404 Not Found when the specified comment does not exist (model binding would fail or not found error).\n- Based on these, the OpenAPI/Swagger 2.0 responses object should cover these statuses without introducing other statuses not evidenced by the code.\n\nthe final generated result begins\n{\n  \"204\": {\n    \"description\": \"No Content\"\n  },\n  \"401\": {\n    \"description\": \"Unauthorized\"\n  },\n  \"403\": {\n    \"description\": \"Forbidden\"\n  },\n  \"404\": {\n    \"description\": \"Not Found\"\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766915051,
+    "id": "chatcmpl-CrhbnC71rg1qhOXd7sp95KKp7rAga",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1452,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1216,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 652,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2104
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766644016868,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":\"/api/v1/ops/keyspace/cleanup\",\"handler\":\"com.datastax.mgmtapi.resources.v1.KeyspaceOpsResources.cleanup\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.NodeOpsResources;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.mgmtapi.resources.models.KeyspaceRequest;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\nimport org.apache.commons.collections4.CollectionUtils;\nimport org.apache.commons.lang3.StringUtils;\n\nimport javax.ws.rs.Consumes;\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.Produces;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\nimport java.util.ArrayList;\nimport java.util.List;\n\n@Path(\"/api/v1/ops/keyspace\")\npublic class KeyspaceOpsResources {\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public KeyspaceOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/cleanup\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Cleanup not needed for tables 'system' or 'system_schema'\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace cleanup process\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n            )\n        )\n    )\n    @Operation(summary = \"Triggers the immediate cleanup of keys no longer belonging to a node. By default, clean all keyspaces. This operation is asynchronous and returns immediately\",\n            operationId = \"cleanup_v1\")\n    public Response cleanup(KeyspaceRequest keyspaceRequest)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            List<String> tables = keyspaceRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = keyspaceRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"NON_LOCAL_STRATEGY\";\n            }\n\n            if (StringUtils.equalsAnyIgnoreCase(keyspaceName, \"system\", \"system_schema\"))\n            {\n                return Response.ok(\"OK\").build();\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.forceKeyspaceCleanup(?, ?, ?, ?)\",\n                    keyspaceRequest.jobs, keyspaceName, tables, true)).build();\n        });\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[]\n\nExplanation:\n- I inspected src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java. The file defines a single JAX-RS endpoint: the class-level @Path(\"/api/v1/ops/keyspace\") combined with the method annotated @POST and @Path(\"/cleanup\"), which yields the API entry /api/v1/ops/keyspace/cleanup (this entry was already provided and must not be repeated).\n- There are no other JAX-RS resource methods (no additional @Path, @GET, @POST, @PUT, @DELETE, etc.) or other literal path strings in this file, so there are no additional API entries to report.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766644012,
+    "id": "chatcmpl-CqZ6CDnWEcC2QffHvBMxm6wcGkrLv",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 407,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 256,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1299,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1706
+    }
+  }
+}

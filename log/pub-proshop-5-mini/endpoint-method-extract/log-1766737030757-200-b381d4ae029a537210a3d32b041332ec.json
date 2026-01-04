@@ -1,0 +1,131 @@
+{
+  "timestamp": 1766737030757,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "I inspected server.js, routes/productRoutes.js and controllers/productController.js and determined the concrete paths and which HTTP methods are explicitly handled by the code.\n\nNotes about interpretation:\n- server.js mounts productRoutes at the prefix /api/products, so all router paths are under that prefix.\n- I did not assume Express implicit behaviors (e.g. automatic HEAD responses for GET); I only mark a method acceptable if the code explicitly registers a handler for it (router.get/post/put/delete/etc or router.route(...).<method>).\n- No router.all or router.options or router.trace or router.head or router.patch registrations are present in the provided files.\n\nEndpoints and allowed methods\n\n1) Path: /api/products\n- All methods allowed (router.all): false\n- HEAD: false\n- POST: true   (router.route('/').post(protect, admin, createProduct))\n- OPTIONS: false\n- TRACE: false\n- GET: true    (router.route('/').get(getProducts))\n- PUT: false\n- DELETE: false\n- PATCH: false\n\n2) Path: /api/products/{id}\n- All methods allowed: false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: true    (router.route('/:id').get(checkObjectId, getProductById))\n- PUT: true    (router.route('/:id').put(protect, admin, checkObjectId, updateProduct))\n- DELETE: true (router.route('/:id').delete(protect, admin, checkObjectId, deleteProduct))\n- PATCH: false\n\n3) Path: /api/products/{id}/reviews\n- All methods allowed: false\n- HEAD: false\n- POST: true   (router.route('/:id/reviews').post(protect, checkObjectId, createProductReview))\n- OPTIONS: false\n- TRACE: false\n- GET: false\n- PUT: false\n- DELETE: false\n- PATCH: false\n\n4) Path: /api/products/top\n- All methods allowed: false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: true    (router.get('/top', getTopProducts))\n- PUT: false\n- DELETE: false\n- PATCH: false\n\nBrief explanation of how these were derived:\n- server.js line app.use('/api/products', productRoutes) sets the prefix /api/products for the router.\n- productRoutes.js explicitly registers handlers:\n  - router.route('/').get(...).post(...)\n  - router.route('/:id/reviews').post(...)\n  - router.get('/top', ...)\n  - router.route('/:id').get(...).put(...).delete(...)\n- controllers/productController.js contains the functions wired to those handlers, confirming which HTTP methods implement which controller logic.\n- No explicit handlers for HEAD, OPTIONS, TRACE, PATCH or a router.all were found in the provided files, so they are marked unacceptable per the instruction to base answers only on the code."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "EndpointMethodExtractResult",
+        "schema": {
+          "properties": {
+            "path": {
+              "description": "The full HTTP request path for the endpoint.",
+              "title": "Path",
+              "type": "string"
+            },
+            "arbitrary": {
+              "description": "Whether all HTTP methods are acceptable.",
+              "title": "Arbitrary",
+              "type": "boolean"
+            },
+            "head": {
+              "description": "Whether the HEAD method is acceptable.",
+              "title": "Head",
+              "type": "boolean"
+            },
+            "post": {
+              "description": "Whether the POST method is acceptable.",
+              "title": "Post",
+              "type": "boolean"
+            },
+            "options": {
+              "description": "Whether the OPTIONS method is acceptable.",
+              "title": "Options",
+              "type": "boolean"
+            },
+            "trace": {
+              "description": "Whether the TRACE method is acceptable.",
+              "title": "Trace",
+              "type": "boolean"
+            },
+            "get": {
+              "description": "Whether the GET method is acceptable.",
+              "title": "Get",
+              "type": "boolean"
+            },
+            "put": {
+              "description": "Whether the PUT method is acceptable.",
+              "title": "Put",
+              "type": "boolean"
+            },
+            "delete": {
+              "description": "Whether the DELETE method is acceptable.",
+              "title": "Delete",
+              "type": "boolean"
+            },
+            "patch": {
+              "description": "Whether the PATCH method is acceptable.",
+              "title": "Patch",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "arbitrary",
+            "head",
+            "post",
+            "options",
+            "trace",
+            "get",
+            "put",
+            "delete",
+            "patch"
+          ],
+          "title": "EndpointMethodExtractResult",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\n  \"arbitrary\": false,\n  \"delete\": false,\n  \"get\": true,\n  \"head\": false,\n  \"options\": false,\n  \"patch\": false,\n  \"path\": \"/api/products\",\n  \"post\": true,\n  \"put\": false,\n  \"trace\": false\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766737020,
+    "id": "chatcmpl-CqxIKvWHJBhqoo8dz5osA4Aqt7XpW",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2004,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1920,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 871,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2875
+    }
+  }
+}

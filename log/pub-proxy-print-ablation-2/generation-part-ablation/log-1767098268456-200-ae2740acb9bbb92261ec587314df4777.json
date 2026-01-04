@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767098268456,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/consumer/subscribe` with method ANY, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `io.github.proxyprint.kitchen.controllers.notifications.NotificationsController.subscribe` is implemented to process HTTP requests to `/consumer/subscribe` with HTTP method ANY.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `NotificationsController#subscribe` is implemented to process HTTP requests to `/consumer/subscribe` with HTTP method ANY.\n\n3. In `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`, `subscribe` is implemented to process HTTP requests to `/consumer/subscribe` with HTTP method ANY.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java`:\n\n```\n/*\n * Copyright 2016 Pivotal Software, Inc..\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.github.proxyprint.kitchen.controllers.notifications;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonObject;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.notifications.Notification;\nimport io.github.proxyprint.kitchen.models.repositories.ConsumerDAO;\nimport io.github.proxyprint.kitchen.utils.NotificationManager;\nimport java.security.Principal;\nimport java.util.List;\n\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.transaction.annotation.Transactional;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\nimport org.springframework.web.context.request.WebRequest;\nimport org.springframework.web.servlet.mvc.method.annotation.SseEmitter;\n\n/**\n *\n * @author jose\n */\n@RestController \npublic class NotificationsController {\n\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private NotificationManager notificationManager;\n    @Autowired\n    private Gson GSON;\n\n    @Transactional\n    @ApiOperation(value = \"Returns nothing\", notes = \"This method sends a notification to a consumer.\")\n    @RequestMapping(value = \"/consumer/{id}/notify\", method = RequestMethod.POST)\n    public void greeting(@PathVariable(value = \"id\") long id, WebRequest request, Principal principal) throws Exception {\n        String message = request.getParameter(\"message\");\n        String name = consumers.findOne(id).getUsername();\n        notificationManager.sendNotification(name, new Notification(message));\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows a consumer to subscribe the SSE.\")\n    @RequestMapping(value = \"/consumer/subscribe\", produces = \"text/event-stream\")\n    public ResponseEntity<SseEmitter> subscribe(WebRequest request){\n        String username = request.getParameter(\"username\");\n        String password = request.getParameter(\"password\");\n\n        Consumer consumer = this.consumers.findByUsername(username);\n        if (consumer == null) {\n            return new ResponseEntity<>(HttpStatus.NOT_FOUND);\n        } else if (consumer.getPassword().equals(password)) {\n            return new ResponseEntity<>(this.notificationManager.subscribe(username), HttpStatus.OK);\n        } else {\n            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);\n        }\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns list of notifications.\", notes = \"This method retrieves to consumer his list of notifications.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/notifications\", method = RequestMethod.GET)\n    public List<Notification> getConsumerNotifications(Principal principal) {\n        Consumer consumer = this.consumers.findByUsername(principal.getName());\n        return consumer.getNotifications();\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns success.\", notes = \"This method allows consumers to delete a notification.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value=\"/notifications/{notificationId}\", method = RequestMethod.DELETE)\n    public ResponseEntity<String> deleteNotification(@PathVariable(value = \"notificationId\") long notId, WebRequest request){\n        JsonObject response = new JsonObject();\n        notificationManager.removeNotification(notId);\n        response.addProperty(\"success\", true);\n        return new ResponseEntity<>(GSON.toJson(response), HttpStatus.OK);\n    }\n\n    @Transactional\n    @ApiOperation(value = \"Returns success.\", notes = \"This method allows consumers to mark a notification as read.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value=\"/notifications/{notificationId}\", method = RequestMethod.PUT)\n    public ResponseEntity<String> readNotification (@PathVariable (value=\"notificationId\") long notId){\n        JsonObject response = new JsonObject();\n        notificationManager.readNotification(notId);\n        response.addProperty(\"success\", true);\n        return new ResponseEntity<>(GSON.toJson(response), HttpStatus.OK);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsTGaDjtMN0L7tEwfankPQOECBN9B",
+    "object": "chat.completion",
+    "created": 1767098248,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation — step by step reasoning\n\n1. Location and mapping:\n   - The controller method is annotated with @RequestMapping(value = \"/consumer/subscribe\", produces = \"text/event-stream\") and has no explicit RequestMethod. In Spring that means it accepts any HTTP method. The task requests an Operation object for the endpoint /consumer/subscribe; the HTTP method key is not part of this object so the Operation object itself should reflect the method-agnostic behavior.\n\n2. Summary and description:\n   - The method has an @ApiOperation annotation:\n     - value = \"Returns success/insuccess.\" → used as summary.\n     - notes = \"This method allows a consumer to subscribe the SSE.\" → used as description.\n\n3. Parameters:\n   - The method takes a WebRequest and reads request parameters \"username\" and \"password\" via request.getParameter(...). These are query (or form) parameters in the HTTP request. I represent them as query parameters of type string. The source code does not enforce presence (it checks for null via consumers.findByUsername), so I mark them as not required (required: false) to match observed behavior.\n\n4. Responses and content type:\n   - The method returns ResponseEntity<SseEmitter> and the @RequestMapping declares produces = \"text/event-stream\". For a successful subscription the controller returns HttpStatus.OK and a SseEmitter (server-sent events) — modeled here as a response with content type text/event-stream and a simple schema (string; streaming SSE content).\n   - The code also returns HttpStatus.NOT_FOUND when the consumer is not found, and HttpStatus.UNAUTHORIZED when the password does not match. Those are included as response status codes with appropriate descriptions and no content.\n\n5. Other fields:\n   - There is no @Secured on this method, so no security requirement is set.\n   - I include an operationId \"subscribe\" to identify the operation; otherwise only fields directly inferred from the code are present: summary, description, parameters, and responses with the declared produced media type.\n\nthe final generated result begins\n{\n  \"summary\": \"Returns success/insuccess.\",\n  \"description\": \"This method allows a consumer to subscribe the SSE.\",\n  \"operationId\": \"subscribe\",\n  \"parameters\": [\n    {\n      \"name\": \"username\",\n      \"in\": \"query\",\n      \"description\": \"Consumer username (passed as request parameter)\",\n      \"required\": false,\n      \"schema\": {\n        \"type\": \"string\"\n      }\n    },\n    {\n      \"name\": \"password\",\n      \"in\": \"query\",\n      \"description\": \"Consumer password (passed as request parameter)\",\n      \"required\": false,\n      \"schema\": {\n        \"type\": \"string\"\n      }\n    }\n  ],\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Subscription accepted; returns Server-Sent Events stream (SseEmitter).\",\n      \"content\": {\n        \"text/event-stream\": {\n          \"schema\": {\n            \"type\": \"string\",\n            \"format\": \"binary\"\n          }\n        }\n      }\n    },\n    \"401\": {\n      \"description\": \"Unauthorized - password mismatch\"\n    },\n    \"404\": {\n      \"description\": \"Not Found - consumer does not exist\"\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1463,
+      "completion_tokens": 2029,
+      "total_tokens": 3492,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1344,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

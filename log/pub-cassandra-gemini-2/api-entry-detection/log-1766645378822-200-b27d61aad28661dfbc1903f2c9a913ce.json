@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766645378822,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the RESTEasy framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":\"/api/v1/ops/node/decommission\",\"handler\":\"NodeOpsResources.decommission\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 2: `{\"path\":\"/api/v1/ops/node/rebuild\",\"handler\":\"NodeOpsResources.rebuild\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 3: `{\"path\":\"/api/v1/ops/node/schema/versions\",\"handler\":\"NodeOpsResources.schemaVersions\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/NodeOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.oss.driver.api.core.cql.Row;\nimport com.datastax.oss.driver.api.core.type.reflect.GenericType;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\n\nimport javax.ws.rs.*;\nimport javax.ws.rs.client.Entity;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\n\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\n\n@Path(\"/api/v1/ops/node\")\npublic class NodeOpsResources {\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public NodeOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/decommission\")\n    @Operation(summary = \"Decommission the *node I am connecting to*. This invocation returns immediately and returns a job id.\", operationId = \"decommission_v1\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node decommission request\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(implementation = String.class),\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\n        )\n    )\n    public Response decommission(@QueryParam(value=\"force\")boolean force)\n    {\n        return handle(() ->\n                Response.accepted(\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService,\"CALL NodeOps.decommission(?, ?)\", force, true)\n                        ).build());\n    }\n\n    @POST\n    @Path(\"/rebuild\")\n    @Operation(summary = \"Rebuild data by streaming data from other nodes. This operation returns immediately with a job id.\", operationId = \"rebuild_v1\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for successfully scheduled Cassandra node rebuild request\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(implementation = String.class),\n            examples = @ExampleObject(value = \"34034d36-3c1e-4bdb-8a8f-f92291a64cb3\")\n        )\n    )\n    public Response rebuild(@QueryParam(\"src_dc\") String srcDatacenter)\n    {\n        return handle(() ->\n                Response.accepted(\n                        ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.rebuild(?)\", srcDatacenter)\n                ).build());\n    }\n\n    @GET\n    @Path(\"/schema/versions\")\n    @Produces(MediaType.APPLICATION_JSON)\n    @ApiResponse(\n            responseCode = \"200\",\n            description = \"Gets the schema versions for each node. Useful for checking schema agreement\",\n            content = @Content(\n                    mediaType = MediaType.APPLICATION_JSON,\n                    examples = @ExampleObject(value = \"{2207c2a9-f598-3971-986b-2926e09e239d: [10.244.1.4, 10.244.2.3, 10.244.3.3]}\")))\n    @Operation(summary = \"Get schema versions.\", operationId = \"getSchemaVersions\")\n    public Response schemaVersions()\n    {\n        return handle(() ->\n        {\n            Row row = cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.getSchemaVersions()\").one();\n\n            Map<String, List> schemaVersions = Collections.emptyMap();\n            if (row != null)\n            {\n                schemaVersions = row.getMap(0, String.class, List.class);\n            }\n            return Response.ok(schemaVersions).build();\n        });\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251225144808572558575Z7BIOV5F",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766645292,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": \"/api/v1/ops/node/decommission\",\n    \"handler\": \"NodeOpsResources.decommission\",\n    \"handler_in_same_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_string_literal\": true,\n    \"path_from_naming_convention\": false,\n    \"is_restful_api\": true,\n    \"is_testing_purposes\": false\n  },\n  {\n    \"path\": \"/api/v1/ops/node/rebuild\",\n    \"handler\": \"NodeOpsResources.rebuild\",\n    \"handler_in_same_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_string_literal\": true,\n    \"path_from_naming_convention\": false,\n    \"is_restful_api\": true,\n    \"is_testing_purposes\": false\n  },\n  {\n    \"path\": \"/api/v1/ops/node/schema/versions\",\n    \"handler\": \"NodeOpsResources.schemaVersions\",\n    \"handler_in_same_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_string_literal\": true,\n    \"path_from_naming_convention\": false,\n    \"is_restful_api\": true,\n    \"is_testing_purposes\": false\n  }\n]\n```\n\nExplanation:\n\nThe code defines a REST resource class `NodeOpsResources` with methods annotated with `@Path`, `@POST`, and `@GET`. These annotations define the API endpoints.\n\n*   `/api/v1/ops/node/decommission`: This path is associated with the `decommission` method. The `@POST` annotation indicates this is a POST request.\n*   `/api/v1/ops/node/rebuild`: This path is associated with the `rebuild` method. The `@POST` annotation indicates this is a POST request.\n*   `/api/v1/ops/node/schema/versions`: This path is associated with the `schemaVersions` method. The `@GET` annotation indicates this is a GET request.\n\nAll paths are extracted from string literals within the `@Path` and method-level annotations. The handlers are the methods themselves. All entries are for RESTful APIs and not for testing purposes.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1944,
+      "completion_tokens": 537,
+      "total_tokens": 2481,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1944,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

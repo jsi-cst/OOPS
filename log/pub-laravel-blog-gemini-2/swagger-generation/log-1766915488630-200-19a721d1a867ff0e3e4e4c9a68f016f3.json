@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766915488630,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}/thumbnail` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/PostThumbnailController.php`, `App\\\\Http\\\\Controllers\\\\Admin\\\\PostThumbnailController::destroy` is implemented to process HTTP requests to `/posts/{post}/thumbnail` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/PostThumbnailController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\RedirectResponse;\n\nclass PostThumbnailController extends Controller\n{\n    /**\n     * Unset the post's thumbnail.\n     */\n    public function destroy(Post $post): RedirectResponse\n    {\n        $post->update(['thumbnail_id' => null]);\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.updated'));\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-20251228175344194610674ddsdmXvT",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766915627,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Okay, I will analyze the provided PHP code to generate the OpenAPI specification for the `/posts/{post}/thumbnail` DELETE endpoint.\n\nHere's my thought process:\n\n1.  **Analyze the code:** The `destroy` method in `PostThumbnailController` handles the DELETE request. It receives a `Post` model instance, updates the `thumbnail_id` to `null`, and redirects the user with a success message.\n2.  **Determine the response:** The method returns a `RedirectResponse`. This indicates a redirect, typically with a 302 status code. The code also uses `withSuccess`, which suggests a success message is flashed to the session.\n3.  **Generate the OpenAPI specification:** Based on the analysis, I'll create a dictionary representing the response objects. I'll include a 302 response for the redirect, and a 200 response for the success case.\n\nthe final generated result begins\n```json\n{\n  \"302\": {\n    \"description\": \"Redirect to the post edit page.\",\n    \"headers\": {\n      \"Location\": {\n        \"type\": \"string\",\n        \"description\": \"The URL to redirect to.\"\n      }\n    }\n  },\n  \"200\": {\n    \"description\": \"Success. The thumbnail was removed.\",\n    \"schema\": {\n      \"type\": \"string\",\n      \"description\": \"Success message.\"\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 467,
+      "completion_tokens": 318,
+      "total_tokens": 785,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 467,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

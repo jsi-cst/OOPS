@@ -1,0 +1,154 @@
+{
+  "timestamp": 1766737343738,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/products/{id}/reviews` with method POST, and here is the relevant information I found:\n\n1. In `controllers/productController.js`, `createProductReview` is implemented to process HTTP requests to `/api/products/{id}/reviews` with HTTP method POST.\n\n2. In `controllers/productController.js`, `createProductReview` is implemented to process HTTP requests to `/api/products/{id}/reviews` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/productController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Product from '../models/productModel.js';\n\n// @desc    Fetch all products\n// @route   GET /api/products\n// @access  Public\nconst getProducts = asyncHandler(async (req, res) => {\n  const pageSize = process.env.PAGINATION_LIMIT;\n  const page = Number(req.query.pageNumber) || 1;\n\n  const keyword = req.query.keyword\n    ? {\n        name: {\n          $regex: req.query.keyword,\n          $options: 'i',\n        },\n      }\n    : {};\n\n  const count = await Product.countDocuments({ ...keyword });\n  const products = await Product.find({ ...keyword })\n    .limit(pageSize)\n    .skip(pageSize * (page - 1));\n\n  res.json({ products, page, pages: Math.ceil(count / pageSize) });\n});\n\n// @desc    Fetch single product\n// @route   GET /api/products/:id\n// @access  Public\nconst getProductById = asyncHandler(async (req, res) => {\n  // NOTE: checking for valid ObjectId to prevent CastError moved to separate\n  // middleware. See README for more info.\n\n  const product = await Product.findById(req.params.id);\n  if (product) {\n    return res.json(product);\n  } else {\n    // NOTE: this will run if a valid ObjectId but no product was found\n    // i.e. product may be null\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Create a product\n// @route   POST /api/products\n// @access  Private/Admin\nconst createProduct = asyncHandler(async (req, res) => {\n  const product = new Product({\n    name: 'Sample name',\n    price: 0,\n    user: req.user._id,\n    image: '/images/sample.jpg',\n    brand: 'Sample brand',\n    category: 'Sample category',\n    countInStock: 0,\n    numReviews: 0,\n    description: 'Sample description',\n  });\n\n  const createdProduct = await product.save();\n  res.status(201).json(createdProduct);\n});\n\n// @desc    Update a product\n// @route   PUT /api/products/:id\n// @access  Private/Admin\nconst updateProduct = asyncHandler(async (req, res) => {\n  const { name, price, description, image, brand, category, countInStock } =\n    req.body;\n\n  const product = await Product.findById(req.params.id);\n\n  if (product) {\n    product.name = name;\n    product.price = price;\n    product.description = description;\n    product.image = image;\n    product.brand = brand;\n    product.category = category;\n    product.countInStock = countInStock;\n\n    const updatedProduct = await product.save();\n    res.json(updatedProduct);\n  } else {\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Delete a product\n// @route   DELETE /api/products/:id\n// @access  Private/Admin\nconst deleteProduct = asyncHandler(async (req, res) => {\n  const product = await Product.findById(req.params.id);\n\n  if (product) {\n    await Product.deleteOne({ _id: product._id });\n    res.json({ message: 'Product removed' });\n  } else {\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Create new review\n// @route   POST /api/products/:id/reviews\n// @access  Private\nconst createProductReview = asyncHandler(async (req, res) => {\n  const { rating, comment } = req.body;\n\n  const product = await Product.findById(req.params.id);\n\n  if (product) {\n    const alreadyReviewed = product.reviews.find(\n      (r) => r.user.toString() === req.user._id.toString()\n    );\n\n    if (alreadyReviewed) {\n      res.status(400);\n      throw new Error('Product already reviewed');\n    }\n\n    const review = {\n      name: req.user.name,\n      rating: Number(rating),\n      comment,\n      user: req.user._id,\n    };\n\n    product.reviews.push(review);\n\n    product.numReviews = product.reviews.length;\n\n    product.rating =\n      product.reviews.reduce((acc, item) => item.rating + acc, 0) /\n      product.reviews.length;\n\n    await product.save();\n    res.status(201).json({ message: 'Review added' });\n  } else {\n    res.status(404);\n    throw new Error('Product not found');\n  }\n});\n\n// @desc    Get top rated products\n// @route   GET /api/products/top\n// @access  Public\nconst getTopProducts = asyncHandler(async (req, res) => {\n  const products = await Product.find({}).sort({ rating: -1 }).limit(3);\n\n  res.json(products);\n});\n\nexport {\n  getProducts,\n  getProductById,\n  createProduct,\n  updateProduct,\n  deleteProduct,\n  createProductReview,\n  getTopProducts,\n};\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_TdJMVC0Vwe8ftGvjDvJATSpc",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/productRoutes.js\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import express from 'express';\\nconst router = express.Router();\\nimport {\\n  getProducts,\\n  getProductById,\\n  createProduct,\\n  updateProduct,\\n  deleteProduct,\\n  createProductReview,\\n  getTopProducts,\\n} from '../controllers/productController.js';\\nimport { protect, admin } from '../middleware/authMiddleware.js';\\nimport checkObjectId from '../middleware/checkObjectId.js';\\n\\nrouter.route('/').get(getProducts).post(protect, admin, createProduct);\\nrouter.route('/:id/reviews').post(protect, checkObjectId, createProductReview);\\nrouter.get('/top', getTopProducts);\\nrouter\\n  .route('/:id')\\n  .get(checkObjectId, getProductById)\\n  .put(protect, admin, checkObjectId, updateProduct)\\n  .delete(protect, admin, checkObjectId, deleteProduct);\\n\\nexport default router;\\n\", 'stderr': ''}",
+        "tool_call_id": "call_TdJMVC0Vwe8ftGvjDvJATSpc"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_DblU9K1jiA6HJBWNrGgnNhQo",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' models/productModel.js\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import mongoose from 'mongoose';\\n\\nconst reviewSchema = mongoose.Schema(\\n  {\\n    name: { type: String, required: true },\\n    rating: { type: Number, required: true },\\n    comment: { type: String, required: true },\\n    user: {\\n      type: mongoose.Schema.Types.ObjectId,\\n      required: true,\\n      ref: 'User',\\n    },\\n  },\\n  {\\n    timestamps: true,\\n  }\\n);\\n\\nconst productSchema = mongoose.Schema(\\n  {\\n    user: {\\n      type: mongoose.Schema.Types.ObjectId,\\n      required: true,\\n      ref: 'User',\\n    },\\n    name: {\\n      type: String,\\n      required: true,\\n    },\\n    image: {\\n      type: String,\\n      required: true,\\n    },\\n    brand: {\\n      type: String,\\n      required: true,\\n    },\\n    category: {\\n      type: String,\\n      required: true,\\n    },\\n    description: {\\n      type: String,\\n      required: true,\\n    },\\n    reviews: [reviewSchema],\\n    rating: {\\n      type: Number,\\n      required: true,\\n      default: 0,\\n    },\\n    numReviews: {\\n      type: Number,\\n      required: true,\\n      default: 0,\\n    },\\n    price: {\\n      type: Number,\\n      required: true,\\n      default: 0,\\n    },\\n    countInStock: {\\n      type: Number,\\n      required: true,\\n      default: 0,\\n    },\\n  },\\n  {\\n    timestamps: true,\\n  }\\n);\\n\\nconst Product = mongoose.model('Product', productSchema);\\n\\nexport default Product;\\n\", 'stderr': ''}",
+        "tool_call_id": "call_DblU9K1jiA6HJBWNrGgnNhQo"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_QnrTBw6FGBEUceYP4j6QaeLS",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' middleware/authMiddleware.js\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import jwt from 'jsonwebtoken';\\nimport asyncHandler from './asyncHandler.js';\\nimport User from '../models/userModel.js';\\n\\n// User must be authenticated\\nconst protect = asyncHandler(async (req, res, next) => {\\n  let token;\\n\\n  // Read JWT from the 'jwt' cookie\\n  token = req.cookies.jwt;\\n\\n  if (token) {\\n    try {\\n      const decoded = jwt.verify(token, process.env.JWT_SECRET);\\n\\n      req.user = await User.findById(decoded.userId).select('-password');\\n\\n      next();\\n    } catch (error) {\\n      console.error(error);\\n      res.status(401);\\n      throw new Error('Not authorized, token failed');\\n    }\\n  } else {\\n    res.status(401);\\n    throw new Error('Not authorized, no token');\\n  }\\n});\\n\\n// User must be an admin\\nconst admin = (req, res, next) => {\\n  if (req.user && req.user.isAdmin) {\\n    next();\\n  } else {\\n    res.status(401);\\n    throw new Error('Not authorized as an admin');\\n  }\\n};\\n\\nexport { protect, admin };\\n\", 'stderr': ''}",
+        "tool_call_id": "call_QnrTBw6FGBEUceYP4j6QaeLS"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_ZaB0QMB4BtiTnKtjfGgfbT5d",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' middleware/checkObjectId.js\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"// @ts-check\\nimport { isValidObjectId } from 'mongoose';\\n\\n/**\\n * Checks if the req.params.id is a valid Mongoose ObjectId.\\n *\\n * @param {import('express').Request} req - The Express request object.\\n * @param {import('express').Response} res - The Express response object.\\n * @param {import('express').NextFunction} next - The Express next middleware function.\\n * @throws {Error} Throws an error if the ObjectId is invalid.\\n */\\n\\nfunction checkObjectId(req, res, next) {\\n  if (!isValidObjectId(req.params.id)) {\\n    res.status(404);\\n    throw new Error(`Invalid ObjectId of:  ${req.params.id}`);\\n  }\\n  next();\\n}\\n\\nexport default checkObjectId;\\n\", 'stderr': ''}",
+        "tool_call_id": "call_ZaB0QMB4BtiTnKtjfGgfbT5d"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CqxNGvi6DVP5DBDYyJbwC6CrrviM7",
+    "object": "chat.completion",
+    "created": 1766737326,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\nI examined the route and controller code to determine which parameters the POST /api/products/{id}/reviews endpoint expects.\n\n- Path parameter:\n  - The route is defined as /api/products/:id/reviews and uses the checkObjectId middleware, so a required path parameter \"id\" (a Mongoose ObjectId, represented as a string) is required.\n\n- Authentication:\n  - The route is protected by the protect middleware which reads the JWT from req.cookies.jwt. In HTTP requests cookies are sent via the Cookie header, so a header parameter named \"Cookie\" carrying the jwt cookie is required to authenticate the request.\n\n- Body payload:\n  - The controller reads rating and comment from req.body and uses them to create a review. The product review schema requires rating (number) and comment (string), so the request body must be a JSON object with those two required properties. Other review fields (name, user) are set server-side and should not be supplied.\n\nBased on the above, the operation parameters (Swagger 2.0 Parameter Objects) are the path parameter \"id\", a header parameter \"Cookie\" to carry the jwt cookie, and a body parameter \"review\" whose schema contains required properties rating and comment.\n\nthe final generated result begins\n[\n  {\n    \"name\": \"id\",\n    \"in\": \"path\",\n    \"description\": \"Product ID (Mongoose ObjectId)\",\n    \"required\": true,\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"Cookie\",\n    \"in\": \"header\",\n    \"description\": \"Authentication cookie containing JWT (cookie name: jwt). Required for protected route.\",\n    \"required\": true,\n    \"type\": \"string\"\n  },\n  {\n    \"name\": \"review\",\n    \"in\": \"body\",\n    \"description\": \"Review object containing rating and comment\",\n    \"required\": true,\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"rating\": {\n          \"type\": \"number\"\n        },\n        \"comment\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"rating\",\n        \"comment\"\n      ]\n    }\n  }\n]",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2801,
+      "completion_tokens": 1613,
+      "total_tokens": 4414,
+      "prompt_tokens_details": {
+        "cached_tokens": 1664,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1152,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "timestamp": 1766737376155,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/orders/{id}/pay` with method PUT, and here is the relevant information I found:\n\n1. In `controllers/orderController.js`, `updateOrderToPaid` is implemented to process HTTP requests to `/api/orders/{id}/pay` with HTTP method PUT.\n\n2. In `controllers/orderController.js`, `updateOrderToPaid` is implemented to process HTTP requests to `/api/orders/{id}/pay` with HTTP method PUT.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/orderController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Order from '../models/orderModel.js';\nimport Product from '../models/productModel.js';\nimport { calcPrices } from '../utils/calcPrices.js';\nimport { verifyPayPalPayment, checkIfNewTransaction } from '../utils/paypal.js';\n\n// @desc    Create new order\n// @route   POST /api/orders\n// @access  Private\nconst addOrderItems = asyncHandler(async (req, res) => {\n  const { orderItems, shippingAddress, paymentMethod } = req.body;\n\n  if (orderItems && orderItems.length === 0) {\n    res.status(400);\n    throw new Error('No order items');\n  } else {\n    // NOTE: here we must assume that the prices from our client are incorrect.\n    // We must only trust the price of the item as it exists in\n    // our DB. This prevents a user paying whatever they want by hacking our client\n    // side code - https://gist.github.com/bushblade/725780e6043eaf59415fbaf6ca7376ff\n\n    // get the ordered items from our database\n    const itemsFromDB = await Product.find({\n      _id: { $in: orderItems.map((x) => x._id) },\n    });\n\n    // map over the order items and use the price from our items from database\n    const dbOrderItems = orderItems.map((itemFromClient) => {\n      const matchingItemFromDB = itemsFromDB.find(\n        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id\n      );\n      return {\n        ...itemFromClient,\n        product: itemFromClient._id,\n        price: matchingItemFromDB.price,\n        _id: undefined,\n      };\n    });\n\n    // calculate prices\n    const { itemsPrice, taxPrice, shippingPrice, totalPrice } =\n      calcPrices(dbOrderItems);\n\n    const order = new Order({\n      orderItems: dbOrderItems,\n      user: req.user._id,\n      shippingAddress,\n      paymentMethod,\n      itemsPrice,\n      taxPrice,\n      shippingPrice,\n      totalPrice,\n    });\n\n    const createdOrder = await order.save();\n\n    res.status(201).json(createdOrder);\n  }\n});\n\n// @desc    Get logged in user orders\n// @route   GET /api/orders/myorders\n// @access  Private\nconst getMyOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({ user: req.user._id });\n  res.json(orders);\n});\n\n// @desc    Get order by ID\n// @route   GET /api/orders/:id\n// @access  Private\nconst getOrderById = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id).populate(\n    'user',\n    'name email'\n  );\n\n  if (order) {\n    res.json(order);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to paid\n// @route   PUT /api/orders/:id/pay\n// @access  Private\nconst updateOrderToPaid = asyncHandler(async (req, res) => {\n  // NOTE: here we need to verify the payment was made to PayPal before marking\n  // the order as paid\n  const { verified, value } = await verifyPayPalPayment(req.body.id);\n  if (!verified) throw new Error('Payment not verified');\n\n  // check if this transaction has been used before\n  const isNewTransaction = await checkIfNewTransaction(Order, req.body.id);\n  if (!isNewTransaction) throw new Error('Transaction has been used before');\n\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    // check the correct amount was paid\n    const paidCorrectAmount = order.totalPrice.toString() === value;\n    if (!paidCorrectAmount) throw new Error('Incorrect amount paid');\n\n    order.isPaid = true;\n    order.paidAt = Date.now();\n    order.paymentResult = {\n      id: req.body.id,\n      status: req.body.status,\n      update_time: req.body.update_time,\n      email_address: req.body.payer.email_address,\n    };\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to delivered\n// @route   GET /api/orders/:id/deliver\n// @access  Private/Admin\nconst updateOrderToDelivered = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    order.isDelivered = true;\n    order.deliveredAt = Date.now();\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Get all orders\n// @route   GET /api/orders\n// @access  Private/Admin\nconst getOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({}).populate('user', 'id name');\n  res.json(orders);\n});\n\nexport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n};\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_0Ooc8ybStdEsWq0iLplrukFS",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' models/orderModel.js\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import mongoose from 'mongoose';\\n\\nconst orderSchema = mongoose.Schema(\\n  {\\n    user: {\\n      type: mongoose.Schema.Types.ObjectId,\\n      required: true,\\n      ref: 'User',\\n    },\\n    orderItems: [\\n      {\\n        name: { type: String, required: true },\\n        qty: { type: Number, required: true },\\n        image: { type: String, required: true },\\n        price: { type: Number, required: true },\\n        product: {\\n          type: mongoose.Schema.Types.ObjectId,\\n          required: true,\\n          ref: 'Product',\\n        },\\n      },\\n    ],\\n    shippingAddress: {\\n      address: { type: String, required: true },\\n      city: { type: String, required: true },\\n      postalCode: { type: String, required: true },\\n      country: { type: String, required: true },\\n    },\\n    paymentMethod: {\\n      type: String,\\n      required: true,\\n    },\\n    paymentResult: {\\n      id: { type: String },\\n      status: { type: String },\\n      update_time: { type: String },\\n      email_address: { type: String },\\n    },\\n    itemsPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    taxPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    shippingPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    totalPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    isPaid: {\\n      type: Boolean,\\n      required: true,\\n      default: false,\\n    },\\n    paidAt: {\\n      type: Date,\\n    },\\n    isDelivered: {\\n      type: Boolean,\\n      required: true,\\n      default: false,\\n    },\\n    deliveredAt: {\\n      type: Date,\\n    },\\n  },\\n  {\\n    timestamps: true,\\n  }\\n);\\n\\nconst Order = mongoose.model('Order', orderSchema);\\n\\nexport default Order;\\n\", 'stderr': ''}",
+        "tool_call_id": "call_0Ooc8ybStdEsWq0iLplrukFS"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_UqqqG2pWMhtVOg6m2FeZGqhF",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' utils/paypal.js\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import dotenv from 'dotenv';\\ndotenv.config();\\nconst { PAYPAL_CLIENT_ID, PAYPAL_APP_SECRET, PAYPAL_API_URL } = process.env;\\n\\n/**\\n * Fetches an access token from the PayPal API.\\n * @see {@link https://developer.paypal.com/reference/get-an-access-token/#link-getanaccesstoken}\\n *\\n * @returns {Promise<string>} The access token if the request is successful.\\n * @throws {Error} If the request is not successful.\\n *\\n */\\nasync function getPayPalAccessToken() {\\n  // Authorization header requires base64 encoding\\n  const auth = Buffer.from(PAYPAL_CLIENT_ID + ':' + PAYPAL_APP_SECRET).toString(\\n    'base64'\\n  );\\n\\n  const url = `${PAYPAL_API_URL}/v1/oauth2/token`;\\n\\n  const headers = {\\n    Accept: 'application/json',\\n    'Accept-Language': 'en_US',\\n    Authorization: `Basic ${auth}`,\\n  };\\n\\n  const body = 'grant_type=client_credentials';\\n  const response = await fetch(url, {\\n    method: 'POST',\\n    headers,\\n    body,\\n  });\\n\\n  if (!response.ok) throw new Error('Failed to get access token');\\n\\n  const paypalData = await response.json();\\n\\n  return paypalData.access_token;\\n}\\n\\n/**\\n * Checks if a PayPal transaction is new by comparing the transaction ID with existing orders in the database.\\n *\\n * @param {Mongoose.Model} orderModel - The Mongoose model for the orders in the database.\\n * @param {string} paypalTransactionId - The PayPal transaction ID to be checked.\\n * @returns {Promise<boolean>} Returns true if it is a new transaction (i.e., the transaction ID does not exist in the database), false otherwise.\\n * @throws {Error} If there's an error in querying the database.\\n *\\n */\\nexport async function checkIfNewTransaction(orderModel, paypalTransactionId) {\\n  try {\\n    // Find all documents where Order.paymentResult.id is the same as the id passed paypalTransactionId\\n    const orders = await orderModel.find({\\n      'paymentResult.id': paypalTransactionId,\\n    });\\n\\n    // If there are no such orders, then it's a new transaction.\\n    return orders.length === 0;\\n  } catch (err) {\\n    console.error(err);\\n  }\\n}\\n\\n/**\\n * Verifies a PayPal payment by making a request to the PayPal API.\\n * @see {@link https://developer.paypal.com/docs/api/orders/v2/#orders_get}\\n *\\n * @param {string} paypalTransactionId - The PayPal transaction ID to be verified.\\n * @returns {Promise<Object>} An object with properties 'verified' indicating if the payment is completed and 'value' indicating the payment amount.\\n * @throws {Error} If the request is not successful.\\n *\\n */\\nexport async function verifyPayPalPayment(paypalTransactionId) {\\n  const accessToken = await getPayPalAccessToken();\\n  const paypalResponse = await fetch(\\n    `${PAYPAL_API_URL}/v2/checkout/orders/${paypalTransactionId}`,\\n    {\\n      headers: {\\n        'Content-Type': 'application/json',\\n        Authorization: `Bearer ${accessToken}`,\\n      },\\n    }\\n  );\\n  if (!paypalResponse.ok) throw new Error('Failed to verify payment');\\n\\n  const paypalData = await paypalResponse.json();\\n  return {\\n    verified: paypalData.status === 'COMPLETED',\\n    value: paypalData.purchase_units[0].amount.value,\\n  };\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_UqqqG2pWMhtVOg6m2FeZGqhF"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\nI examined controllers/orderController.js and related files to determine the possible responses from the PUT /api/orders/{id}/pay endpoint.\n\nKey findings:\n- Successful path: If the PayPal payment is verified, the PayPal transaction is new, the order exists, and the paid amount matches order.totalPrice, the order is updated (isPaid true, paidAt, paymentResult set) and the updated order document is returned as JSON. That corresponds to a 200 response with the updated Order object.\n- Not found: If the order is not found, the controller sets res.status(404) and throws \"Order not found\". That corresponds to a 404 response with an error message.\n- Several failure cases result in thrown errors without explicit status codes in this controller:\n  - Payment verification fails -> throws \"Payment not verified\".\n  - Transaction has been used before -> throws \"Transaction has been used before\".\n  - Incorrect amount paid -> throws \"Incorrect amount paid\".\n  These are handled by the global error middleware in the app; they represent client-side / request validation failures (mapped here as 400 Bad Request). I include a 400 response with an error-message schema.\n- Unexpected failures (e.g., failures in verifyPayPalPayment fetching PayPal API token or network/database issues) should map to 500 Internal Server Error.\n\nI inspected models/orderModel.js to build the successful response schema for the Order object (fields and types) and utils/paypal.js to see verification behaviors (value returned as string, etc.), so the response schema matches the model structure returned by Mongoose.\n\nThe responses object below contains:\n- 200: schema for the full Order object returned after marking an order paid.\n- 400: generic error object schema for client-related errors like payment verification failure, reused transaction, or incorrect amount.\n- 404: error object schema for \"Order not found\".\n- 500: generic internal server error object schema.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"Order updated to paid\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"_id\": {\n          \"type\": \"string\"\n        },\n        \"user\": {\n          \"type\": \"string\",\n          \"description\": \"User id (ObjectId)\"\n        },\n        \"orderItems\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"name\": {\n                \"type\": \"string\"\n              },\n              \"qty\": {\n                \"type\": \"number\"\n              },\n              \"image\": {\n                \"type\": \"string\"\n              },\n              \"price\": {\n                \"type\": \"number\"\n              },\n              \"product\": {\n                \"type\": \"string\",\n                \"description\": \"Product id (ObjectId)\"\n              },\n              \"_id\": {\n                \"type\": \"string\"\n              }\n            }\n          }\n        },\n        \"shippingAddress\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"address\": {\n              \"type\": \"string\"\n            },\n            \"city\": {\n              \"type\": \"string\"\n            },\n            \"postalCode\": {\n              \"type\": \"string\"\n            },\n            \"country\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"paymentMethod\": {\n          \"type\": \"string\"\n        },\n        \"paymentResult\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"id\": {\n              \"type\": \"string\"\n            },\n            \"status\": {\n              \"type\": \"string\"\n            },\n            \"update_time\": {\n              \"type\": \"string\"\n            },\n            \"email_address\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        \"itemsPrice\": {\n          \"type\": \"number\"\n        },\n        \"taxPrice\": {\n          \"type\": \"number\"\n        },\n        \"shippingPrice\": {\n          \"type\": \"number\"\n        },\n        \"totalPrice\": {\n          \"type\": \"number\"\n        },\n        \"isPaid\": {\n          \"type\": \"boolean\"\n        },\n        \"paidAt\": {\n          \"type\": \"string\",\n          \"format\": \"date-time\"\n        },\n        \"isDelivered\": {\n          \"type\": \"boolean\"\n        },\n        \"deliveredAt\": {\n          \"type\": \"string\",\n          \"format\": \"date-time\"\n        },\n        \"createdAt\": {\n          \"type\": \"string\",\n          \"format\": \"date-time\"\n        },\n        \"updatedAt\": {\n          \"type\": \"string\",\n          \"format\": \"date-time\"\n        }\n      }\n    }\n  },\n  \"400\": {\n    \"description\": \"Bad request - payment verification failed, transaction reused, or incorrect amount paid\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  },\n  \"404\": {\n    \"description\": \"Order not found\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  },\n  \"500\": {\n    \"description\": \"Internal server error\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766737353,
+    "id": "chatcmpl-CqxNh6HpgNinYRFm1G2A17AEPxfAT",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2419,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1280,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3079,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 5498
+    }
+  }
+}

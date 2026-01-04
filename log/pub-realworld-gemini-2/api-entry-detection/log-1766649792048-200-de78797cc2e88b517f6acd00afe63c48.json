@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766649792048,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Go and the Go standard library framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `hello.go`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `hello.go`:\n\n```\npackage main\n\nimport (\n\t\"fmt\"\n\n\t\"github.com/gin-gonic/gin\"\n\n\t\"github.com/jinzhu/gorm\"\n\t\"github.com/gothinkster/golang-gin-realworld-example-app/articles\"\n\t\"github.com/gothinkster/golang-gin-realworld-example-app/common\"\n\t\"github.com/gothinkster/golang-gin-realworld-example-app/users\"\n)\n\nfunc Migrate(db *gorm.DB) {\n\tusers.AutoMigrate()\n\tdb.AutoMigrate(&articles.ArticleModel{})\n\tdb.AutoMigrate(&articles.TagModel{})\n\tdb.AutoMigrate(&articles.FavoriteModel{})\n\tdb.AutoMigrate(&articles.ArticleUserModel{})\n\tdb.AutoMigrate(&articles.CommentModel{})\n}\n\nfunc main() {\n\n\tdb := common.Init()\n\tMigrate(db)\n\tdefer db.Close()\n\n\tr := gin.Default()\n\n\tv1 := r.Group(\"/api\")\n\tusers.UsersRegister(v1.Group(\"/users\"))\n\tv1.Use(users.AuthMiddleware(false))\n\tarticles.ArticlesAnonymousRegister(v1.Group(\"/articles\"))\n\tarticles.TagsAnonymousRegister(v1.Group(\"/tags\"))\n\n\tv1.Use(users.AuthMiddleware(true))\n\tusers.UserRegister(v1.Group(\"/user\"))\n\tusers.ProfileRegister(v1.Group(\"/profiles\"))\n\n\tarticles.ArticlesRegister(v1.Group(\"/articles\"))\n\n\ttestAuth := r.Group(\"/api/ping\")\n\n\ttestAuth.GET(\"/\", func(c *gin.Context) {\n\t\tc.JSON(200, gin.H{\n\t\t\t\"message\": \"pong\",\n\t\t})\n\t})\n\n\t// test 1 to 1\n\ttx1 := db.Begin()\n\tuserA := users.UserModel{\n\t\tUsername: \"AAAAAAAAAAAAAAAA\",\n\t\tEmail:    \"aaaa@g.cn\",\n\t\tBio:      \"hehddeda\",\n\t\tImage:    nil,\n\t}\n\ttx1.Save(&userA)\n\ttx1.Commit()\n\tfmt.Println(userA)\n\n\t//db.Save(&ArticleUserModel{\n\t//    UserModelID:userA.ID,\n\t//})\n\t//var userAA ArticleUserModel\n\t//db.Where(&ArticleUserModel{\n\t//    UserModelID:userA.ID,\n\t//}).First(&userAA)\n\t//fmt.Println(userAA)\n\n\tr.Run() // listen and serve on 0.0.0.0:8080\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-202512251601433233318403KdBpAjN",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766649705,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": \"/api/ping/\",\n    \"handler\": \"anonymous\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": false\n  }\n]\n```\n\n**Explanation:**\n\nThe code uses the `gin-gonic/gin` framework for routing. I have identified one API entry based on the provided code:\n\n*   **`/api/ping/`**: This path is defined using `r.Group(\"/api\")` and `testAuth.GET(\"/\", func(c *gin.Context) { ... })`. The handler is an anonymous function. The implementation of the handler is present in the same file. The path is extracted from a literal string. This is a RESTful API entry and is not intended for testing.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1068,
+      "completion_tokens": 211,
+      "total_tokens": 1279,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1068,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

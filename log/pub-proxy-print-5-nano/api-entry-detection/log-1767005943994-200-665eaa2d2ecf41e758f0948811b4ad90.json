@@ -1,0 +1,55 @@
+{
+  "timestamp": 1767005943994,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (1.x) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/pricetable/PapersTable.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/pricetable/PapersTable.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.printshops.pricetable;\n\nimport io.github.proxyprint.kitchen.models.printshops.PrintShop;\nimport io.github.proxyprint.kitchen.models.printshops.pricetable.RangePaperItem;\n\nimport java.util.HashMap;\nimport java.util.Map;\nimport java.util.Set;\nimport java.util.TreeSet;\n\n/**\n * Created by daniel on 02-05-2016.\n */\npublic class PapersTable {\n    private Map<String,Map<String,PaperTableItem>> items = new HashMap<>();\n\n    public PapersTable() {\n        this.items = new HashMap<>();\n    }\n\n    public Map<String, Map<String,PaperTableItem>> getItems() { return items; }\n\n    public void setItems(Map<String, Map<String,PaperTableItem>> items) { this.items = items; }\n\n    /**\n     * Insert a (Range)PaperItem in a pricetable.\n     * @param pi, the PaperItem to be inserted.\n     * @param pshop, the current print shop instance.\n     * @return the updated price table.\n     */\n    public void addRangePaperItem(RangePaperItem pi, PrintShop pshop) {\n        if (!items.containsKey(pi.getColors().toString())) { // The color is new\n            // Create new PaperTableItem\n            PaperTableItem pti = new PaperTableItem(pi.getInfLim(), pi.getSupLim());\n            pti.addPriceToPaperTableItem(pi, pshop.getPrice(pi));\n            pti.setColors(pi.getColors().toString());\n\n            // Add new range and associated PaperTableItem instance\n            Map<String,PaperTableItem> map = new HashMap<>();\n            map.put(pti.genKey(), pti);\n\n            // Add to table\n            items.put(pi.getColors().toString(), map);\n\n        } else { // The color already exists\n            String ptiKey = pi.getInfLim() + \";\" + pi.getSupLim();\n            Map<String, PaperTableItem> aux = items.get(pi.getColors().toString());\n            PaperTableItem pti = aux.get(ptiKey);\n\n            if (pti != null) {\n                // PriceTableItem instance already exists add price\n                pti.addPriceToPaperTableItem(pi, pshop.getPrice(pi));\n                pti.setColors(pi.getColors().toString());\n                items.get(pi.getColors().toString()).put(pti.genKey(), pti);\n            } else {\n                // Create new PaperTableItem\n                pti = new PaperTableItem(pi.getInfLim(), pi.getSupLim());\n                pti.setColors(pi.getColors().toString());\n                pti.addPriceToPaperTableItem(pi, pshop.getPrice(pi));\n\n                // Add new range and associated PaperTableItem instance\n                Map<String,PaperTableItem> map = items.get(pi.getColors().toString());\n                map.put(pti.genKey(), pti);\n\n                // Add to table\n                items.put(pi.getColors().toString(), map);\n            }\n        }\n    }\n\n    public Map<String, Set<PaperTableItem>> getFinalTable() {\n        Map<String, Set<PaperTableItem>> finalTable = new HashMap<>();\n\n        // Covert Map<String,PaperTableItem> into Set<PaperTableItem>\n        for(String color : items.keySet()) {\n            Map<String,PaperTableItem> map = items.get(color);\n            Set<PaperTableItem> set = new TreeSet<>();\n            for(PaperTableItem pti : map.values()) {\n                set.add(pti);\n            }\n            finalTable.put(color,set);\n        }\n\n        return finalTable;\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n- There are no REST API route mappings defined in the provided file. PapersTable.java is a domain/model class that builds and manages price tables and does not contain any Spring MVC annotations (e.g., @RequestMapping, @RestController) or explicit HTTP route definitions. Therefore, there are no API entries to extract from this file.\n\nAPI entries list:\n[]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767005931,
+    "id": "chatcmpl-Cs5Fb5aTe9B0J7Lwovmh1oHq24Pho",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 660,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 576,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1225,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1885
+    }
+  }
+}

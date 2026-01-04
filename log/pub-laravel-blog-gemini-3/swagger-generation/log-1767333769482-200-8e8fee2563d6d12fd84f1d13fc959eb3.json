@@ -1,0 +1,138 @@
+{
+  "timestamp": 1767333769482,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/likes` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method POST.\n\n2. In `app/Concern/Likeable.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     *\n     * @return Response\n     */\n    public function store(Request $request, Post $post)\n    {\n        return $post->like();\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     *\n     * @return \\Illuminate\\Http\\Response\n     */\n    public function destroy(Post $post)\n    {\n        return $post->dislike();\n    }\n}\n```\n\nContents of file `app/Concern/Likeable.php`:\n\n```\n<?php\n\nnamespace App\\Concern;\n\nuse App\\Models\\Like;\nuse Illuminate\\Database\\Eloquent\\Relations\\morphMany;\n\ntrait Likeable\n{\n    /**\n     * The \"booting\" method of the trait.\n     */\n    protected static function bootLikeable(): void\n    {\n        static::deleting(fn ($resource) => $resource->likes->each->delete());\n    }\n\n    /**\n     * Get all of the resource's likes.\n     */\n    public function likes(): morphMany\n    {\n        return $this->morphMany(Like::class, 'likeable');\n    }\n\n    /**\n     * Create a like if it does not exist yet.\n     */\n    public function like()\n    {\n        if ($this->likes()->where('author_id', auth()->id())->doesntExist()) {\n            return $this->likes()->create(['author_id' => auth()->id()]);\n        }\n    }\n\n    /**\n     * Check if the resource is liked by the current user\n     */\n    public function isLiked(): bool\n    {\n        return $this->likes->where('author_id', auth()->id())->isNotEmpty();\n    }\n\n    /**\n     * Delete like for a resource.\n     */\n    public function dislike()\n    {\n        return $this->likes()->where('author_id', auth()->id())->get()->each->delete();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_1ee4cd78b4b24dc9ba6e8e7cebb471dd",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_1ee4cd78b4b24dc9ba6e8e7cebb471dd"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_b68f3ae23eed44f896f72003ebf5a006",
+            "function": {
+              "arguments": "{\"command\":\"cat routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_b68f3ae23eed44f896f72003ebf5a006"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_6f77b8572674430ab76a7e0c6de3218c",
+            "function": {
+              "arguments": "{\"command\":\"ls database/migrations\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '2014_10_12_000000_create_users_table.php\\n2014_10_12_100000_create_password_resets_table.php\\n2016_12_19_080506_create_posts_table.php\\n2016_12_19_201351_create_comments_table.php\\n2016_12_30_125504_create_newsletter_subscriptions_table.php\\n2016_12_30_171448_create_jobs_table.php\\n2017_01_08_205244_add_provider_and_provider_id_to_users.php\\n2017_01_09_191917_update_email_and_password_to_nullable_to_users.php\\n2017_01_23_210625_create_roles_table.php\\n2017_01_29_003732_add_registered_at_to_users_table.php\\n2017_03_12_213124_create_media_table.php\\n2017_03_19_102521_add_thumbnail_id_to_posts_table.php\\n2017_03_25_194948_add_api_token_to_users_table.php\\n2017_04_16_092512_add_slug_to_posts.php\\n2017_11_14_001056_add_index_on_title_to_posts.php\\n2017_11_15_003340_create_likes_table.php\\n2018_03_22_214952_drop_media_table.php\\n2018_03_22_215224_create_media_table_with_media_library.php\\n2018_03_22_230046_create_media_libraries_table.php\\n2018_09_05_220100_add_email_verified_at_to_users.php\\n2019_09_09_000456_create_failed_jobs_table.php\\n2019_12_14_000001_create_personal_access_tokens_table.php\\n2020_10_06_231328_add_fields_to_media.php\\n2022_04_30_011124_add_generated_conversions_to_media_table.php\\n2024_10_19_150013_create_telescope_entries_table.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_6f77b8572674430ab76a7e0c6de3218c"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-f7bb7044d5164eda8f2f015bc6bd29c9",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333769,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_209037786004473b8cd5094f083d5b29",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"cat database/migrations/2016_12_19_080506_create_posts_table.php\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3596,
+      "completion_tokens": 550,
+      "total_tokens": 4146,
+      "completion_tokens_details": {
+        "reasoning_tokens": 505
+      }
+    }
+  }
+}

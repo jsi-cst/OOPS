@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767006809941,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/documents/{id}` with method GET, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`, `getEmployees` is implemented to process HTTP requests to `/documents/{id}` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.printshops;\n\nimport com.google.gson.Gson;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.Document;\nimport io.github.proxyprint.kitchen.models.printshops.Employee;\nimport io.github.proxyprint.kitchen.models.repositories.DocumentDAO;\nimport io.github.proxyprint.kitchen.models.repositories.EmployeeDAO;\nimport java.io.File;\n\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.core.io.FileSystemResource;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport java.security.Principal;\nimport javax.annotation.Resource;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 14-05-2016.\n */\n@RestController \n@Transactional\npublic class EmployeeController {\n\n    @Resource(name = \"documentsPath\")\n    private String documentsPath;\n    @Autowired\n    private EmployeeDAO employees;\n    @Autowired\n    private DocumentDAO documents;\n    @Autowired\n    private Gson GSON;\n\n    @ApiOperation(value = \"Returns a document\", notes = \"This method allows employees to get a document by a given id.\")\n    @Secured(\"ROLE_EMPLOYEE\")\n    @RequestMapping(value = \"/documents/{id}\", method = RequestMethod.GET)\n    public ResponseEntity<FileSystemResource> getEmployees(@PathVariable(value = \"id\") long id, Principal principal) {\n        HttpHeaders headers = new HttpHeaders();\n\n        Employee emp = this.employees.findByUsername(principal.getName());\n        Document doc = this.documents.findOne(id);\n\n        if (doc == null) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.NOT_FOUND);\n        } else if (emp.getPrintShop().getId() != doc.getPrintRequest().getPrintshop().getId()) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.UNAUTHORIZED);\n        } else {\n            headers.setContentType(MediaType.parseMediaType(\"application/pdf\"));\n            headers.add(\"Content-Disposition\", \"inline;filename=\" + doc.getName() + \".pdf\");\n            headers.setCacheControl(\"must-revalidate, post-check=0, pre-check=0\");\n\n            return new ResponseEntity(new FileSystemResource(new File(this.documentsPath+doc.getFile().getName())), headers, HttpStatus.OK);\n        }\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-20251229191543327331055xwuzGhGA",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1767006948,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Okay, I will analyze the provided Java code to generate the OpenAPI specification for the `/documents/{id}` GET endpoint.\n\nHere's the breakdown:\n\n1.  **Endpoint and Method:** The code defines a GET endpoint at `/documents/{id}`.\n2.  **Response Codes:**\n    *   `200 OK`:  The document is found and the employee is authorized. The response body is a PDF file.\n    *   `404 NOT FOUND`: The document with the given ID is not found. The response body is likely empty (or a JSON error message, but the code doesn't specify).\n    *   `401 UNAUTHORIZED`: The employee is not authorized to access the document. The response body is likely empty (or a JSON error message, but the code doesn't specify).\n3.  **Response Body:**\n    *   `200 OK`: A PDF file. The `Content-Type` header is set to `application/pdf`.\n    *   `404 NOT FOUND` and `401 UNAUTHORIZED`:  Likely empty, or a JSON error message.\n\nBased on this analysis, I will generate the `responses` section for the OpenAPI specification.\n\n```json\n{\n  \"200\": {\n    \"description\": \"Document found and accessible\",\n    \"headers\": {\n      \"Content-Disposition\": {\n        \"type\": \"string\",\n        \"description\": \"Specifies the filename for the downloaded PDF.\"\n      },\n      \"Content-Type\": {\n        \"type\": \"string\",\n        \"description\": \"The content type of the response.\",\n        \"default\": \"application/pdf\"\n      },\n      \"Cache-Control\": {\n        \"type\": \"string\",\n        \"description\": \"Cache control directives.\",\n        \"default\": \"must-revalidate, post-check=0, pre-check=0\"\n      }\n    },\n    \"schema\": {\n      \"type\": \"string\",\n      \"format\": \"binary\"\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized\",\n    \"schema\": {\n      \"type\": \"string\"\n    }\n  },\n  \"404\": {\n    \"description\": \"Document not found\",\n    \"schema\": {\n      \"type\": \"string\"\n    }\n  }\n}\n```\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"Document found and accessible\",\n    \"headers\": {\n      \"Content-Disposition\": {\n        \"type\": \"string\",\n        \"description\": \"Specifies the filename for the downloaded PDF.\"\n      },\n      \"Content-Type\": {\n        \"type\": \"string\",\n        \"description\": \"The content type of the response.\",\n        \"default\": \"application/pdf\"\n      },\n      \"Cache-Control\": {\n        \"type\": \"string\",\n        \"description\": \"Cache control directives.\",\n        \"default\": \"must-revalidate, post-check=0, pre-check=0\"\n      }\n    },\n    \"schema\": {\n      \"type\": \"string\",\n      \"format\": \"binary\"\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized\",\n    \"schema\": {\n      \"type\": \"string\"\n    }\n  },\n  \"404\": {\n    \"description\": \"Document not found\",\n    \"schema\": {\n      \"type\": \"string\"\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1038,
+      "completion_tokens": 804,
+      "total_tokens": 1842,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1038,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

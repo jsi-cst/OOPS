@@ -1,0 +1,167 @@
+{
+  "timestamp": 1767326603701,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/paste/{paste_id}` with method DELETE, and here is the relevant information I found:\n\n1. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `getCodePasteFromId` is implemented to process HTTP requests to `/api/paste/{paste_id}` with HTTP method DELETE.\n\n2. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `deleteCodePasteWithId` is implemented to process HTTP requests to `/api/paste/{paste_id}` with HTTP method DELETE.\n\n3. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController#getCodePasteFromId` is implemented to process HTTP requests to `/api/paste/{paste_id}` with HTTP method DELETE.\n\n4. In `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`, `CodePasteController#deleteCodePasteWithId` is implemented to process HTTP requests to `/api/paste/{paste_id}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/urcodebin/api/controllers/CodePasteController.java`:\n\n```\npackage com.urcodebin.api.controllers;\n\nimport com.urcodebin.api.controllers.requestbody.UploadPasteRequestBody;\nimport com.urcodebin.api.dto.CodePasteDTO;\nimport com.urcodebin.api.entities.CodePaste;\nimport com.urcodebin.api.enums.PasteSyntax;\nimport com.urcodebin.api.error.exception.MissingRequiredSourceCodeException;\nimport com.urcodebin.api.error.exception.PasteNotFoundException;\nimport com.urcodebin.api.services.interfaces.CodePasteService;\nimport org.modelmapper.ModelMapper;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.beans.factory.annotation.Qualifier;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.util.List;\nimport java.util.Optional;\nimport java.util.UUID;\nimport java.util.stream.Collectors;\n\n@RestController\n@RequestMapping(\"/api/paste\")\npublic class CodePasteController {\n\n    private final CodePasteService codePasteService;\n\n    private final ModelMapper modelMapper;\n\n    private static final int MAX_TITLE_LENGTH = 50;\n    private static final int MIN_TITLE_LENGTH = 1;\n    private static final int MAX_SEARCH_LIMIT = 20;\n    private static final int MIN_SEARCH_LIMIT = 1;\n\n    @Autowired\n    public CodePasteController(@Qualifier(\"PasteService\") CodePasteService codePasteService,\n                               ModelMapper modelMapper) {\n        this.codePasteService = codePasteService;\n        this.modelMapper = modelMapper;\n    }\n\n    @GetMapping(path = \"/{paste_id}\")\n    public CodePasteDTO getCodePasteFromId(@PathVariable(\"paste_id\") String pasteId) {\n        UUID pasteUUID = createUUIDFromString(pasteId);\n        Optional<CodePaste> foundPasteId = codePasteService.findByCodePasteId(pasteUUID);\n        final CodePaste codePaste = foundPasteId.orElseThrow(() ->\n                            new PasteNotFoundException(\"No CodePaste has been found with the given id.\"));\n        return convertToDTO(codePaste);\n    }\n\n    @DeleteMapping(path = \"/{paste_id}\")\n    public void deleteCodePasteWithId(@PathVariable(\"paste_id\") String pasteId) {\n        UUID pasteUUID = createUUIDFromString(pasteId);\n        if(!codePasteService.doesCodePasteWithIdExist(pasteUUID))\n            throw new PasteNotFoundException(\"No CodePaste has been found with the given id.\");\n\n        codePasteService.deleteCodePasteById(pasteUUID);\n    }\n\n    @GetMapping(path = \"/public\")\n    public List<CodePasteDTO> getListOfPublicPastesWith(\n                @RequestParam(value = \"paste_title\", defaultValue = \"\") String pasteTitle,\n                @RequestParam(value = \"paste_syntax\", required = false) String pasteSyntax,\n                @RequestParam(value = \"limit\", defaultValue = \"5\") int limit) {\n        if(limit > MAX_SEARCH_LIMIT || limit < MIN_SEARCH_LIMIT)\n            throw new IllegalArgumentException(\"limit number must be between 1 and 20.\");\n\n        List<CodePaste> listOfPastes;\n        if(pasteSyntax == null) {\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, limit);\n        } else {\n            PasteSyntax pasteSyntaxToSearch = createPasteSyntaxFromString(pasteSyntax);\n            listOfPastes = codePasteService.findListOfCodePastesBy(pasteTitle, pasteSyntaxToSearch, limit);\n        }\n        return listOfPastes.stream()\n                .map(this::convertToDTO)\n                .collect(Collectors.toList());\n    }\n\n    @PostMapping\n    public CodePasteDTO postNewCodePasteWith(@RequestBody UploadPasteRequestBody pasteRequestBody) {\n        if(pasteRequestBody.getSourceCode().isEmpty())\n            throw new MissingRequiredSourceCodeException(\"Required field (source_code) is missing.\");\n\n        int titleLength = pasteRequestBody.getPasteTitle().length();\n        if(titleLength > MAX_TITLE_LENGTH || titleLength < MIN_TITLE_LENGTH) {\n            String errorMsg = String.format(\"Paste Title field length must be within %s and %s\",\n                                                MIN_TITLE_LENGTH, MAX_TITLE_LENGTH);\n            throw new IllegalArgumentException(errorMsg);\n        }\n\n        final CodePaste newCodePaste = codePasteService.createNewCodePaste(pasteRequestBody);\n        return convertToDTO(newCodePaste);\n    }\n\n    private CodePasteDTO convertToDTO(CodePaste codePaste) {\n        return modelMapper.map(codePaste, CodePasteDTO.class);\n    }\n\n    private UUID createUUIDFromString(String stringId) {\n        try {\n            return UUID.fromString(stringId);\n        } catch (IllegalArgumentException e) {\n            throw new IllegalArgumentException(\"Invalid UUID format, please format properly!\");\n        }\n    }\n\n    private PasteSyntax createPasteSyntaxFromString(String pasteSyntax) {\n        try {\n            return PasteSyntax.valueOf(pasteSyntax);\n        } catch (IllegalArgumentException e) {\n            throw new IllegalArgumentException(\"paste_syntax parameter is not any of the given options.\");\n        }\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_04dbeaabf03840c4a8c84f3689c2a0e0",
+            "function": {
+              "arguments": "{\"command\":\"find src -name \\\"PasteNotFoundException.java\\\"\\nfind src -name \\\"IllegalArgumentException.java\\\"\\nfind src -name \\\"MissingRequiredSourceCodeException.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/urcodebin/api/error/exception/PasteNotFoundException.java\\nsrc/main/java/com/urcodebin/api/error/exception/MissingRequiredSourceCodeException.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_04dbeaabf03840c4a8c84f3689c2a0e0"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_cf1851b3a6ed44af8397ffcb7d8619d4",
+            "function": {
+              "arguments": "{\"command\":\"grep -r \\\"@ControllerAdvice\\\" src\\ngrep -r \\\"@ExceptionHandler\\\" src\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java:@ControllerAdvice\\nsrc/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java:    @ExceptionHandler(value = { IllegalArgumentException.class, MissingRequiredSourceCodeException.class })\\nsrc/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java:    @ExceptionHandler(value = { PasteNotFoundException.class, UserAccountNotFoundException.class })\\nsrc/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java:    @ExceptionHandler(value = {AccountInformationTakenException.class })\\n', 'stderr': ''}",
+        "tool_call_id": "call_cf1851b3a6ed44af8397ffcb7d8619d4"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_cc700253b8a74469b8fcb2b082751a00",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/error/handler/ResponseExceptionHandler.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.error.handler;\\n\\nimport com.urcodebin.api.error.exception.*;\\nimport org.springframework.http.HttpHeaders;\\nimport org.springframework.http.HttpStatus;\\nimport org.springframework.http.ResponseEntity;\\nimport org.springframework.http.converter.HttpMessageNotReadableException;\\nimport org.springframework.web.bind.annotation.ControllerAdvice;\\nimport org.springframework.web.bind.annotation.ExceptionHandler;\\nimport org.springframework.web.context.request.WebRequest;\\nimport org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;\\n\\nimport java.time.LocalDateTime;\\n\\n@ControllerAdvice\\npublic class ResponseExceptionHandler extends ResponseEntityExceptionHandler {\\n\\n    @ExceptionHandler(value = { IllegalArgumentException.class, MissingRequiredSourceCodeException.class })\\n    public ResponseEntity<Object> handleIllegalArgument(final RuntimeException exception, final WebRequest request) {\\n        return baseExceptionHandler(exception, request, HttpStatus.BAD_REQUEST);\\n    }\\n\\n    @ExceptionHandler(value = { PasteNotFoundException.class, UserAccountNotFoundException.class })\\n    public ResponseEntity<Object> handleNotFound(final RuntimeException exception, final WebRequest request) {\\n        return baseExceptionHandler(exception, request, HttpStatus.NOT_FOUND);\\n    }\\n\\n    @ExceptionHandler(value = {AccountInformationTakenException.class })\\n    public ResponseEntity<Object> handleConflict(final RuntimeException exception, final WebRequest request) {\\n        return baseExceptionHandler(exception, request, HttpStatus.CONFLICT);\\n    }\\n\\n    @Override\\n    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,\\n                                                                  HttpHeaders headers, HttpStatus status, WebRequest request) {\\n        return baseExceptionHandler(ex, request, HttpStatus.BAD_REQUEST);\\n    }\\n\\n    private ResponseEntity<Object> baseExceptionHandler(final RuntimeException exception, final WebRequest request,\\n                                                        final HttpStatus status) {\\n        ErrorResponse errorBody = createErrorResponse(exception, status);\\n        return handleExceptionInternal(exception, errorBody, new HttpHeaders(),\\n                status, request);\\n    }\\n\\n    private ErrorResponse createErrorResponse(RuntimeException exception, HttpStatus status) {\\n        ErrorResponse errorResponse = new ErrorResponse();\\n        errorResponse.setTimestamp(LocalDateTime.now());\\n        errorResponse.setStatus(status.value());\\n        errorResponse.setError(status.getReasonPhrase());\\n        errorResponse.setMessage(exception.getMessage());\\n        return errorResponse;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_cc700253b8a74469b8fcb2b082751a00"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_532d70bb8a244727897e4acb0d9f5f42",
+            "function": {
+              "arguments": "{\"command\":\"find src -name \\\"ErrorResponse.java\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/com/urcodebin/api/error/handler/ErrorResponse.java\\n', 'stderr': ''}",
+        "tool_call_id": "call_532d70bb8a244727897e4acb0d9f5f42"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_6e69e4415fc54dc1bbb9415dd1147f1b",
+            "function": {
+              "arguments": "{\"command\":\"cat src/main/java/com/urcodebin/api/error/handler/ErrorResponse.java\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package com.urcodebin.api.error.handler;\\n\\nimport com.fasterxml.jackson.annotation.JsonFormat;\\nimport com.fasterxml.jackson.databind.annotation.JsonSerialize;\\nimport com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;\\n\\nimport java.time.LocalDateTime;\\n\\npublic class ErrorResponse {\\n\\n    @JsonFormat(pattern = \"yyyy-MM-dd HH:mm:ss\")\\n    @JsonSerialize(using = LocalDateTimeSerializer.class)\\n    private LocalDateTime timestamp;\\n    private int status;\\n    private String error;\\n    private String message;\\n\\n    public ErrorResponse() {\\n        this.timestamp = LocalDateTime.now();\\n    }\\n\\n    public ErrorResponse(Exception e) {\\n        this.timestamp = LocalDateTime.now();\\n        this.message = e.getMessage();\\n    }\\n\\n    public LocalDateTime getTimestamp() {\\n        return timestamp;\\n    }\\n\\n    public void setTimestamp(LocalDateTime timestamp) {\\n        this.timestamp = timestamp;\\n    }\\n\\n    public int getStatus() {\\n        return status;\\n    }\\n\\n    public void setStatus(int status) {\\n        this.status = status;\\n    }\\n\\n    public String getError() {\\n        return error;\\n    }\\n\\n    public void setError(String error) {\\n        this.error = error;\\n    }\\n\\n    public String getMessage() {\\n        return message;\\n    }\\n\\n    public void setMessage(String message) {\\n        this.message = message;\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_6e69e4415fc54dc1bbb9415dd1147f1b"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-0efec993410340ef811c34b53b134ed3",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767326603,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "To generate the OpenAPI Specification for the `DELETE /api/paste/{paste_id}` endpoint, we analyze the `CodePasteController#deleteCodePasteWithId` method and its associated exception handling.\n\n### Analysis of the DELETE Endpoint\n\n1.  **Method Implementation**:\n    The method `deleteCodePasteWithId` takes a `paste_id` path variable.\n    - It first calls `createUUIDFromString(pasteId)`. If the provided `pasteId` is not a valid UUID string, an `IllegalArgumentException` is thrown.\n    - It then checks if the paste exists using `codePasteService.doesCodePasteWithIdExist(pasteUUID)`. If it does not exist, a `PasteNotFoundException` is thrown.\n    - Finally, it calls `codePasteService.deleteCodePasteById(pasteUUID)` to delete the paste.\n    - The method return type is `void`. In Spring Boot, a `void` return type without a specific `@ResponseStatus` defaults to a `200 OK` response.\n\n2.  **Exception Handling**:\n    The project uses a `@ControllerAdvice` class named `ResponseExceptionHandler` to handle exceptions globally.\n    - `IllegalArgumentException` (thrown if the UUID format is invalid) is handled by `handleIllegalArgument`, which returns a `400 Bad Request` status.\n    - `PasteNotFoundException` (thrown if no paste is found with the given UUID) is handled by `handleNotFound`, which returns a `404 Not Found` status.\n    - In both cases, the response body is an `ErrorResponse` object.\n\n3.  **ErrorResponse Structure**:\n    Based on `ErrorResponse.java`, the object contains the following fields:\n    - `timestamp`: `LocalDateTime` (serialized as a string, typically formatted as \"yyyy-MM-dd HH:mm:ss\").\n    - `status`: `int` (the HTTP status code).\n    - `error`: `String` (the reason phrase of the HTTP status).\n    - `message`: `String` (the exception message).\n\n### Response Objects\n\n- **200 OK**: Returned when the paste is successfully deleted (or was not there, depending on implementation, but the check ensures it existed). Since the return type is `void`, the body is empty.\n- **400 Bad Request**: Returned when the `paste_id` is not a valid UUID. The body follows the `ErrorResponse` structure.\n- **404 Not Found**: Returned when no paste is found with the provided UUID. The body follows the `ErrorResponse` structure.\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"OK\"\n  },\n  \"400\": {\n    \"description\": \"Bad Request\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"timestamp\": {\n          \"type\": \"string\",\n          \"example\": \"2023-10-27 10:00:00\"\n        },\n        \"status\": {\n          \"type\": \"integer\",\n          \"example\": 400\n        },\n        \"error\": {\n          \"type\": \"string\",\n          \"example\": \"Bad Request\"\n        },\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Invalid UUID format, please format properly!\"\n        }\n      }\n    }\n  },\n  \"404\": {\n    \"description\": \"Not Found\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"timestamp\": {\n          \"type\": \"string\",\n          \"example\": \"2023-10-27 10:00:05\"\n        },\n        \"status\": {\n          \"type\": \"integer\",\n          \"example\": 404\n        },\n        \"error\": {\n          \"type\": \"string\",\n          \"example\": \"Not Found\"\n        },\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"No CodePaste has been found with the given id.\"\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 3194,
+      "completion_tokens": 2780,
+      "total_tokens": 5974,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1843
+      }
+    }
+  }
+}

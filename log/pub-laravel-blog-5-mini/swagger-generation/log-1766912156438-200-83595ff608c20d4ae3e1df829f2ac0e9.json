@@ -1,0 +1,107 @@
+{
+  "timestamp": 1766912156438,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/likes` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n2. In `app/Concern/Likeable.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n3. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n4. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     *\n     * @return Response\n     */\n    public function store(Request $request, Post $post)\n    {\n        return $post->like();\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     *\n     * @return \\Illuminate\\Http\\Response\n     */\n    public function destroy(Post $post)\n    {\n        return $post->dislike();\n    }\n}\n```\n\nContents of file `app/Concern/Likeable.php`:\n\n```\n<?php\n\nnamespace App\\Concern;\n\nuse App\\Models\\Like;\nuse Illuminate\\Database\\Eloquent\\Relations\\morphMany;\n\ntrait Likeable\n{\n    /**\n     * The \"booting\" method of the trait.\n     */\n    protected static function bootLikeable(): void\n    {\n        static::deleting(fn ($resource) => $resource->likes->each->delete());\n    }\n\n    /**\n     * Get all of the resource's likes.\n     */\n    public function likes(): morphMany\n    {\n        return $this->morphMany(Like::class, 'likeable');\n    }\n\n    /**\n     * Create a like if it does not exist yet.\n     */\n    public function like()\n    {\n        if ($this->likes()->where('author_id', auth()->id())->doesntExist()) {\n            return $this->likes()->create(['author_id' => auth()->id()]);\n        }\n    }\n\n    /**\n     * Check if the resource is liked by the current user\n     */\n    public function isLiked(): bool\n    {\n        return $this->likes->where('author_id', auth()->id())->isNotEmpty();\n    }\n\n    /**\n     * Delete like for a resource.\n     */\n    public function dislike()\n    {\n        return $this->likes()->where('author_id', auth()->id())->get()->each->delete();\n    }\n}\n```\n\nContents of file `app/Http/Controllers/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Str;\n\nuse function HotwiredLaravel\\TurboLaravel\\dom_id;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->like();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->dislike();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_xdUzSvFkg2ldPokNys2gB0fb",
+            "function": {
+              "arguments": "{\"command\":\"rg \\\"PostLikeController\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/api.php:8:use App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nroutes/api.php:33:        Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\nroutes/api.php:34:        Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\nroutes/auth.php:13:use App\\\\Http\\\\Controllers\\\\PostLikeController;\\nroutes/auth.php:55:    Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\nroutes/auth.php:56:    Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\napp/Http/Controllers/PostLikeController.php:11:class PostLikeController extends Controller\\napp/Http/Controllers/Api/V1/PostLikeController.php:9:class PostLikeController extends Controller\\n\", 'stderr': ''}",
+        "tool_call_id": "call_xdUzSvFkg2ldPokNys2gB0fb"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,160p' routes/api.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_7dT4QG7sFZvhRmDVNDU0RrRp",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1766912155,
+    "id": "chatcmpl-Crgr5wXMGSYrNuUjmsPIR81q5Z11r",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 29,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1585,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1614
+    }
+  }
+}

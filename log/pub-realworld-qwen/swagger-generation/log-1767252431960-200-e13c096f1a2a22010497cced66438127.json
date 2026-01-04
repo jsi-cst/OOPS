@@ -1,0 +1,167 @@
+{
+  "timestamp": 1767252431960,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Go (Golang) and the Gin (github.com/gin-gonic/gin) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/profiles/{username}/follow` with method POST, and here is the relevant information I found:\n\n1. In `users/routers.go`, `ProfileFollow` is implemented to process HTTP requests to `/api/profiles/{username}/follow` with HTTP method POST.\n\n2. In `users/routers.go`, `ProfileUnfollow` is implemented to process HTTP requests to `/api/profiles/{username}/follow` with HTTP method POST.\n\n3. In `users/routers.go`, `ProfileFollow` is implemented to process HTTP requests to `/api/profiles/{username}/follow` with HTTP method POST.\n\n4. In `users/routers.go`, `ProfileUnfollow` is implemented to process HTTP requests to `/api/profiles/{username}/follow` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `users/routers.go`:\n\n```\npackage users\n\nimport (\n\t\"errors\"\n\t\"github.com/gothinkster/golang-gin-realworld-example-app/common\"\n\t\"github.com/gin-gonic/gin\"\n\t\"net/http\"\n)\n\nfunc UsersRegister(router *gin.RouterGroup) {\n\trouter.POST(\"/\", UsersRegistration)\n\trouter.POST(\"/login\", UsersLogin)\n}\n\nfunc UserRegister(router *gin.RouterGroup) {\n\trouter.GET(\"/\", UserRetrieve)\n\trouter.PUT(\"/\", UserUpdate)\n}\n\nfunc ProfileRegister(router *gin.RouterGroup) {\n\trouter.GET(\"/:username\", ProfileRetrieve)\n\trouter.POST(\"/:username/follow\", ProfileFollow)\n\trouter.DELETE(\"/:username/follow\", ProfileUnfollow)\n}\n\nfunc ProfileRetrieve(c *gin.Context) {\n\tusername := c.Param(\"username\")\n\tuserModel, err := FindOneUser(&UserModel{Username: username})\n\tif err != nil {\n\t\tc.JSON(http.StatusNotFound, common.NewError(\"profile\", errors.New(\"Invalid username\")))\n\t\treturn\n\t}\n\tprofileSerializer := ProfileSerializer{c, userModel}\n\tc.JSON(http.StatusOK, gin.H{\"profile\": profileSerializer.Response()})\n}\n\nfunc ProfileFollow(c *gin.Context) {\n\tusername := c.Param(\"username\")\n\tuserModel, err := FindOneUser(&UserModel{Username: username})\n\tif err != nil {\n\t\tc.JSON(http.StatusNotFound, common.NewError(\"profile\", errors.New(\"Invalid username\")))\n\t\treturn\n\t}\n\tmyUserModel := c.MustGet(\"my_user_model\").(UserModel)\n\terr = myUserModel.following(userModel)\n\tif err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewError(\"database\", err))\n\t\treturn\n\t}\n\tserializer := ProfileSerializer{c, userModel}\n\tc.JSON(http.StatusOK, gin.H{\"profile\": serializer.Response()})\n}\n\nfunc ProfileUnfollow(c *gin.Context) {\n\tusername := c.Param(\"username\")\n\tuserModel, err := FindOneUser(&UserModel{Username: username})\n\tif err != nil {\n\t\tc.JSON(http.StatusNotFound, common.NewError(\"profile\", errors.New(\"Invalid username\")))\n\t\treturn\n\t}\n\tmyUserModel := c.MustGet(\"my_user_model\").(UserModel)\n\n\terr = myUserModel.unFollowing(userModel)\n\tif err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewError(\"database\", err))\n\t\treturn\n\t}\n\tserializer := ProfileSerializer{c, userModel}\n\tc.JSON(http.StatusOK, gin.H{\"profile\": serializer.Response()})\n}\n\nfunc UsersRegistration(c *gin.Context) {\n\tuserModelValidator := NewUserModelValidator()\n\tif err := userModelValidator.Bind(c); err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))\n\t\treturn\n\t}\n\n\tif err := SaveOne(&userModelValidator.userModel); err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewError(\"database\", err))\n\t\treturn\n\t}\n\tc.Set(\"my_user_model\", userModelValidator.userModel)\n\tserializer := UserSerializer{c}\n\tc.JSON(http.StatusCreated, gin.H{\"user\": serializer.Response()})\n}\n\nfunc UsersLogin(c *gin.Context) {\n\tloginValidator := NewLoginValidator()\n\tif err := loginValidator.Bind(c); err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))\n\t\treturn\n\t}\n\tuserModel, err := FindOneUser(&UserModel{Email: loginValidator.userModel.Email})\n\n\tif err != nil {\n\t\tc.JSON(http.StatusForbidden, common.NewError(\"login\", errors.New(\"Not Registered email or invalid password\")))\n\t\treturn\n\t}\n\n\tif userModel.checkPassword(loginValidator.User.Password) != nil {\n\t\tc.JSON(http.StatusForbidden, common.NewError(\"login\", errors.New(\"Not Registered email or invalid password\")))\n\t\treturn\n\t}\n\tUpdateContextUserModel(c, userModel.ID)\n\tserializer := UserSerializer{c}\n\tc.JSON(http.StatusOK, gin.H{\"user\": serializer.Response()})\n}\n\nfunc UserRetrieve(c *gin.Context) {\n\tserializer := UserSerializer{c}\n\tc.JSON(http.StatusOK, gin.H{\"user\": serializer.Response()})\n}\n\nfunc UserUpdate(c *gin.Context) {\n\tmyUserModel := c.MustGet(\"my_user_model\").(UserModel)\n\tuserModelValidator := NewUserModelValidatorFillWith(myUserModel)\n\tif err := userModelValidator.Bind(c); err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewValidatorError(err))\n\t\treturn\n\t}\n\n\tuserModelValidator.userModel.ID = myUserModel.ID\n\tif err := myUserModel.Update(userModelValidator.userModel); err != nil {\n\t\tc.JSON(http.StatusUnprocessableEntity, common.NewError(\"database\", err))\n\t\treturn\n\t}\n\tUpdateContextUserModel(c, myUserModel.ID)\n\tserializer := UserSerializer{c}\n\tc.JSON(http.StatusOK, gin.H{\"user\": serializer.Response()})\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the endpoint `/api/profiles/{username}/follow` with method POST. Looking at the router registration in the code, I can see that:\n\n1. `ProfileFollow` is registered for POST method at `:username/follow`\n2. `ProfileUnfollow` is registered for DELETE method at `:username/follow`\n\nThere seems to be an inconsistency in the provided information - it states that both `ProfileFollow` and `ProfileUnfollow` are implemented for POST method, but the actual code shows `ProfileFollow` for POST and `ProfileUnfollow` for DELETE.\n\nFor the POST method `/api/profiles/{username}/follow`, I need to analyze the `ProfileFollow` function to determine the possible responses.\n\nLet me examine the `ProfileFollow` function:\n\n1. It can return HTTP 404 (StatusNotFound) if the user with the given username doesn't exist\n2. It can return HTTP 422 (StatusUnprocessableEntity) if there's a database error when following\n3. It can return HTTP 200 (StatusOK) on successful follow with a profile response\n\nI should also check the common error handling and serializer structures to understand the response format.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_860e92667a3644a0abe20fbf",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.go\\\" -exec grep -l \\\"NewError\\\\|ProfileSerializer\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './common/utils.go\\n./common/unit_test.go\\n./articles/serializers.go\\n./articles/routers.go\\n./users/serializers.go\\n./users/routers.go\\n', 'stderr': ''}",
+        "tool_call_id": "call_860e92667a3644a0abe20fbf"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the common utils and the ProfileSerializer to understand the response format:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_52211c9f01094603849415d3",
+            "function": {
+              "arguments": "{\"command\": \"cat ./common/utils.go\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '// Common tools and helper functions\\npackage common\\n\\nimport (\\n\\t\"fmt\"\\n\\t\"math/rand\"\\n\\t\"time\"\\n\\n\\t\"github.com/dgrijalva/jwt-go\"\\n\\t\"gopkg.in/go-playground/validator.v8\"\\n\\n\\t\"github.com/gin-gonic/gin/binding\"\\n\\t\"github.com/gin-gonic/gin\"\\n)\\n\\nvar letters = []rune(\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\")\\n\\n// A helper function to generate random string\\nfunc RandString(n int) string {\\n\\tb := make([]rune, n)\\n\\tfor i := range b {\\n\\t\\tb[i] = letters[rand.Intn(len(letters))]\\n\\t}\\n\\treturn string(b)\\n}\\n\\n// Keep this two config private, it should not expose to open source\\nconst NBSecretPassword = \"A String Very Very Very Strong!!@##$!@#$\"\\nconst NBRandomPassword = \"A String Very Very Very Niubilty!!@##$!@#4\"\\n\\n// A Util function to generate jwt_token which can be used in the request header\\nfunc GenToken(id uint) string {\\n\\tjwt_token := jwt.New(jwt.GetSigningMethod(\"HS256\"))\\n\\t// Set some claims\\n\\tjwt_token.Claims = jwt.MapClaims{\\n\\t\\t\"id\":  id,\\n\\t\\t\"exp\": time.Now().Add(time.Hour * 24).Unix(),\\n\\t}\\n\\t// Sign and get the complete encoded token as a string\\n\\ttoken, _ := jwt_token.SignedString([]byte(NBSecretPassword))\\n\\treturn token\\n}\\n\\n// My own Error type that will help return my customized Error info\\n//  {\"database\": {\"hello\":\"no such table\", error: \"not_exists\"}}\\ntype CommonError struct {\\n\\tErrors map[string]interface{} `json:\"errors\"`\\n}\\n\\n// To handle the error returned by c.Bind in gin framework\\n// https://github.com/go-playground/validator/blob/v9/_examples/translations/main.go\\nfunc NewValidatorError(err error) CommonError {\\n\\tres := CommonError{}\\n\\tres.Errors = make(map[string]interface{})\\n\\terrs := err.(validator.ValidationErrors)\\n\\tfor _, v := range errs {\\n\\t\\t// can translate each error one at a time.\\n\\t\\t//fmt.Println(\"gg\",v.NameNamespace)\\n\\t\\tif v.Param != \"\" {\\n\\t\\t\\tres.Errors[v.Field] = fmt.Sprintf(\"{%v: %v}\", v.Tag, v.Param)\\n\\t\\t} else {\\n\\t\\t\\tres.Errors[v.Field] = fmt.Sprintf(\"{key: %v}\", v.Tag)\\n\\t\\t}\\n\\n\\t}\\n\\treturn res\\n}\\n\\n// Warp the error info in a object\\nfunc NewError(key string, err error) CommonError {\\n\\tres := CommonError{}\\n\\tres.Errors = make(map[string]interface{})\\n\\tres.Errors[key] = err.Error()\\n\\treturn res\\n}\\n\\n// Changed the c.MustBindWith() ->  c.ShouldBindWith().\\n// I don\\'t want to auto return 400 when error happened.\\n// origin function is here: https://github.com/gin-gonic/gin/blob/master/context.go\\nfunc Bind(c *gin.Context, obj interface{}) error {\\n\\tb := binding.Default(c.Request.Method, c.ContentType())\\n\\treturn c.ShouldBindWith(obj, b)\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_52211c9f01094603849415d3"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the ProfileSerializer to understand the response format:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_5e328d40693f40c48d06d315",
+            "function": {
+              "arguments": "{\"command\": \"cat ./users/serializers.go\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package users\\n\\nimport (\\n\\t\"github.com/gin-gonic/gin\"\\n\\n\\t\"github.com/gothinkster/golang-gin-realworld-example-app/common\"\\n)\\n\\ntype ProfileSerializer struct {\\n\\tC *gin.Context\\n\\tUserModel\\n}\\n\\n// Declare your response schema here\\ntype ProfileResponse struct {\\n\\tID        uint    `json:\"-\"`\\n\\tUsername  string  `json:\"username\"`\\n\\tBio       string  `json:\"bio\"`\\n\\tImage     *string `json:\"image\"`\\n\\tFollowing bool    `json:\"following\"`\\n}\\n\\n// Put your response logic including wrap the userModel here.\\nfunc (self *ProfileSerializer) Response() ProfileResponse {\\n\\tmyUserModel := self.C.MustGet(\"my_user_model\").(UserModel)\\n\\tprofile := ProfileResponse{\\n\\t\\tID:        self.ID,\\n\\t\\tUsername:  self.Username,\\n\\t\\tBio:       self.Bio,\\n\\t\\tImage:     self.Image,\\n\\t\\tFollowing: myUserModel.isFollowing(self.UserModel),\\n\\t}\\n\\treturn profile\\n}\\n\\ntype UserSerializer struct {\\n\\tc *gin.Context\\n}\\n\\ntype UserResponse struct {\\n\\tUsername string  `json:\"username\"`\\n\\tEmail    string  `json:\"email\"`\\n\\tBio      string  `json:\"bio\"`\\n\\tImage    *string `json:\"image\"`\\n\\tToken    string  `json:\"token\"`\\n}\\n\\nfunc (self *UserSerializer) Response() UserResponse {\\n\\tmyUserModel := self.c.MustGet(\"my_user_model\").(UserModel)\\n\\tuser := UserResponse{\\n\\t\\tUsername: myUserModel.Username,\\n\\t\\tEmail:    myUserModel.Email,\\n\\t\\tBio:      myUserModel.Bio,\\n\\t\\tImage:    myUserModel.Image,\\n\\t\\tToken:    common.GenToken(myUserModel.ID),\\n\\t}\\n\\treturn user\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_5e328d40693f40c48d06d315"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I have all the information I need to generate the response objects for the POST method on `/api/profiles/{username}/follow` endpoint. Let me analyze the possible responses from the `ProfileFollow` function:\n\n1. **HTTP 200 (StatusOK)**: When the follow operation is successful, it returns a JSON object with a \"profile\" key containing the profile data in the format defined by `ProfileResponse`.\n\n2. **HTTP 404 (StatusNotFound)**: When the user with the given username doesn't exist, it returns an error in the format defined by `CommonError`.\n\n3. **HTTP 422 (StatusUnprocessableEntity)**: When there's a database error during the follow operation, it returns an error in the format defined by `CommonError`.\n\nLet me also check if there are any other potential responses by looking at the authentication/authorization aspects:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_33ba51c413d24a1aa3b6ddcd",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"my_user_model\\\" --include=\\\"*.go\\\" .\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './articles/serializers.go:\\tmyUserModel := s.C.MustGet(\"my_user_model\").(users.UserModel)\\n./articles/validators.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(users.UserModel)\\n./articles/validators.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(users.UserModel)\\n./articles/routers.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(users.UserModel)\\n./articles/routers.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(users.UserModel)\\n./articles/routers.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(users.UserModel)\\n./users/middlewares.go:\\tc.Set(\"my_user_model\", myUserModel)\\n./users/serializers.go:\\tmyUserModel := self.C.MustGet(\"my_user_model\").(UserModel)\\n./users/serializers.go:\\tmyUserModel := self.c.MustGet(\"my_user_model\").(UserModel)\\n./users/routers.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(UserModel)\\n./users/routers.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(UserModel)\\n./users/routers.go:\\tc.Set(\"my_user_model\", userModelValidator.userModel)\\n./users/routers.go:\\tmyUserModel := c.MustGet(\"my_user_model\").(UserModel)\\n', 'stderr': ''}",
+        "tool_call_id": "call_33ba51c413d24a1aa3b6ddcd"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the middleware to understand if there are authentication-related responses:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_007147f5af6b4e51b547b4d9",
+            "function": {
+              "arguments": "{\"command\": \"cat ./users/middlewares.go\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'package users\\n\\nimport (\\n\\t\"github.com/dgrijalva/jwt-go\"\\n\\t\"github.com/dgrijalva/jwt-go/request\"\\n\\t\"github.com/gothinkster/golang-gin-realworld-example-app/common\"\\n\\t\"github.com/gin-gonic/gin\"\\n\\t\"net/http\"\\n\\t\"strings\"\\n)\\n\\n// Strips \\'TOKEN \\' prefix from token string\\nfunc stripBearerPrefixFromTokenString(tok string) (string, error) {\\n\\t// Should be a bearer token\\n\\tif len(tok) > 5 && strings.ToUpper(tok[0:6]) == \"TOKEN \" {\\n\\t\\treturn tok[6:], nil\\n\\t}\\n\\treturn tok, nil\\n}\\n\\n// Extract  token from Authorization header\\n// Uses PostExtractionFilter to strip \"TOKEN \" prefix from header\\nvar AuthorizationHeaderExtractor = &request.PostExtractionFilter{\\n\\trequest.HeaderExtractor{\"Authorization\"},\\n\\tstripBearerPrefixFromTokenString,\\n}\\n\\n// Extractor for OAuth2 access tokens.  Looks in \\'Authorization\\'\\n// header then \\'access_token\\' argument for a token.\\nvar MyAuth2Extractor = &request.MultiExtractor{\\n\\tAuthorizationHeaderExtractor,\\n\\trequest.ArgumentExtractor{\"access_token\"},\\n}\\n\\n// A helper to write user_id and user_model to the context\\nfunc UpdateContextUserModel(c *gin.Context, my_user_id uint) {\\n\\tvar myUserModel UserModel\\n\\tif my_user_id != 0 {\\n\\t\\tdb := common.GetDB()\\n\\t\\tdb.First(&myUserModel, my_user_id)\\n\\t}\\n\\tc.Set(\"my_user_id\", my_user_id)\\n\\tc.Set(\"my_user_model\", myUserModel)\\n}\\n\\n// You can custom middlewares yourself as the doc: https://github.com/gin-gonic/gin#custom-middleware\\n//  r.Use(AuthMiddleware(true))\\nfunc AuthMiddleware(auto401 bool) gin.HandlerFunc {\\n\\treturn func(c *gin.Context) {\\n\\t\\tUpdateContextUserModel(c, 0)\\n\\t\\ttoken, err := request.ParseFromRequest(c.Request, MyAuth2Extractor, func(token *jwt.Token) (interface{}, error) {\\n\\t\\t\\tb := ([]byte(common.NBSecretPassword))\\n\\t\\t\\treturn b, nil\\n\\t\\t})\\n\\t\\tif err != nil {\\n\\t\\t\\tif auto401 {\\n\\t\\t\\t\\tc.AbortWithError(http.StatusUnauthorized, err)\\n\\t\\t\\t}\\n\\t\\t\\treturn\\n\\t\\t}\\n\\t\\tif claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {\\n\\t\\t\\tmy_user_id := uint(claims[\"id\"].(float64))\\n\\t\\t\\t//fmt.Println(my_user_id,claims[\"id\"])\\n\\t\\t\\tUpdateContextUserModel(c, my_user_id)\\n\\t\\t}\\n\\t}\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_007147f5af6b4e51b547b4d9"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-3d90d3ef-320a-9bc0-b37f-fa4728ee20ba",
+    "choices": [
+      {
+        "message": {
+          "content": "Now I have all the information I need to generate the response objects for the POST method on `/api/profiles/{username}/follow` endpoint. Let me analyze the possible responses:\n\n1. **HTTP 200 (StatusOK)**: Success response with profile data when following is successful\n2. **HTTP 401 (StatusUnauthorized)**: When authentication fails (from middleware)\n3. **HTTP 404 (StatusNotFound)**: When the user with the given username doesn't exist\n4. **HTTP 422 (StatusUnprocessableEntity)**: When there's a database error during the follow operation\n\nBased on the code analysis, I can now generate the response objects in Swagger 2.0 format.\n\nI need to think step by step:\n\n1. The `ProfileFollow` function is called for POST method on `/api/profiles/{username}/follow`\n2. It can return:\n   - 200 OK with profile data\n   - 404 Not Found when username is invalid\n   - 422 Unprocessable Entity when there's a database error\n3. There's also an authentication middleware that could return 401 Unauthorized\n\nThe response format for 200 includes a \"profile\" object with the structure defined in ProfileResponse.\nThe error responses follow the CommonError format with an \"errors\" field.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"Profile followed successfully\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"profile\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"username\": {\n              \"type\": \"string\",\n              \"example\": \"johndoe\"\n            },\n            \"bio\": {\n              \"type\": \"string\",\n              \"example\": \"Software developer\"\n            },\n            \"image\": {\n              \"type\": \"string\",\n              \"example\": \"https://example.com/image.jpg\"\n            },\n            \"following\": {\n              \"type\": \"boolean\",\n              \"example\": true\n            }\n          },\n          \"required\": [\"username\", \"bio\", \"image\", \"following\"]\n        }\n      },\n      \"required\": [\"profile\"]\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthorized - Authentication required\"\n  },\n  \"404\": {\n    \"description\": \"Profile not found\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"errors\": {\n          \"type\": \"object\",\n          \"additionalProperties\": {\n            \"type\": \"string\"\n          }\n        }\n      },\n      \"required\": [\"errors\"]\n    }\n  },\n  \"422\": {\n    \"description\": \"Unprocessable Entity - Database error or validation failure\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"errors\": {\n          \"type\": \"object\",\n          \"additionalProperties\": {\n            \"type\": \"string\"\n          }\n        }\n      },\n      \"required\": [\"errors\"]\n    }\n  }\n}",
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "stop"
+      }
+    ],
+    "created": 1767252420,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 5180,
+      "completion_tokens": 639,
+      "prompt_tokens": 4541,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

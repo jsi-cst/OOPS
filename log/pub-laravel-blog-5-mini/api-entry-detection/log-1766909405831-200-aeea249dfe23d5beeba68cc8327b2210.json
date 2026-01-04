@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766909405831,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Controllers/Api/V1/UserController.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/UserController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\UsersRequest;\nuse App\\Http\\Resources\\User as UserResource;\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Hash;\n\nclass UserController extends Controller\n{\n    /**\n     * Return the users.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return UserResource::collection(\n            User::withCount(['comments', 'posts'])->with('roles')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(User $user): UserResource\n    {\n        return new UserResource($user);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(UsersRequest $request, User $user): UserResource\n    {\n        $this->authorize('update', $user);\n\n        if ($request->filled('password')) {\n            $request->merge([\n                'password' => Hash::make($request->input('password'))\n            ]);\n        }\n\n        $user->update(array_filter($request->only(['name', 'email', 'password'])));\n\n        return new UserResource($user);\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": null,\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController::index\",\n    \"implementation_in_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": false,\n    \"path_from_naming_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController::show\",\n    \"implementation_in_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": false,\n    \"path_from_naming_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": null,\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController::update\",\n    \"implementation_in_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": false,\n    \"path_from_naming_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  }\n]\n\nExplanation:\n- The file defines a controller class App\\Http\\Controllers\\Api\\V1\\UserController with three public action methods: index, show, and update. Each of these is an API handler (class method) and their implementations are present in this same source file.\n- No literal route/path strings are present in this file (no Route:: or string path definitions), so exact HTTP paths cannot be determined from this file alone — therefore \"path\" is set to null for each entry.\n- Although Laravel commonly uses route definitions or Route::resource to map these controller methods to RESTful paths (for example, /users and /users/{user}), such mappings are not present in this source file. Per the instruction not to guess paths defined elsewhere, I did not set paths nor mark them as derived from Laravel resource naming conventions.\n- The methods correspond to RESTful operations (index, show, update), so is_rest is set to true. There is nothing in the file indicating these are test endpoints, so is_test is false.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766909395,
+    "id": "chatcmpl-Crg8ZFp2XOOFKCN4ESylKbGMNIEBg",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1354,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 896,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 754,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2108
+    }
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "timestamp": 1767257747658,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/cms/user` with method PUT, and here is the relevant information I found:\n\n1. In `app/api/cms/user.py`, `update` is implemented to process HTTP requests to `/cms/user` with HTTP method PUT.\n\n2. In `app/api/cms/user.py`, `user_api` is implemented to process HTTP requests to `/cms/user` with HTTP method PUT.\n\n3. In `app/api/cms/user.py`, `update` is implemented to process HTTP requests to `/cms/user` with HTTP method PUT.\n\n4. In `app/api/cms/user.py`, `user_api` is implemented to process HTTP requests to `/cms/user` with HTTP method PUT.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/api/cms/user.py`:\n\n```\n\"\"\"\nuser apis\n~~~~~~~~~\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nimport jwt\nfrom flask import Blueprint, current_app, g, request\nfrom flask_jwt_extended import (\n    create_access_token,\n    create_refresh_token,\n    get_current_user,\n    get_jwt_identity,\n    verify_jwt_in_request,\n)\n\nfrom app.api import AuthorizationBearerSecurity, api\nfrom app.api.cms.exception import RefreshFailed\nfrom app.api.cms.schema.user import (\n    CaptchaSchema,\n    ChangePasswordSchema,\n    LoginSchema,\n    LoginTokenSchema,\n    UserBaseInfoSchema,\n    UserRegisterSchema,\n    UserSchema,\n)\nfrom app.lin import (\n    DocResponse,\n    Duplicated,\n    Failed,\n    Log,\n    Logger,\n    NotFound,\n    ParameterError,\n    Success,\n    admin_required,\n    db,\n    get_tokens,\n    login_required,\n    manager,\n    permission_meta,\n)\nfrom app.util.captcha import CaptchaTool\nfrom app.util.common import split_group\n\nuser_api = Blueprint(\"user\", __name__)\n\n\n@user_api.route(\"/register\", methods=[\"POST\"])\n@permission_meta(name=\"注册\", module=\"用户\", mount=False)\n@Logger(template=\"管理员新建了一个用户\")  # 记录日志\n@admin_required\n@api.validate(\n    tags=[\"用户\"],\n    security=[AuthorizationBearerSecurity],\n    resp=DocResponse(Success(\"用户创建成功\"), Duplicated(\"字段重复，请重新输入\")),\n)\ndef register(json: UserRegisterSchema):\n    \"\"\"\n    注册新用户\n    \"\"\"\n    if manager.user_model.count_by_username(g.username) > 0:\n        raise Duplicated(\"用户名重复，请重新输入\")  # type: ignore\n    if g.email and g.email.strip() != \"\":\n        if manager.user_model.count_by_email(g.email) > 0:\n            raise Duplicated(\"注册邮箱重复，请重新输入\")  # type: ignore\n    # create a user\n    with db.auto_commit():\n        user = manager.user_model()\n        user.username = g.username\n        if g.email and g.email.strip() != \"\":\n            user.email = g.email\n        db.session.add(user)\n        db.session.flush()\n        user.password = g.password\n        group_ids = g.group_ids\n        # 如果没传分组数据，则将其设定为 guest 分组\n        if len(group_ids) == 0:\n            from app.lin import GroupLevelEnum\n\n            group_ids = [GroupLevelEnum.GUEST.value]\n        for group_id in group_ids:\n            user_group = manager.user_group_model()\n            user_group.user_id = user.id\n            user_group.group_id = group_id\n            db.session.add(user_group)\n\n    raise Success(\"用户创建成功\")  # type: ignore\n\n\n@user_api.route(\"/login\", methods=[\"POST\"])\n@api.validate(resp=DocResponse(Failed(\"验证码校验失败\"), r=LoginTokenSchema), tags=[\"用户\"])\ndef login(json: LoginSchema):\n    \"\"\"\n    用户登录\n    \"\"\"\n    # 校对验证码\n    if current_app.config.get(\"LOGIN_CAPTCHA\"):\n        tag = request.headers.get(\"tag\", \"\")\n        secret_key = current_app.config.get(\"SECRET_KEY\", \"\")\n        if g.captcha != jwt.decode(tag, secret_key, algorithms=[\"HS256\"]).get(\"code\"):\n            raise Failed(\"验证码校验失败\")  # type: ignore\n\n    user = manager.user_model.verify(g.username, g.password)\n    # 用户未登录，此处不能用装饰器记录日志\n    Log.create_log(\n        message=f\"{user.username}登录成功获取了令牌\",\n        user_id=user.id,\n        username=user.username,\n        status_code=200,\n        method=\"post\",\n        path=\"/cms/user/login\",\n        permission=\"\",\n        commit=True,\n    )\n    access_token, refresh_token = get_tokens(user)\n    return LoginTokenSchema(access_token=access_token, refresh_token=refresh_token)\n\n\n@user_api.route(\"\", methods=[\"PUT\"])\n@permission_meta(name=\"用户更新信息\", module=\"用户\", mount=False)\n@login_required\n@api.validate(\n    tags=[\"用户\"],\n    security=[AuthorizationBearerSecurity],\n    resp=DocResponse(Success(\"用户信息更新成功\"), ParameterError(\"邮箱已被注册，请重新输入邮箱\")),\n)\ndef update(json: UserBaseInfoSchema):\n    \"\"\"\n    更新用户信息\n    \"\"\"\n    user = get_current_user()\n\n    if g.email and user.email != g.email:\n        exists = manager.user_model.get(email=g.email)\n        if exists:\n            raise ParameterError(\"邮箱已被注册，请重新输入邮箱\")\n    with db.auto_commit():\n        if g.email:\n            user.email = g.email\n        if g.nickname:\n            user.nickname = g.nickname\n        if g.avatar:\n            user._avatar = g.avatar\n    raise Success(\"用户信息更新成功\")\n\n\n@user_api.route(\"/change_password\", methods=[\"PUT\"])\n@permission_meta(name=\"修改密码\", module=\"用户\", mount=False)\n@Logger(template=\"{user.username}修改了自己的密码\")  # 记录日志\n@login_required\n@api.validate(\n    tags=[\"用户\"],\n    security=[AuthorizationBearerSecurity],\n    resp=DocResponse(Success(\"密码修改成功\"), Failed(\"密码修改失败\")),\n)\ndef change_password(json: ChangePasswordSchema):\n    \"\"\"\n    修改密码\n    \"\"\"\n    user = get_current_user()\n    ok = user.change_password(g.old_password, g.new_password)\n    if ok:\n        db.session.commit()\n        raise Success(\"密码修改成功\")\n    else:\n        return Failed(\"修改密码失败\")\n\n\n@user_api.route(\"/information\")\n@permission_meta(name=\"查询自己信息\", module=\"用户\", mount=False)\n@login_required\n@api.validate(\n    tags=[\"用户\"],\n    security=[AuthorizationBearerSecurity],\n    resp=DocResponse(r=UserSchema),\n)\ndef get_information():\n    \"\"\"\n    获取用户信息\n    \"\"\"\n    current_user = get_current_user()\n    return current_user\n\n\n@user_api.route(\"/refresh\")\n@permission_meta(name=\"刷新令牌\", module=\"用户\", mount=False)\n@api.validate(\n    resp=DocResponse(RefreshFailed, NotFound(\"refresh_token未被识别\"), r=LoginTokenSchema),\n    tags=[\"用户\"],\n)\ndef refresh():\n    \"\"\"\n    刷新令牌\n    \"\"\"\n    try:\n        verify_jwt_in_request(refresh=True)\n    except Exception:\n        raise RefreshFailed\n\n    identity = get_jwt_identity()\n    if identity:\n        access_token = create_access_token(identity=identity)\n        refresh_token = create_refresh_token(identity=identity)\n        return LoginTokenSchema(access_token=access_token, refresh_token=refresh_token)\n\n    return NotFound(\"refresh_token未被识别\")\n\n\n@user_api.route(\"/permissions\")\n@permission_meta(name=\"查询自己拥有的权限\", module=\"用户\", mount=False)\n@login_required\n@api.validate(\n    tags=[\"用户\"],\n    security=[AuthorizationBearerSecurity],\n    # resp=DocResponse(r=UserPermissionSchema), # 当前数据接口无法使用OpenAPI表示\n)\ndef get_allowed_apis():\n    \"\"\"\n    获取用户拥有的权限\n    \"\"\"\n    user = get_current_user()\n    groups = manager.group_model.select_by_user_id(user.id)\n    group_ids = [group.id for group in groups]\n    _permissions = manager.permission_model.select_by_group_ids(group_ids)\n    permission_list = [{\"permission\": permission.name, \"module\": permission.module} for permission in _permissions]\n    res = split_group(permission_list, \"module\")\n    setattr(user, \"permissions\", res)\n    setattr(user, \"admin\", user.is_admin)\n    user._fields.extend([\"admin\", \"permissions\"])\n\n    return user\n\n\n@user_api.route(\"/captcha\", methods=[\"GET\", \"POST\"])\n@api.validate(\n    resp=DocResponse(r=CaptchaSchema),\n    tags=[\"用户\"],\n)\ndef get_captcha():\n    \"\"\"\n    获取图形验证码\n    \"\"\"\n    if not current_app.config.get(\"LOGIN_CAPTCHA\"):\n        return CaptchaSchema()  # type: ignore\n    image, code = CaptchaTool().get_verify_code()\n    secret_key = current_app.config.get(\"SECRET_KEY\")\n    tag = jwt.encode({\"code\": code}, secret_key, algorithm=\"HS256\")\n    return {\"tag\": tag, \"image\": image}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the PUT method endpoint `/cms/user` in the provided Flask application. Let me examine the `update` function which handles this endpoint.\n\nFrom the code, I can see that the `update` function:\n1. Is decorated with `@user_api.route(\"\", methods=[\"PUT\"])` which maps to `/cms/user` with PUT method\n2. Has security requirements with `@login_required` and `@permission_meta`\n3. Uses `@api.validate` with specific response documentation\n4. Takes a `UserBaseInfoSchema` as input\n5. Returns success or error responses\n\nLet me check the schema files to understand the request and response structures better.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_64869bbc6c8448f987329778",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.py\\\" -exec grep -l \\\"UserBaseInfoSchema\\\\|LoginTokenSchema\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/api/cms/schema/user.py\\n./app/api/cms/user.py\\n', 'stderr': ''}",
+        "tool_call_id": "call_64869bbc6c8448f987329778"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me examine the schema file to understand the structure of the responses:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_e8d136db62c74d3992a7f2af",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/api/cms/schema/user.py\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'import re\\nfrom typing import List, Optional\\n\\nfrom pydantic import Field, validator\\n\\nfrom app.lin import BaseModel, ParameterError\\n\\nfrom . import EmailSchema, GroupIdListSchema, ResetPasswordSchema\\n\\n\\nclass LoginSchema(BaseModel):\\n    username: str = Field(description=\"用户名\")\\n    password: str = Field(description=\"密码\")\\n    captcha: Optional[str] = Field(description=\"验证码\")\\n\\n\\nclass LoginTokenSchema(BaseModel):\\n    access_token: str = Field(description=\"access_token\")\\n    refresh_token: str = Field(description=\"refresh_token\")\\n\\n\\nclass CaptchaSchema(BaseModel):\\n    image: str = Field(\"\", description=\"验证码图片base64编码\")\\n    tag: str = Field(\"\", description=\"验证码标记码\")\\n\\n\\nclass PermissionNameSchema(BaseModel):\\n    name: str = Field(description=\"权限名称\")\\n\\n\\nclass PermissionModuleSchema(BaseModel):\\n    module: List[PermissionNameSchema] = Field(description=\"权限模块\")\\n\\n\\nclass UserBaseInfoSchema(EmailSchema):\\n    nickname: Optional[str] = Field(description=\"用户昵称\", min_length=2, max_length=10)\\n    avatar: Optional[str] = Field(description=\"头像url\")\\n\\n\\nclass UserSchema(UserBaseInfoSchema):\\n    id: int = Field(description=\"用户id\")\\n    username: str = Field(description=\"用户名\")\\n\\n\\nclass UserPermissionSchema(UserSchema):\\n    admin: bool = Field(description=\"是否是管理员\")\\n    permissions: List[PermissionModuleSchema] = Field(description=\"用户权限\")\\n\\n\\nclass ChangePasswordSchema(ResetPasswordSchema):\\n    old_password: str = Field(description=\"旧密码\")\\n\\n\\nclass UserRegisterSchema(GroupIdListSchema, EmailSchema):\\n    username: str = Field(description=\"用户名\", min_length=2, max_length=10)\\n    password: str = Field(description=\"密码\", min_length=6, max_length=22)\\n    confirm_password: str = Field(description=\"确认密码\", min_length=6, max_length=22)\\n\\n    @validator(\"confirm_password\")\\n    def passwords_match(cls, v, values, **kwargs):\\n        if v != values[\"password\"]:\\n            raise ParameterError(\"两次输入的密码不一致，请输入相同的密码\")\\n        return v\\n\\n    @validator(\"username\")\\n    def check_username(cls, v, values, **kwargs):\\n        if not re.match(r\"^[a-zA-Z0-9_]{2,10}$\", v):\\n            raise ParameterError(\"用户名只能由字母、数字、下划线组成，且长度为2-10位\")\\n        return v\\n', 'stderr': ''}",
+        "tool_call_id": "call_e8d136db62c74d3992a7f2af"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the common schema files to understand the EmailSchema and other base schemas:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_33148f7759ea4dba81b216d3",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.py\\\" -exec grep -l \\\"EmailSchema\\\\|GroupIdListSchema\\\\|ResetPasswordSchema\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/api/cms/schema/user.py\\n./app/api/cms/schema/__init__.py\\n./app/api/cms/schema/admin.py\\n./app/api/cms/admin.py\\n', 'stderr': ''}",
+        "tool_call_id": "call_33148f7759ea4dba81b216d3"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the schema init file to understand the base schemas:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_2d6ab69e9aac475ba59dca22",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/api/cms/schema/__init__.py\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'from typing import List, Optional\\n\\nfrom pydantic import EmailStr, Field, validator\\n\\nfrom app.lin import BaseModel, ParameterError\\n\\n\\nclass EmailSchema(BaseModel):\\n    email: Optional[str] = Field(description=\"用户邮箱\")\\n\\n    @validator(\"email\")\\n    def check_email(cls, v, values, **kwargs):\\n        return EmailStr.validate(v) if v else \"\"\\n\\n\\nclass ResetPasswordSchema(BaseModel):\\n    new_password: str = Field(description=\"新密码\", min_length=6, max_length=22)\\n    confirm_password: str = Field(description=\"确认密码\", min_length=6, max_length=22)\\n\\n    @validator(\"confirm_password\")\\n    def passwords_match(cls, v, values, **kwargs):\\n        if v != values[\"new_password\"]:\\n            raise ParameterError(\"两次输入的密码不一致，请输入相同的密码\")\\n        return v\\n\\n\\nclass GroupIdListSchema(BaseModel):\\n    group_ids: List[int] = Field(description=\"用户组ID列表\")\\n\\n    @validator(\"group_ids\", each_item=True)\\n    def check_group_id(cls, v, values, **kwargs):\\n        if v <= 0:\\n            raise ParameterError(\"用户组ID必须大于0\")\\n        return v\\n', 'stderr': ''}",
+        "tool_call_id": "call_2d6ab69e9aac475ba59dca22"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the lin module to understand the response classes like Success, ParameterError, etc.:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_553a7a3218d7416a8c3d7b92",
+            "function": {
+              "arguments": "{\"command\": \"grep -n -A 10 -B 10 \\\"class Success\\\\|class ParameterError\\\\|class Failed\\\\|class Duplicated\\\\|class NotFound\\\" ./app/lin/*.py\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/lin/exception.py-75-    @staticmethod\\n./app/lin/exception.py-76-    def get_url_no_param():\\n./app/lin/exception.py-77-        full_path = str(request.full_path)\\n./app/lin/exception.py-78-        main_path = full_path.split(\"?\")\\n./app/lin/exception.py-79-        return main_path[0]\\n./app/lin/exception.py-80-\\n./app/lin/exception.py-81-    def get_headers(self, environ=None, scope=None):\\n./app/lin/exception.py-82-        return [(k, v) for k, v in self.headers.items()]\\n./app/lin/exception.py-83-\\n./app/lin/exception.py-84-\\n./app/lin/exception.py:85:class Success(APIException):\\n./app/lin/exception.py-86-    code = 200\\n./app/lin/exception.py-87-    message = \"OK\"\\n./app/lin/exception.py-88-    message_code = 0\\n./app/lin/exception.py-89-\\n./app/lin/exception.py-90-\\n./app/lin/exception.py-91-class Created(APIException):\\n./app/lin/exception.py-92-    code = 201\\n./app/lin/exception.py-93-    message = \"Created\"\\n./app/lin/exception.py-94-    message_code = 1\\n./app/lin/exception.py-95-\\n--\\n./app/lin/exception.py-99-    message = \"Updated\"\\n./app/lin/exception.py-100-    message_code = 2\\n./app/lin/exception.py-101-\\n./app/lin/exception.py-102-\\n./app/lin/exception.py-103-class Deleted(APIException):\\n./app/lin/exception.py-104-    code = 200\\n./app/lin/exception.py-105-    message = \"Deleted\"\\n./app/lin/exception.py-106-    message_code = 3\\n./app/lin/exception.py-107-\\n./app/lin/exception.py-108-\\n./app/lin/exception.py:109:class Failed(APIException):\\n./app/lin/exception.py-110-    code = 400\\n./app/lin/exception.py-111-    message = \"Failed\"\\n./app/lin/exception.py-112-    message_code = 10200\\n./app/lin/exception.py-113-\\n./app/lin/exception.py-114-\\n./app/lin/exception.py-115-class UnAuthorization(APIException):\\n./app/lin/exception.py-116-    code = 401\\n./app/lin/exception.py-117-    message = \"Authorization Failed\"\\n./app/lin/exception.py-118-    message_code = 10000\\n./app/lin/exception.py-119-\\n./app/lin/exception.py-120-\\n./app/lin/exception.py-121-class UnAuthentication(APIException):\\n./app/lin/exception.py-122-    code = 401\\n./app/lin/exception.py-123-    message = \"Authentication Failed\"\\n./app/lin/exception.py-124-    message_code = 10010\\n./app/lin/exception.py-125-\\n./app/lin/exception.py-126-\\n./app/lin/exception.py:127:class NotFound(APIException):\\n./app/lin/exception.py-128-    code = 404\\n./app/lin/exception.py-129-    message = \"Not Found\"\\n./app/lin/exception.py-130-    message_code = 10021\\n./app/lin/exception.py-131-\\n./app/lin/exception.py-132-\\n./app/lin/exception.py:133:class ParameterError(APIException):\\n./app/lin/exception.py-134-    code = 400\\n./app/lin/exception.py-135-    message = \"Parameters Error\"\\n./app/lin/exception.py-136-    message_code = 10030\\n./app/lin/exception.py-137-\\n./app/lin/exception.py-138-\\n./app/lin/exception.py-139-class TokenInvalid(APIException):\\n./app/lin/exception.py-140-    code = 401\\n./app/lin/exception.py-141-    message = \"Token Invalid\"\\n./app/lin/exception.py-142-    message_code = 10040\\n./app/lin/exception.py-143-\\n--\\n./app/lin/exception.py-147-    message = \"Token Expired\"\\n./app/lin/exception.py-148-    message_code = 10052\\n./app/lin/exception.py-149-\\n./app/lin/exception.py-150-\\n./app/lin/exception.py-151-class InternalServerError(APIException):\\n./app/lin/exception.py-152-    code = 500\\n./app/lin/exception.py-153-    message = \"Internal Server Error\"\\n./app/lin/exception.py-154-    message_code = 9999\\n./app/lin/exception.py-155-\\n./app/lin/exception.py-156-\\n./app/lin/exception.py:157:class Duplicated(APIException):\\n./app/lin/exception.py-158-    code = 400\\n./app/lin/exception.py-159-    message = \"Duplicated\"\\n./app/lin/exception.py-160-    message_code = 10060\\n./app/lin/exception.py-161-\\n./app/lin/exception.py-162-\\n./app/lin/exception.py-163-class Forbidden(APIException):\\n./app/lin/exception.py-164-    code = 401\\n./app/lin/exception.py-165-    message = \"Forbidden\"\\n./app/lin/exception.py-166-    message_code = 10070\\n./app/lin/exception.py-167-\\n', 'stderr': ''}",
+        "tool_call_id": "call_553a7a3218d7416a8c3d7b92"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-5efb2cd3-4293-918f-9a8c-303e21d60b14",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me also check what the DocResponse class does to understand the response format:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_823b666182794a4593ccf28d",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"grep -n -A 15 -B 5 \\\"DocResponse\\\\|def validate\\\" ./app/lin/*.py\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767257745,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 5404,
+      "completion_tokens": 63,
+      "prompt_tokens": 5341,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "timestamp": 1766736035556,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "Here is the analysis based on the provided backend source code.\n\n1) Full HTTP request paths (beginning with / and with path params in {})\n- /profiles/{id}\n  - GET /profiles/{id} -> getProfile\n  - PATCH /profiles/{id} -> updateProfile\n  - DELETE /profiles/{id} -> deleteProfile\n\n- /profiles\n  - GET /profiles -> getProfilesByUser (note: uses query parameter searchQuery, e.g. /profiles?searchQuery=<userId>)\n  - POST /profiles -> createProfile\n\nNotes:\n- The base path /profiles is mounted in index.js with app.use('/profiles', profile), and the router defines routes for '/' and '/:id' relative to that base.\n\n2) Are all HTTP methods acceptable?\n- No. The router only defines GET, POST, PATCH, and DELETE for the /profiles resource. There is no explicit PUT, OPTIONS (route), TRACE, or HEAD defined at the application layer (though HEAD/OPTIONS behavior may be provided by other middleware, see below).\n\n3) HEAD method acceptable?\n- Yes. Because there are GET routes defined for /profiles and /profiles/{id}, Express will automatically handle HEAD requests for those routes by default (it reuses the GET handlers and sends no body for HEAD). This is behavior of the framework, not explicit route definitions in the code.\n\n4) POST method acceptable?\n- Yes. POST is defined at /profiles (createProfile).\n\n5) OPTIONS method acceptable?\n- Yes, in practice. The app uses the CORS middleware (app.use(cors())). CORS handles preflight OPTIONS requests, so OPTIONS for these routes will be answered appropriately.\n\n6) TRACE method acceptable?\n- No. There is no TRACE handling defined, and there is no middleware in the provided code to enable TRACE. Typically TRACE would not be exposed by default.\n\n7) GET method acceptable?\n- Yes. GET is defined for:\n  - GET /profiles/{id} (getProfile)\n  - GET /profiles (getProfilesByUser)\n\n8) PUT method acceptable?\n- No. There is no PUT route defined.\n\n9) DELETE method acceptable?\n- Yes. DELETE /profiles/{id} (deleteProfile) is defined.\n\n10) PATCH method acceptable?\n- Yes. PATCH /profiles/{id} (updateProfile) is defined.\n\nExplanation:\n- The routes are wired in routes/profile.js with GET for /:id, GET for /, POST for /, PATCH for /:id, and DELETE for /:id.\n- The base path is mounted in index.js as /profiles, so the full paths become /profiles, /profiles/{id}, etc.\n- HEAD is not explicitly defined but is typically supported by Express automatically for GET routes, so HEAD is considered acceptable here because there are GET handlers for the corresponding paths.\n- OPTIONS is effectively supported due to the global CORS middleware, which handles preflight requests.\n- PUT is not present; others (GET, POST, PATCH, DELETE) are present for the appropriate paths as described."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "EndpointMethodExtractResult",
+        "schema": {
+          "properties": {
+            "path": {
+              "description": "The full HTTP request path for the endpoint.",
+              "title": "Path",
+              "type": "string"
+            },
+            "arbitrary": {
+              "description": "Whether all HTTP methods are acceptable.",
+              "title": "Arbitrary",
+              "type": "boolean"
+            },
+            "head": {
+              "description": "Whether the HEAD method is acceptable.",
+              "title": "Head",
+              "type": "boolean"
+            },
+            "post": {
+              "description": "Whether the POST method is acceptable.",
+              "title": "Post",
+              "type": "boolean"
+            },
+            "options": {
+              "description": "Whether the OPTIONS method is acceptable.",
+              "title": "Options",
+              "type": "boolean"
+            },
+            "trace": {
+              "description": "Whether the TRACE method is acceptable.",
+              "title": "Trace",
+              "type": "boolean"
+            },
+            "get": {
+              "description": "Whether the GET method is acceptable.",
+              "title": "Get",
+              "type": "boolean"
+            },
+            "put": {
+              "description": "Whether the PUT method is acceptable.",
+              "title": "Put",
+              "type": "boolean"
+            },
+            "delete": {
+              "description": "Whether the DELETE method is acceptable.",
+              "title": "Delete",
+              "type": "boolean"
+            },
+            "patch": {
+              "description": "Whether the PATCH method is acceptable.",
+              "title": "Patch",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "arbitrary",
+            "head",
+            "post",
+            "options",
+            "trace",
+            "get",
+            "put",
+            "delete",
+            "patch"
+          ],
+          "title": "EndpointMethodExtractResult",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"arbitrary\":false,\"delete\":false,\"get\":true,\"head\":true,\"options\":true,\"patch\":false,\"path\":\"/profiles\",\"post\":true,\"put\":false,\"trace\":false}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766736026,
+    "id": "chatcmpl-Cqx2It1bou0SabdMLXiGEknd2ht56",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1467,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1408,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 876,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2343
+    }
+  }
+}

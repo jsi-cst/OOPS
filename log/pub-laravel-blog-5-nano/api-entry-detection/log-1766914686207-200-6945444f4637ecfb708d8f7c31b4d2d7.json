@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766914686207,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Controllers/Api/V1/MediaController.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":null,\"handler\":\"App\\\\\\\\Http\\\\\\\\Controllers\\\\\\\\Api\\\\\\\\V1\\\\\\\\MediaController::index\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 2: `{\"path\":null,\"handler\":\"App\\\\\\\\Http\\\\\\\\Controllers\\\\\\\\Api\\\\\\\\V1\\\\\\\\MediaController::store\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 3: `{\"path\":null,\"handler\":\"App\\\\\\\\Http\\\\\\\\Controllers\\\\\\\\Api\\\\\\\\V1\\\\\\\\MediaController::destroy\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":false,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/MediaController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\MediaLibraryRequest;\nuse App\\Http\\Resources\\Media as MediaResource;\nuse App\\Models\\Media;\nuse App\\Models\\MediaLibrary;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass MediaController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return MediaResource::collection(\n            MediaLibrary::first()->media()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(MediaLibraryRequest $request): MediaResource\n    {\n        $this->authorize('store', Media::class);\n\n        $image = $request->file('image');\n        $name = $image->getClientOriginalName();\n\n        if ($request->filled('name')) {\n            $name = $request->input('name');\n        }\n\n        return new MediaResource(\n            MediaLibrary::first()\n                ->addMedia($image)\n                ->usingName($name)\n                ->toMediaCollection()\n        );\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Media $medium): Response\n    {\n        $this->authorize('delete', $medium);\n\n        $medium->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CrhVn4krk0uOARyveFhTYj1D58UCy",
+    "object": "chat.completion",
+    "created": 1766914679,
+    "model": "gpt-5-nano-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "[]\nExplanation:\n- I reviewed app/Http/Controllers/Api/V1/MediaController.php. It defines three public methods: index, store, and destroy, which correspond to standard RESTful actions. However, there are no explicit route definitions or literal path strings in this file that would map a path to a handler.\n- Since paths are not defined via literal strings or naming conventions extracted from this file, no additional API entries can be determined from this file beyond the already provided ones. The existing API entries (index, store, destroy) already cover the RESTful actions for this controller, and their paths cannot be extracted from this file alone. Therefore, the output is an empty list.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1030,
+      "completion_tokens": 1045,
+      "total_tokens": 2075,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 896,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

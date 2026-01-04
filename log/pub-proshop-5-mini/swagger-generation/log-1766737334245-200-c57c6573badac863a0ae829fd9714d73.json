@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766737334245,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/upload` with method POST, and here is the relevant information I found:\n\n1. In `routes/uploadRoutes.js`, `anonymous` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n2. In `routes/uploadRoutes.js`, `uploadRoutes` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/uploadRoutes.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport multer from 'multer';\n\nconst router = express.Router();\n\nconst storage = multer.diskStorage({\n  destination(req, file, cb) {\n    cb(null, 'uploads/');\n  },\n  filename(req, file, cb) {\n    cb(\n      null,\n      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`\n    );\n  },\n});\n\nfunction fileFilter(req, file, cb) {\n  const filetypes = /jpe?g|png|webp/;\n  const mimetypes = /image\\/jpe?g|image\\/png|image\\/webp/;\n\n  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());\n  const mimetype = mimetypes.test(file.mimetype);\n\n  if (extname && mimetype) {\n    cb(null, true);\n  } else {\n    cb(new Error('Images only!'), false);\n  }\n}\n\nconst upload = multer({ storage, fileFilter });\nconst uploadSingleImage = upload.single('image');\n\nrouter.post('/', (req, res) => {\n  uploadSingleImage(req, res, function (err) {\n    if (err) {\n      return res.status(400).send({ message: err.message });\n    }\n\n    res.status(200).send({\n      message: 'Image uploaded successfully',\n      image: `/${req.file.path}`,\n    });\n  });\n});\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CqxNFjOUS7TU7cQbbD13XSLdcdNH4",
+    "object": "chat.completion",
+    "created": 1766737325,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation:\n\n- The route in routes/uploadRoutes.js registers a POST handler at '/' on a router which is mounted at /api/upload, so the endpoint is POST /api/upload.\n- The handler uses multer to process a single file field named \"image\".\n- On success the code does: res.status(200).send({ message: 'Image uploaded successfully', image: `/${req.file.path}` }), so the 200 response body is a JSON object with:\n  - message: string\n  - image: string (URL/path to the uploaded file)\n- On error (any multer/fileFilter error or other), the code does: res.status(400).send({ message: err.message }), so the 400 response body is a JSON object with:\n  - message: string (error message, e.g., \"Images only!\")\n\nFollowing Swagger 2.0 Response Object structure, below are the responses for POST /api/upload. No $ref are used and only the responses observed in the source are included.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"Image uploaded successfully\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Image uploaded successfully\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"example\": \"/uploads/image-1609459200000.jpg\"\n        }\n      },\n      \"required\": [\n        \"message\",\n        \"image\"\n      ]\n    }\n  },\n  \"400\": {\n    \"description\": \"Bad request (file validation or upload error)\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Images only!\"\n        }\n      },\n      \"required\": [\n        \"message\"\n      ]\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 729,
+      "completion_tokens": 1041,
+      "total_tokens": 1770,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 640,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

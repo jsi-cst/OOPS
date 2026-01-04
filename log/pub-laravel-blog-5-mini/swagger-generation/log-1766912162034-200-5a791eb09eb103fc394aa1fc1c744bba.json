@@ -1,0 +1,154 @@
+{
+  "timestamp": 1766912162034,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}/likes` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\PostLikeController::store` is implemented to process HTTP requests to `/posts/{post}/likes` with HTTP method DELETE.\n\n2. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\PostLikeController::destroy` is implemented to process HTTP requests to `/posts/{post}/likes` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Str;\n\nuse function HotwiredLaravel\\TurboLaravel\\dom_id;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->like();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->dislike();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_HVC5lRIq9fCqayQlL0B1z0Tx",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"PostLikeController\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/auth.php:13:use App\\\\Http\\\\Controllers\\\\PostLikeController;\\nroutes/auth.php:55:    Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\nroutes/auth.php:56:    Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\nroutes/api.php:8:use App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nroutes/api.php:33:        Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\nroutes/api.php:34:        Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\napp/Http/Controllers/Api/V1/PostLikeController.php:9:class PostLikeController extends Controller\\napp/Http/Controllers/PostLikeController.php:11:class PostLikeController extends Controller\\n\", 'stderr': ''}",
+        "tool_call_id": "call_HVC5lRIq9fCqayQlL0B1z0Tx"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_cGIb4r367KBCcPIslCIXWxTb",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,220p' routes/auth.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\AuthenticatedSessionController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\EmailVerificationNotificationController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\EmailVerificationPromptController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\NewPasswordController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\PasswordController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\PasswordResetLinkController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\RegisteredUserController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\VerifyEmailController;\\nuse App\\\\Http\\\\Controllers\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\UserPasswordController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\nRoute::redirect('/.well-known/change-password', '/settings/password');\\n\\nRoute::middleware('guest')->group(function () {\\n    Route::get('register', [RegisteredUserController::class, 'create'])->name('register');\\n    Route::post('register', [RegisteredUserController::class, 'store']);\\n    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');\\n    Route::post('login', [AuthenticatedSessionController::class, 'store']);\\n    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');\\n    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');\\n    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');\\n    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');\\n});\\n\\nRoute::middleware('auth')->group(function () {\\n    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');\\n    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)\\n        ->middleware(['signed', 'throttle:6,1'])\\n        ->name('verification.verify');\\n\\n    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])\\n        ->middleware('throttle:6,1')\\n        ->name('verification.send');\\n\\n    Route::put('password', [PasswordController::class, 'update'])->name('password.update');\\n    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');\\n});\\n\\nRoute::middleware(['auth', 'verified'])->group(function () {\\n    Route::prefix('settings')->group(function () {\\n        Route::get('account', [UserController::class, 'edit'])->name('users.edit');\\n        Route::match(['put', 'patch'], 'account', [UserController::class, 'update'])->name('users.update');\\n\\n        Route::get('password', [UserPasswordController::class, 'edit'])->name('users.password');\\n        Route::match(['put', 'patch'], 'password', [UserPasswordController::class, 'update'])->name('users.password.update');\\n    });\\n\\n    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\\n    Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\n    Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\n\\n    Route::resource('newsletter-subscriptions', NewsletterSubscriptionController::class)->only('store');\\n});\\n\", 'stderr': ''}",
+        "tool_call_id": "call_cGIb4r367KBCcPIslCIXWxTb"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_8IdNMNMHtGOKCb4Km8Ei3ux8",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_8IdNMNMHtGOKCb4Km8Ei3ux8"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Hru0V1veJyWmGbPBTmXNjHYi",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_Hru0V1veJyWmGbPBTmXNjHYi"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The DELETE endpoint is defined at /posts/{post}/likes in both routes/auth.php (web, auth middleware) and routes/api.php (API v1, auth:sanctum + verified). Both routes map to PostLikeController::destroy(Post $post).\n- The controller method uses Laravel route-model binding to resolve the {post} parameter to an instance of App\\Models\\Post.\n- Post::getRouteKeyName() returns 'id' when the request expects JSON (API routes) and 'slug' for non-JSON (web) requests. Therefore the path parameter can be either a numeric id (for API) or a slug string (for web).\n- Swagger 2.0 requires path parameters to be declared and required. To cover both usages (id or slug), the parameter is declared as a required path parameter named \"post\" with type \"string\" and a description explaining the dual behavior.\n- No other path, query, header, or body parameters are required for this DELETE operation.\n\nthe final generated result begins\n[\n  {\n    \"name\": \"post\",\n    \"in\": \"path\",\n    \"description\": \"Identifier of the Post to unlike. Resolved via route-model binding: for API (JSON) requests this is the numeric id, for web requests this is the post slug.\",\n    \"required\": true,\n    \"type\": \"string\"\n  }\n]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912152,
+    "id": "chatcmpl-Crgr2cHUcBTQPtbkOaJ1sJIXAREnS",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1062,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 768,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3624,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4686
+    }
+  }
+}

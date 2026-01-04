@@ -1,0 +1,145 @@
+{
+  "timestamp": 1766912181703,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/posts/{post}` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/PostController.php`, `App\\\\Http\\\\Controllers\\\\Admin\\\\PostController` is implemented to process HTTP requests to `/admin/posts/{post}` with HTTP method GET.\n\n2. In `app/Http/Controllers/Admin/PostController.php`, `PostController` is implemented to process HTTP requests to `/admin/posts/{post}` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Models\\MediaLibrary;\nuse App\\Models\\Post;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\View\\View;\n\nclass PostController extends Controller\n{\n    /**\n     * Show the application posts index.\n     */\n    public function index(): View\n    {\n        return view('admin.posts.index', [\n            'posts' => Post::withCount('comments', 'likes')->with('author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Post $post): View\n    {\n        return view('admin.posts.edit', [\n            'post' => $post,\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Show the form for creating a new resource.\n     */\n    public function create(Request $request): View\n    {\n        return view('admin.posts.create', [\n            'users' => User::authors()->pluck('name', 'id'),\n            'media' => MediaLibrary::first()->media()->get()->pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): RedirectResponse\n    {\n        $post = Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.created'));\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): RedirectResponse\n    {\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return redirect()->route('admin.posts.edit', $post)->withSuccess(__('posts.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post)\n    {\n        $post->delete();\n\n        return redirect()->route('admin.posts.index')->withSuccess(__('posts.deleted'));\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_9jpJuajshhd5eKCQnj7RN7fx",
+            "function": {
+              "arguments": "{\"command\":\"rg \\\"admin/posts\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'tests/Feature/Admin/PostTest.php:22:            ->get(\\'/admin/posts\\')\\ntests/Feature/Admin/PostTest.php:34:            ->get(\\'/admin/posts/create\\')\\ntests/Feature/Admin/PostTest.php:49:            ->post(\\'/admin/posts\\', $params)\\ntests/Feature/Admin/PostTest.php:64:            ->post(\\'/admin/posts\\', $params)\\ntests/Feature/Admin/PostTest.php:75:            ->get(\"/admin/posts/{$post->slug}/edit\")\\ntests/Feature/Admin/PostTest.php:91:        $response = $this->actingAsAdmin()->patch(\"/admin/posts/{$post->slug}\", $params);\\ntests/Feature/Admin/PostTest.php:95:        $response->assertRedirect(\"/admin/posts/{$post->slug}/edit\");\\ntests/Feature/Admin/PostTest.php:113:            ->delete(\"/admin/posts/{$post->slug}\")\\nresources/views/admin/posts/index.blade.php:13:    @include (\\'admin/posts/_list\\')\\nresources/views/admin/posts/edit.blade.php:12:    @include(\\'admin/posts/_thumbnail\\')\\nresources/views/admin/posts/edit.blade.php:18:        @include(\\'admin/posts/_form\\')\\nresources/views/admin/posts/create.blade.php:9:        @include(\\'admin/posts/_form\\')\\n', 'stderr': ''}",
+        "tool_call_id": "call_9jpJuajshhd5eKCQnj7RN7fx"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_cp0iQbz1AhI2P44YeLRFGIji",
+            "function": {
+              "arguments": "{\"command\":\"rg \\\"Route::resource\\\\(|Route::get\\\\(|Route::patch\\\\(|Route::delete\\\\(|Route::post\\\\(\\\" -n routes -S || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/api.php:33:        Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\nroutes/api.php:34:        Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\nroutes/api.php:43:    Route::post('/authenticate', [AuthenticateController::class, 'authenticate'])->name('authenticate');\\nroutes/auth.php:21:    Route::get('register', [RegisteredUserController::class, 'create'])->name('register');\\nroutes/auth.php:22:    Route::post('register', [RegisteredUserController::class, 'store']);\\nroutes/auth.php:23:    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');\\nroutes/auth.php:24:    Route::post('login', [AuthenticatedSessionController::class, 'store']);\\nroutes/auth.php:25:    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');\\nroutes/auth.php:26:    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');\\nroutes/auth.php:27:    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');\\nroutes/auth.php:28:    Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');\\nroutes/auth.php:32:    Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');\\nroutes/auth.php:33:    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)\\nroutes/auth.php:37:    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])\\nroutes/auth.php:42:    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');\\nroutes/auth.php:47:        Route::get('account', [UserController::class, 'edit'])->name('users.edit');\\nroutes/auth.php:50:        Route::get('password', [UserPasswordController::class, 'edit'])->name('users.password');\\nroutes/auth.php:54:    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\\nroutes/auth.php:55:    Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\nroutes/auth.php:56:    Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\nroutes/auth.php:58:    Route::resource('newsletter-subscriptions', NewsletterSubscriptionController::class)->only('store');\\nroutes/web.php:21:Route::get('/', [PostController::class, 'index'])->name('home');\\nroutes/web.php:22:Route::get('/posts/feed', [PostFeedController::class, 'index'])->name('posts.feed');\\nroutes/web.php:23:Route::resource('posts', PostController::class)->only('show');\\nroutes/web.php:24:Route::resource('users', UserController::class)->only('show');\\nroutes/web.php:25:Route::resource('posts.comments', PostCommentController::class)->only('index');\\nroutes/web.php:27:Route::get('newsletter-subscriptions/unsubscribe', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter-subscriptions.unsubscribe');\\nroutes/admin.php:11:Route::get('dashboard', ShowDashboard::class)->name('dashboard');\\nroutes/admin.php:12:Route::resource('posts', PostController::class);\\nroutes/admin.php:13:Route::delete('/posts/{post}/thumbnail', [PostThumbnailController::class, 'destroy'])->name('posts_thumbnail.destroy');\\nroutes/admin.php:14:Route::resource('users', UserController::class)->only(['index', 'edit', 'update']);\\nroutes/admin.php:15:Route::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\\nroutes/admin.php:16:Route::resource('media', MediaLibraryController::class)->only(['index', 'show', 'create', 'store', 'destroy']);\\n\", 'stderr': ''}",
+        "tool_call_id": "call_cp0iQbz1AhI2P44YeLRFGIji"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_oZ0JNf3knobFj4J3O23IS3ep",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' tests/Feature/Admin/PostTest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace Tests\\\\Feature\\\\Admin;\\n\\nuse App\\\\Models\\\\Comment;\\nuse App\\\\Models\\\\Post;\\nuse App\\\\Models\\\\User;\\nuse Illuminate\\\\Foundation\\\\Testing\\\\RefreshDatabase;\\nuse Tests\\\\TestCase;\\n\\nclass PostTest extends TestCase\\n{\\n    use RefreshDatabase;\\n\\n    public function testIndex()\\n    {\\n        $anakin = User::factory()->anakin()->create();\\n        Post::factory()->create([\\'author_id\\' => $anakin->id]);\\n        Post::factory()->count(3)->create();\\n\\n        $this->actingAsAdmin()\\n            ->get(\\'/admin/posts\\')\\n            ->assertOk()\\n            ->assertSee(\\'4 posts\\')\\n            ->assertSee(\\'Anakin\\')\\n            ->assertSee(\\'Author\\')\\n            ->assertSee(\\'Posted at\\')\\n            ->assertSee(\\'Title\\');\\n    }\\n\\n    public function testCreate()\\n    {\\n        $this->actingAsAdmin()\\n            ->get(\\'/admin/posts/create\\')\\n            ->assertOk()\\n            ->assertSee(\\'Create post\\')\\n            ->assertSee(\\'Title\\')\\n            ->assertSee(\\'Author\\')\\n            ->assertSee(\\'Posted at\\')\\n            ->assertSee(\\'Content\\')\\n            ->assertSee(\\'Save\\');\\n    }\\n\\n    public function testStore()\\n    {\\n        $params = $this->validParams();\\n\\n        $this->actingAsAdmin()\\n            ->post(\\'/admin/posts\\', $params)\\n            ->assertStatus(302);\\n\\n        $params[\\'posted_at\\'] = now()->second(0)->toDateTimeString();\\n\\n        $post = Post::first();\\n\\n        $this->assertDatabaseHas(\\'posts\\', $params);\\n    }\\n\\n    public function testStoreFail()\\n    {\\n        $params = $this->validParams([\\'content\\' => null]);\\n\\n        $this->actingAsAdmin()\\n            ->post(\\'/admin/posts\\', $params)\\n            ->assertStatus(302)\\n            ->assertSessionHas(\\'errors\\');\\n    }\\n\\n    public function testEdit()\\n    {\\n        $anakin = $this->admin([\\'name\\' => \\'Anakin\\', \\'email\\' => \\'anakin@skywalker.st\\']);\\n        $post = Post::factory()->create([\\'author_id\\' => $anakin->id]);\\n\\n        $this->actingAs($anakin)\\n            ->get(\"/admin/posts/{$post->slug}/edit\")\\n            ->assertOk()\\n            ->assertSee(\\'Anakin\\')\\n            ->assertSee(\\'Show post\\')\\n            ->assertSee($post->title)\\n            ->assertSee($post->content)\\n            ->assertSee(humanize_date($post->posted_at, \\'Y-m-d\\\\TH:i\\'))\\n            ->assertSee(\\'Update\\')\\n            ->assertSee(\\'Posted at\\');\\n    }\\n\\n    public function testUpdate()\\n    {\\n        $post = Post::factory()->create();\\n        $params = $this->validParams();\\n\\n        $response = $this->actingAsAdmin()->patch(\"/admin/posts/{$post->slug}\", $params);\\n\\n        $post->refresh();\\n\\n        $response->assertRedirect(\"/admin/posts/{$post->slug}/edit\");\\n\\n        $this->assertDatabaseHas(\\'posts\\', $params);\\n        $this->assertEquals($params[\\'content\\'], $post->content);\\n    }\\n\\n    public function testDelete()\\n    {\\n        $post = Post::factory()->create();\\n        Comment::factory()\\n            ->count(2)\\n            ->create()\\n            ->each(function ($comment) use ($post) {\\n                $comment->post_id = $post->id;\\n                $comment->save();\\n            });\\n\\n        $this->actingAsAdmin()\\n            ->delete(\"/admin/posts/{$post->slug}\")\\n            ->assertStatus(302);\\n\\n        $this->assertDatabaseMissing(\\'posts\\', $post->toArray());\\n        $this->assertTrue(Comment::all()->isEmpty());\\n    }\\n\\n    /**\\n     * Valid params for updating or creating a resource\\n     *\\n     * @param  array  $overrides  new params\\n     */\\n    private function validParams(array $overrides = []): array\\n    {\\n        return array_merge([\\n            \\'title\\' => \\'hello world\\',\\n            \\'content\\' => \"I\\'m a content\",\\n            \\'posted_at\\' => now()->format(\\'Y-m-d\\\\TH:i\\'),\\n            \\'author_id\\' => $this->admin()->id,\\n        ], $overrides);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_oZ0JNf3knobFj4J3O23IS3ep"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,240p' routes/admin.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_YezaEVNghASm9PFQpLnrmPq8",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1766912176,
+    "id": "chatcmpl-CrgrQlBlSXT5HMuJyk5KnfQKD8Xnx",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 611,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 576,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3479,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4090
+    }
+  }
+}

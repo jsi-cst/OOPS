@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766736888673,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `controllers/orderController.js`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results.\n\nHere are the API entries you previously found, do not repeat them. If there are other API entries in the file, continue to output them. Otherwise, output an empty list.\n\nEntry 1: `{\"path\":\"/api/orders\",\"handler\":\"addOrderItems\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 2: `{\"path\":\"/api/orders/myorders\",\"handler\":\"getMyOrders\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 3: `{\"path\":\"/api/orders/{id}\",\"handler\":\"getOrderById\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 4: `{\"path\":\"/api/orders/{id}/pay\",\"handler\":\"updateOrderToPaid\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 5: `{\"path\":\"/api/orders/{id}/deliver\",\"handler\":\"updateOrderToDelivered\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`.\n\nEntry 6: `{\"path\":\"/api/orders\",\"handler\":\"getOrders\",\"handler_in_same_file\":true,\"path_is_prefix\":false,\"path_from_string_literal\":true,\"path_from_naming_convention\":false,\"is_restful_api\":true,\"is_testing_purposes\":false}`."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/orderController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Order from '../models/orderModel.js';\nimport Product from '../models/productModel.js';\nimport { calcPrices } from '../utils/calcPrices.js';\nimport { verifyPayPalPayment, checkIfNewTransaction } from '../utils/paypal.js';\n\n// @desc    Create new order\n// @route   POST /api/orders\n// @access  Private\nconst addOrderItems = asyncHandler(async (req, res) => {\n  const { orderItems, shippingAddress, paymentMethod } = req.body;\n\n  if (orderItems && orderItems.length === 0) {\n    res.status(400);\n    throw new Error('No order items');\n  } else {\n    // NOTE: here we must assume that the prices from our client are incorrect.\n    // We must only trust the price of the item as it exists in\n    // our DB. This prevents a user paying whatever they want by hacking our client\n    // side code - https://gist.github.com/bushblade/725780e6043eaf59415fbaf6ca7376ff\n\n    // get the ordered items from our database\n    const itemsFromDB = await Product.find({\n      _id: { $in: orderItems.map((x) => x._id) },\n    });\n\n    // map over the order items and use the price from our items from database\n    const dbOrderItems = orderItems.map((itemFromClient) => {\n      const matchingItemFromDB = itemsFromDB.find(\n        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id\n      );\n      return {\n        ...itemFromClient,\n        product: itemFromClient._id,\n        price: matchingItemFromDB.price,\n        _id: undefined,\n      };\n    });\n\n    // calculate prices\n    const { itemsPrice, taxPrice, shippingPrice, totalPrice } =\n      calcPrices(dbOrderItems);\n\n    const order = new Order({\n      orderItems: dbOrderItems,\n      user: req.user._id,\n      shippingAddress,\n      paymentMethod,\n      itemsPrice,\n      taxPrice,\n      shippingPrice,\n      totalPrice,\n    });\n\n    const createdOrder = await order.save();\n\n    res.status(201).json(createdOrder);\n  }\n});\n\n// @desc    Get logged in user orders\n// @route   GET /api/orders/myorders\n// @access  Private\nconst getMyOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({ user: req.user._id });\n  res.json(orders);\n});\n\n// @desc    Get order by ID\n// @route   GET /api/orders/:id\n// @access  Private\nconst getOrderById = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id).populate(\n    'user',\n    'name email'\n  );\n\n  if (order) {\n    res.json(order);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to paid\n// @route   PUT /api/orders/:id/pay\n// @access  Private\nconst updateOrderToPaid = asyncHandler(async (req, res) => {\n  // NOTE: here we need to verify the payment was made to PayPal before marking\n  // the order as paid\n  const { verified, value } = await verifyPayPalPayment(req.body.id);\n  if (!verified) throw new Error('Payment not verified');\n\n  // check if this transaction has been used before\n  const isNewTransaction = await checkIfNewTransaction(Order, req.body.id);\n  if (!isNewTransaction) throw new Error('Transaction has been used before');\n\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    // check the correct amount was paid\n    const paidCorrectAmount = order.totalPrice.toString() === value;\n    if (!paidCorrectAmount) throw new Error('Incorrect amount paid');\n\n    order.isPaid = true;\n    order.paidAt = Date.now();\n    order.paymentResult = {\n      id: req.body.id,\n      status: req.body.status,\n      update_time: req.body.update_time,\n      email_address: req.body.payer.email_address,\n    };\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to delivered\n// @route   GET /api/orders/:id/deliver\n// @access  Private/Admin\nconst updateOrderToDelivered = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    order.isDelivered = true;\n    order.deliveredAt = Date.now();\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Get all orders\n// @route   GET /api/orders\n// @access  Private/Admin\nconst getOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({}).populate('user', 'id name');\n  res.json(orders);\n});\n\nexport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n};\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CqxG8va7AsVIAXtpraKNAAfWeL3tE",
+    "object": "chat.completion",
+    "created": 1766736884,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "[] \n\nExplanation: I inspected controllers/orderController.js and found only the six route handlers you already listed (addOrderItems, getMyOrders, getOrderById, updateOrderToPaid, updateOrderToDelivered, getOrders). There are no other literal route strings, router usages, or additional exported handlers in this file that define API entries. All routes in this file are already covered by the previously provided entries, so there are no additional API entries to report.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2030,
+      "completion_tokens": 424,
+      "total_tokens": 2454,
+      "prompt_tokens_details": {
+        "cached_tokens": 1920,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 320,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

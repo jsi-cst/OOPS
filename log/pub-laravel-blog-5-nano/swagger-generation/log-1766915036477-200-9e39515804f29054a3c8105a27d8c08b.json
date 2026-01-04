@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766915036477,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/newsletter-subscriptions` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/NewsletterSubscriptionController.php`, `App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController@store` is implemented to process HTTP requests to `/newsletter-subscriptions` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/NewsletterSubscriptionController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\NewsletterSubscriptionRequest;\nuse App\\Jobs\\UnsubscribeEmailNewsletter;\nuse App\\Models\\NewsletterSubscription;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Support\\Facades\\Auth;\nuse Illuminate\\Support\\Facades\\Session;\nuse Validator;\n\nclass NewsletterSubscriptionController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(NewsletterSubscriptionRequest $request): RedirectResponse\n    {\n        $newsletterSubscription = NewsletterSubscription::create($request->validated());\n\n        return back()->withSuccess(__('newsletter.created'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function unsubscribe(Request $request)\n    {\n        $validator = Validator::make($request->all(), [\n            'email' => 'required|email|exists:newsletter_subscriptions,email'\n        ]);\n\n        if ($validator->fails()) {\n            $errors = $validator->errors()->all();\n            $route = 'login';\n\n            if (Auth::check()) {\n                $route = 'home';\n            }\n\n            return redirect()->route($route)->withErrors($errors);\n        }\n\n        UnsubscribeEmailNewsletter::dispatch($request->input('email'));\n\n        Session::flash('success', __('newsletter.unsubscribed'));\n\n        return view('newsletters.unsubscribed');\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Step-by-step explanation:\n- The provided NewsletterSubscriptionController@store handles POST requests to /newsletter-subscriptions.\n- It creates a NewsletterSubscription from the validated request data and then redirects back to the previous page with a success flash message. This behavior corresponds to an HTTP 302 Redirect response.\n- In Swagger/OpenAPI 2.0 (Swagger 2.0) the responses for this endpoint should reflect the possible HTTP responses. Since the code path for the store method returns a redirect, the primary response is a 302 status with a descriptive message. There are no other explicit responses returned by this method in the given code (no 200/201 body is returned, no error responses are defined here).\n- Therefore, the OpenAPI 2.0 responses object for POST /newsletter-subscriptions should include a single 302 response description and should avoid any $ref references or additional fields not shown in the given code.\n\nthe final generated result begins\n{\n  \"302\": {\n    \"description\": \"Redirects back to the previous page with a success flash message stored in the session.\"\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766915022,
+    "id": "chatcmpl-CrhbKLXLArA2SDHiUbEn3azQDXq77",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1961,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1728,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 719,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2680
+    }
+  }
+}

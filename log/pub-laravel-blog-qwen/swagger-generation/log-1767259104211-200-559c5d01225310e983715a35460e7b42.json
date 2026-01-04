@@ -1,0 +1,158 @@
+{
+  "timestamp": 1767259104211,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments` with method POST, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\n2. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::store` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\n3. In `app/Http/Controllers/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\n4. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::store` is implemented to process HTTP requests to `/comments` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the POST endpoint for `/comments` to generate the OpenAPI response specification. Let me examine the controller method and understand what it returns.\n\nFrom the provided code, I can see that the `store` method in `CommentController`:\n1. Takes a `CommentsRequest` as input\n2. Creates a new comment using the authenticated user\n3. Returns a `MultiplePendingTurboStreamResponse` which contains Turbo Stream responses\n\nThe method returns Turbo Stream responses that:\n- Prepend a new comment to the 'comments' element using the 'comments._comment' view\n- Replace the 'comments_form' element with the 'comments._form' view\n- Update the 'comments_count' element with a translated count\n\nLet me check if there are any validation rules or additional information in the CommentsRequest class that might help me understand the expected input and potential responses.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a330898e3cf644d58a4f0bb7",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"CommentsRequest.php\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Http/Requests/CommentsRequest.php\\n./app/Http/Requests/Admin/CommentsRequest.php\\n./app/Http/Requests/Api/CommentsRequest.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_a330898e3cf644d58a4f0bb7"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the main CommentsRequest.php file to understand the validation rules and what fields are expected:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_de887ef57beb4f20998fc8b1",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Http/Requests/CommentsRequest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required',\\n            'post_id' => 'required|exists:posts,id'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_de887ef57beb4f20998fc8b1"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the Comment model to understand the structure of a comment:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_04a334ba89e64521911077b6",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Comment.php\\\" -type f -path \\\"./app/Models/*\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Models/Comment.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_04a334ba89e64521911077b6"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me examine the Comment model to understand its structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_7c52d622081f48959d52728d",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_7c52d622081f48959d52728d"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-e7f589cf-2fbd-90b7-837a-7378e74b3aff",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me also check if there are any migration files for the comments table to understand the database structure better:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_36218709801340e891cb273d",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"find . -name \\\"*comment*.php\\\" -path \\\"./database/migrations/*\\\"\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259102,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 2076,
+      "completion_tokens": 58,
+      "prompt_tokens": 2018,
+      "prompt_tokens_details": {
+        "cached_tokens": 1408
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "timestamp": 1767333838389,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method GET.\n\n2. In `app/Http/Requests/Admin/PostsRequest.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@store` is implemented to process HTTP requests to `/v1/posts` with HTTP method GET.\n\n3. In `app/Http/Controllers/Api/V1/PostController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController@index` is implemented to process HTTP requests to `/v1/posts` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\PostsRequest;\nuse App\\Http\\Resources\\Post as PostResource;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass PostController extends Controller\n{\n    /**\n     * Return the posts.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return PostResource::collection(\n            Post::search($request->input('q'))->withCount('comments')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(PostsRequest $request, Post $post): PostResource\n    {\n        $this->authorize('update', $post);\n\n        $post->update($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']));\n\n        return new PostResource($post);\n    }\n\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(PostsRequest $request): PostResource\n    {\n        $this->authorize('store', Post::class);\n\n        return new PostResource(\n            Post::create($request->only(['title', 'content', 'posted_at', 'author_id', 'thumbnail_id']))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(Post $post): PostResource\n    {\n        return new PostResource($post);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): Response\n    {\n        $this->authorize('delete', $post);\n\n        $post->delete();\n\n        return response()->noContent();\n    }\n}\n```\n\nContents of file `app/Http/Requests/Admin/PostsRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse App\\Rules\\CanBeAuthor;\nuse Carbon\\Carbon;\nuse Illuminate\\Foundation\\Http\\FormRequest;\nuse Illuminate\\Support\\Str;\n\nclass PostsRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Prepare the data for validation.\n     */\n    protected function prepareForValidation(): void\n    {\n        $this->merge([\n            'slug' => Str::slug($this->input('title'))\n        ]);\n\n        $this->merge([\n            'posted_at' => Carbon::parse($this->input('posted_at'))\n        ]);\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'title' => 'required',\n            'content' => 'required',\n            'posted_at' => 'required|date',\n            'thumbnail_id' => 'nullable|exists:media,id',\n            'author_id' => ['required', 'exists:users,id', new CanBeAuthor],\n            'slug' => 'unique:posts,slug,' . (optional($this->post)->id ?: 'NULL'),\n        ];\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_9934774fa4a447479b09bc4d40a2966e",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Http/Resources/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\n\\nclass Post extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        return [\\n            'id' => $this->id,\\n            'title' => $this->title,\\n            'slug' => $this->slug,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'author_id' => $this->author_id,\\n            'comments_count' => $this->comments_count ?? $this->comments()->count(),\\n            'thumbnail_url' => $this->when($this->hasThumbnail(), url(optional($this->thumbnail)->getUrl())),\\n            'thumb_thumbnail_url' => $this->when($this->hasThumbnail(), url(optional($this->thumbnail)->getUrl('thumb')))\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_9934774fa4a447479b09bc4d40a2966e"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_be19bca7c507444389deccea91fe33e6",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_be19bca7c507444389deccea91fe33e6"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_6c4b08fd63114c88a473f0840ddd1a6a",
+            "function": {
+              "arguments": "{\"command\":\"cat app/Providers/AppServiceProvider.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Providers;\\n\\nuse Illuminate\\\\Pagination\\\\Paginator;\\nuse Illuminate\\\\Support\\\\Facades\\\\Blade;\\nuse Illuminate\\\\Support\\\\ServiceProvider;\\n\\nclass AppServiceProvider extends ServiceProvider\\n{\\n    /**\\n     * Bootstrap any application services.\\n     */\\n    public function boot(): void\\n    {\\n        Paginator::useBootstrap();\\n    }\\n\\n    /**\\n     * Register any application services.\\n     */\\n    public function register(): void\\n    {\\n        Blade::directive(\\'humanize_date\\', function (string $params) {\\n            return \"<?php echo humanize_date($params); ?>\";\\n        });\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_6c4b08fd63114c88a473f0840ddd1a6a"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-9f8897c31d844bb680d94bee4ce58941",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333838,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The endpoint `GET /v1/posts` is handled by the `index` method in `App\\Http\\Controllers\\Api\\V1\\PostController`. This method returns a collection of `Post` resources, which are paginated using Laravel's built-in pagination. \n\nThe `PostResource` defines the structure of each post in the collection. Based on `app/Http/Resources/Post.php`, each post object contains:\n- `id`: The unique identifier for the post.\n- `title`: The title of the post.\n- `slug`: The URL-friendly version of the title.\n- `content`: The full content of the post.\n- `posted_at`: The date and time the post was published (in ISO 8601 format).\n- `author_id`: The ID of the user who authored the post.\n- `comments_count`: The number of comments associated with the post.\n- `thumbnail_url`: (Optional) The full URL of the post's thumbnail.\n- `thumb_thumbnail_url`: (Optional) The full URL of the post's small thumbnail.\n\nSince the `index` method uses Laravel's `paginate()` method, the response is wrapped in a standard pagination structure containing `data`, `links`, and `meta` objects.\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"A paginated list of posts.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"data\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"id\": {\n                \"type\": \"integer\"\n              },\n              \"title\": {\n                \"type\": \"string\"\n              },\n              \"slug\": {\n                \"type\": \"string\"\n              },\n              \"content\": {\n                \"type\": \"string\"\n              },\n              \"posted_at\": {\n                \"type\": \"string\",\n                \"format\": \"date-time\"\n              },\n              \"author_id\": {\n                \"type\": \"integer\"\n              },\n              \"comments_count\": {\n                \"type\": \"integer\"\n              },\n              \"thumbnail_url\": {\n                \"type\": \"string\"\n              },\n              \"thumb_thumbnail_url\": {\n                \"type\": \"string\"\n              }\n            }\n          }\n        },\n        \"links\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"first\": {\n              \"type\": \"string\"\n            },\n            \"last\": {\n              \"type\": \"string\"\n            },\n            \"prev\": {\n              \"type\": \"string\",\n              \"nullable\": true\n            },\n            \"next\": {\n              \"type\": \"string\",\n              \"nullable\": true\n            }\n          }\n        },\n        \"meta\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"current_page\": {\n              \"type\": \"integer\"\n            },\n            \"from\": {\n              \"type\": \"integer\"\n            },\n            \"last_page\": {\n              \"type\": \"integer\"\n            },\n            \"path\": {\n              \"type\": \"string\"\n            },\n            \"per_page\": {\n              \"type\": \"integer\"\n            },\n            \"to\": {\n              \"type\": \"integer\"\n            },\n            \"total\": {\n              \"type\": \"integer\"\n            }\n          }\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2843,
+      "completion_tokens": 3890,
+      "total_tokens": 6733,
+      "completion_tokens_details": {
+        "reasoning_tokens": 3069
+      }
+    }
+  }
+}

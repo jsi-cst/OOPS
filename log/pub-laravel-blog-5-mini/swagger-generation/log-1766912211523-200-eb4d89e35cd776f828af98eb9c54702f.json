@@ -1,0 +1,126 @@
+{
+  "timestamp": 1766912211523,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/comments/{comment}` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/CommentController.php`, `App\\\\Http\\\\Controllers\\\\CommentController::destroy` is implemented to process HTTP requests to `/comments/{comment}` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Http\\Requests\\CommentsRequest;\nuse App\\Models\\Comment;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Facades\\Auth;\n\nclass CommentController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(CommentsRequest $request): MultiplePendingTurboStreamResponse\n    {\n        $comment = Auth::user()->comments()->create($request->validated());\n\n        return response()->turboStream([\n            response()->turboStream()->prepend('comments')->view('comments._comment', ['comment' => $comment]),\n            response()->turboStream()->replace('comments_form')->view('comments._form', ['post' => $comment->post]),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): MultiplePendingTurboStreamResponse\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->turboStream([\n            response()->turboStream()->remove($comment),\n            response()->turboStream()->update('comments_count', trans_choice('comments.count', $comment->post->comments()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_mmWzBQlRTohNv8UyAimLjTPV",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"turboStream\\\" -n vendor || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': 'grep: vendor: No such file or directory\\n'}",
+        "tool_call_id": "call_mmWzBQlRTohNv8UyAimLjTPV"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_AP1zgyG3jvdFnIa0DVloVPl9",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"comments\\\" -n routes || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/admin.php:15:Route::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\\nroutes/web.php:25:Route::resource('posts.comments', PostCommentController::class)->only('index');\\nroutes/auth.php:54:    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\\nroutes/api.php:28:        Route::apiResource('comments', CommentController::class)->only('destroy');\\nroutes/api.php:29:        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\\nroutes/api.php:46:    Route::apiResource('posts.comments', PostCommentController::class)->only('index');\\nroutes/api.php:47:    Route::apiResource('users.comments', UserCommentController::class)->only('index');\\nroutes/api.php:48:    Route::apiResource('comments', CommentController::class)->only(['index', 'show']);\\n\", 'stderr': ''}",
+        "tool_call_id": "call_AP1zgyG3jvdFnIa0DVloVPl9"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-Crgryf3z5sXvX5pMLxgXaWdOmgjIs",
+    "object": "chat.completion",
+    "created": 1766912210,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": null,
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,240p' routes/auth.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_k7PWNahCTzCayNfY5ahIXGFP",
+              "type": "function"
+            }
+          ],
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1037,
+      "completion_tokens": 29,
+      "total_tokens": 1066,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

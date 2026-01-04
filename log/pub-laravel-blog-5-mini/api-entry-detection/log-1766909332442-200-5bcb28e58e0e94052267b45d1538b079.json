@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766909332442,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `routes/web.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/web.php`:\n\n```\n<?php\n\nuse App\\Http\\Controllers\\NewsletterSubscriptionController;\nuse App\\Http\\Controllers\\PostCommentController;\nuse App\\Http\\Controllers\\PostController;\nuse App\\Http\\Controllers\\PostFeedController;\nuse App\\Http\\Controllers\\UserController;\nuse Illuminate\\Support\\Facades\\Route;\n\n/*\n|--------------------------------------------------------------------------\n| Web Routes\n|--------------------------------------------------------------------------\n|\n| Here is where you can register web routes for your application. These\n| routes are loaded by the RouteServiceProvider and all of them will\n| be assigned to the \"web\" middleware group. Make something great!\n|\n*/\n\nRoute::get('/', [PostController::class, 'index'])->name('home');\nRoute::get('/posts/feed', [PostFeedController::class, 'index'])->name('posts.feed');\nRoute::resource('posts', PostController::class)->only('show');\nRoute::resource('users', UserController::class)->only('show');\nRoute::resource('posts.comments', PostCommentController::class)->only('index');\n\nRoute::get('newsletter-subscriptions/unsubscribe', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter-subscriptions.unsubscribe');\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": \"/\",\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\PostController::index\",\n    \"implementation_in_same_file\": false,\n    \"is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_restful\": false,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/posts/feed\",\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\PostFeedController::index\",\n    \"implementation_in_same_file\": false,\n    \"is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_restful\": false,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/posts/{post}\",\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\PostController::show\",\n    \"implementation_in_same_file\": false,\n    \"is_prefix\": false,\n    \"path_from_literal\": false,\n    \"path_from_convention\": true,\n    \"is_restful\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/users/{user}\",\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\UserController::show\",\n    \"implementation_in_same_file\": false,\n    \"is_prefix\": false,\n    \"path_from_literal\": false,\n    \"path_from_convention\": true,\n    \"is_restful\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/posts/{post}/comments\",\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\PostCommentController::index\",\n    \"implementation_in_same_file\": false,\n    \"is_prefix\": false,\n    \"path_from_literal\": false,\n    \"path_from_convention\": true,\n    \"is_restful\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/newsletter-subscriptions/unsubscribe\",\n    \"handler\": \"App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController::unsubscribe\",\n    \"implementation_in_same_file\": false,\n    \"is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_convention\": false,\n    \"is_restful\": false,\n    \"is_test\": false\n  }\n]\n\nExplanation:\n\n- I extracted six route entries from routes/web.php: two explicit GET routes defined by literal strings (\"/\" and \"/posts/feed\"), three resource-based routes produced by Route::resource(...) (posts.show, users.show, posts.comments.index), and one explicit GET route using a string without a leading slash (\"newsletter-subscriptions/unsubscribe\").\n- For literal Route::get(...) calls I set path_from_literal = true. For Route::resource(...) entries I set path_from_convention = true and path_from_literal = false because the actual path patterns (e.g., /posts/{post}) are generated by Laravel's resource routing conventions rather than being written as string literals in this file.\n- All handlers reference controller class methods; none of those implementations are present in this source file (routes/web.php) so implementation_in_same_file = false for all entries. There are no anonymous (closure) handlers in this file.\n- Paths produced from resource() calls have their route parameters formatted with curly braces (e.g., {post}, {user}) per Laravel conventions.\n- For the route defined as 'newsletter-subscriptions/unsubscribe' in the source (without a leading slash), I normalized it to begin with a slash in the output (\"/newsletter-subscriptions/unsubscribe\") because route paths are requested in that form; path_from_literal is true since the string is explicitly present in the file.\n- I marked is_restful = true for the resource-generated entries (show/index for resources), and false for the other custom GET endpoints (home, feed, unsubscribe), since those are application/web endpoints rather than standard REST resource actions (except where they overlap).\n- None of the routes are test routes.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766909311,
+    "id": "chatcmpl-Crg7Dd69Ko9VoSNFKH7F7TA1hiNEc",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2480,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1664,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 677,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3157
+    }
+  }
+}

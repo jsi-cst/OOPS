@@ -1,0 +1,78 @@
+{
+  "timestamp": 1767006293931,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (1.x) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/documents/{id}` with method GET, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`, `io.github.proxyprint.kitchen.controllers.printshops.EmployeeController#getEmployees` is implemented to process HTTP requests to `/documents/{id}` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.printshops;\n\nimport com.google.gson.Gson;\nimport io.github.proxyprint.kitchen.models.consumer.printrequest.Document;\nimport io.github.proxyprint.kitchen.models.printshops.Employee;\nimport io.github.proxyprint.kitchen.models.repositories.DocumentDAO;\nimport io.github.proxyprint.kitchen.models.repositories.EmployeeDAO;\nimport java.io.File;\n\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.core.io.FileSystemResource;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport java.security.Principal;\nimport javax.annotation.Resource;\nimport org.springframework.transaction.annotation.Transactional;\n\n/**\n * Created by daniel on 14-05-2016.\n */\n@RestController \n@Transactional\npublic class EmployeeController {\n\n    @Resource(name = \"documentsPath\")\n    private String documentsPath;\n    @Autowired\n    private EmployeeDAO employees;\n    @Autowired\n    private DocumentDAO documents;\n    @Autowired\n    private Gson GSON;\n\n    @ApiOperation(value = \"Returns a document\", notes = \"This method allows employees to get a document by a given id.\")\n    @Secured(\"ROLE_EMPLOYEE\")\n    @RequestMapping(value = \"/documents/{id}\", method = RequestMethod.GET)\n    public ResponseEntity<FileSystemResource> getEmployees(@PathVariable(value = \"id\") long id, Principal principal) {\n        HttpHeaders headers = new HttpHeaders();\n\n        Employee emp = this.employees.findByUsername(principal.getName());\n        Document doc = this.documents.findOne(id);\n\n        if (doc == null) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.NOT_FOUND);\n        } else if (emp.getPrintShop().getId() != doc.getPrintRequest().getPrintshop().getId()) {\n            headers.setContentType(MediaType.APPLICATION_JSON);\n            return new ResponseEntity(headers, HttpStatus.UNAUTHORIZED);\n        } else {\n            headers.setContentType(MediaType.parseMediaType(\"application/pdf\"));\n            headers.add(\"Content-Disposition\", \"inline;filename=\" + doc.getName() + \".pdf\");\n            headers.setCacheControl(\"must-revalidate, post-check=0, pre-check=0\");\n\n            return new ResponseEntity(new FileSystemResource(new File(this.documentsPath+doc.getFile().getName())), headers, HttpStatus.OK);\n        }\n    }\n}\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Analysis and reasoning:\n- The endpoint is defined by @RequestMapping(value = \"/documents/{id}\", method = RequestMethod.GET) in EmployeeController, which maps to GET /documents/{id}.\n- The method signature includes @PathVariable(value = \"id\") long id, indicating a path parameter named id of type long.\n- The second parameter, Principal principal, is an authentication helper injected by the framework and is not exposed as a request parameter in the API contract, so it should not appear in the Swagger parameter list.\n- In Swagger 2.0, a path parameter needs at least: name, in (path), required (true for path params), type, and possibly format. The Java type long corresponds to type integer with format int64.\n- Therefore, the Parameter Objects for paths[\"/documents/{id}\"][GET].parameters should include only the id path parameter with appropriate type/format.\n\nthe final generated result begins\n[\n  {\n    \"name\": \"id\",\n    \"in\": \"path\",\n    \"required\": true,\n    \"type\": \"integer\",\n    \"format\": \"int64\"\n  }\n]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767006285,
+    "id": "chatcmpl-Cs5LJSdA0IYNBaScPwlg1Wcc4b65S",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1328,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1088,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1006,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2334
+    }
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "timestamp": 1767259155863,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/posts/{post}/likes` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n2. In `app/Concern/Likeable.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n3. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n4. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n5. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n6. In `app/Concern/Likeable.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@store` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n7. In `app/Http/Controllers/Api/V1/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\n8. In `app/Http/Controllers/PostLikeController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController@destroy` is implemented to process HTTP requests to `/v1/posts/{post}/likes` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Models\\Post;\nuse Illuminate\\Http\\Request;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     *\n     * @return Response\n     */\n    public function store(Request $request, Post $post)\n    {\n        return $post->like();\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     *\n     * @return \\Illuminate\\Http\\Response\n     */\n    public function destroy(Post $post)\n    {\n        return $post->dislike();\n    }\n}\n```\n\nContents of file `app/Concern/Likeable.php`:\n\n```\n<?php\n\nnamespace App\\Concern;\n\nuse App\\Models\\Like;\nuse Illuminate\\Database\\Eloquent\\Relations\\morphMany;\n\ntrait Likeable\n{\n    /**\n     * The \"booting\" method of the trait.\n     */\n    protected static function bootLikeable(): void\n    {\n        static::deleting(fn ($resource) => $resource->likes->each->delete());\n    }\n\n    /**\n     * Get all of the resource's likes.\n     */\n    public function likes(): morphMany\n    {\n        return $this->morphMany(Like::class, 'likeable');\n    }\n\n    /**\n     * Create a like if it does not exist yet.\n     */\n    public function like()\n    {\n        if ($this->likes()->where('author_id', auth()->id())->doesntExist()) {\n            return $this->likes()->create(['author_id' => auth()->id()]);\n        }\n    }\n\n    /**\n     * Check if the resource is liked by the current user\n     */\n    public function isLiked(): bool\n    {\n        return $this->likes->where('author_id', auth()->id())->isNotEmpty();\n    }\n\n    /**\n     * Delete like for a resource.\n     */\n    public function dislike()\n    {\n        return $this->likes()->where('author_id', auth()->id())->get()->each->delete();\n    }\n}\n```\n\nContents of file `app/Http/Controllers/PostLikeController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse HotwiredLaravel\\TurboLaravel\\Http\\MultiplePendingTurboStreamResponse;\nuse Illuminate\\Support\\Str;\n\nuse function HotwiredLaravel\\TurboLaravel\\dom_id;\n\nclass PostLikeController extends Controller\n{\n    /**\n     * Store a newly created resource in storage.\n     */\n    public function store(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->like();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Post $post): MultiplePendingTurboStreamResponse\n    {\n        $post->dislike();\n\n        return response()->turboStream([\n            response()->turboStream()->replace(dom_id($post, 'like'))->view('likes._like', ['post' => $post]),\n            response()->turboStream()->update(dom_id($post, 'likes_count'), Str::of($post->likes()->count()))\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the DELETE endpoint `/v1/posts/{post}/likes` and determine the response objects for this API endpoint. Let me break down what I can see from the provided information:\n\n1. The endpoint `/v1/posts/{post}/likes` with HTTP method DELETE is handled by `App\\Http\\Controllers\\Api\\V1\\PostLikeController@destroy`\n2. The `destroy` method in `PostLikeController` calls `$post->dislike()` which is defined in the `Likeable` trait\n3. The `dislike` method returns the result of deleting likes for the current user\n\nLet me check the route definition to confirm the API version and understand the structure better.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_e45275442e624be197d783a6",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.php\\\" -exec grep -l \\\"v1/posts.*likes\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './tests/Feature/Api/V1/PostLikeTest.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_e45275442e624be197d783a6"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the routes file to understand the API structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a86de1e836004125a6354e44",
+            "function": {
+              "arguments": "{\"command\": \"find ./routes -name \\\"*.php\\\" -exec grep -l \\\"posts.*likes\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './routes/auth.php\\n./routes/api.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_a86de1e836004125a6354e44"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the API routes file:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_ec8bdf70fc984435877010f2",
+            "function": {
+              "arguments": "{\"command\": \"grep -A 10 -B 10 \\\"posts.*likes\\\\|PostLike\\\" ./routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n--\\n*/\\n\\nRoute::prefix('v1')->name('api')->group(function () {\\n    Route::middleware(['auth:sanctum', 'verified'])->group(function () {\\n        // Comments\\n        Route::apiResource('comments', CommentController::class)->only('destroy');\\n        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\\n\\n        // Posts\\n        Route::apiResource('posts', PostController::class)->only(['update', 'store', 'destroy']);\\n        Route::post('/posts/{post}/likes', [PostLikeController::class, 'store'])->name('posts.likes.store');\\n        Route::delete('/posts/{post}/likes', [PostLikeController::class, 'destroy'])->name('posts.likes.destroy');\\n\\n        // Users\\n        Route::apiResource('users', UserController::class)->only('update');\\n\\n        // Media\\n        Route::apiResource('media', MediaController::class)->only(['store', 'destroy']);\\n    });\\n\\n    Route::post('/authenticate', [AuthenticateController::class, 'authenticate'])->name('authenticate');\\n\\n\", 'stderr': ''}",
+        "tool_call_id": "call_ec8bdf70fc984435877010f2"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the test file to understand the expected behavior of the endpoint:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_ab0f40087abd430987691bfa",
+            "function": {
+              "arguments": "{\"command\": \"cat ./tests/Feature/Api/V1/PostLikeTest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace Tests\\\\Feature\\\\Api\\\\V1;\\n\\nuse App\\\\Models\\\\Post;\\nuse Illuminate\\\\Foundation\\\\Testing\\\\RefreshDatabase;\\nuse Tests\\\\TestCase;\\n\\nclass PostLikeTest extends TestCase\\n{\\n    use RefreshDatabase;\\n\\n    public function testPostLike()\\n    {\\n        $post = Post::factory()->create();\\n\\n        $this->actingAsUser(\\'sanctum\\')\\n            ->json(\\'POST\\', \"/api/v1/posts/{$post->id}/likes\")\\n            ->assertCreated();\\n\\n        $this->assertCount(1, $post->likes);\\n    }\\n\\n    public function testPostDislike()\\n    {\\n        $user = $this->user();\\n        $post = Post::factory()->create();\\n        $post->likes()->create([\\'author_id\\' => $user->id]);\\n\\n        $this->actingAs($user, \\'sanctum\\')\\n            ->json(\\'DELETE\\', \"/api/v1/posts/{$post->id}/likes\")\\n            ->assertOk();\\n\\n        $this->assertCount(0, $post->likes);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_ab0f40087abd430987691bfa"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the Like model to understand the structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_9fd9d4af6d2e41a0afe1c3fa",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Like.php\\\" -path \\\"./app/*\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Models/Like.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_9fd9d4af6d2e41a0afe1c3fa"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_0012ed314a264e5c8b3b7714",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Models/Like.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\MorphTo;\\n\\nclass Like extends Model\\n{\\n    use HasFactory;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'likeable_id',\\n        'likeable_type',\\n        'author_id',\\n    ];\\n\\n    /**\\n     * Get all of the owning likeable models.\\n     */\\n    public function likeable(): MorphTo\\n    {\\n        return $this->morphTo();\\n    }\\n\\n    /**\\n     * Return the like's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_0012ed314a264e5c8b3b7714"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the Post model to understand the relationship:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_653c899f295b4959827677a7",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Post.php\\\" -path \\\"./app/*\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Http/Resources/Post.php\\n./app/Models/Post.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_653c899f295b4959827677a7"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_36811bcf192043d3ac70fab3",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_36811bcf192043d3ac70fab3"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-50225170-2c60-9eb8-b770-0127c9b7da8d",
+    "choices": [
+      {
+        "message": {
+          "content": "Now I have a clear understanding of the DELETE endpoint `/v1/posts/{post}/likes`. Let me analyze the response:\n\n1. The endpoint is handled by `PostLikeController@destroy` method\n2. The method calls `$post->dislike()` which is from the `Likeable` trait\n3. The `dislike` method deletes the like record for the current user and returns the result\n4. From the test file, I can see that the expected response is `assertOk()` which means HTTP status 200\n5. The endpoint requires authentication as it's within the `auth:sanctum` middleware group\n\nBased on the test file, when a user deletes a like, the response should be successful (HTTP 200), and the like should be removed from the post.\n\nLet me also check if there are any other possible responses by looking for error handling:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_3365c6c75d6749d2ba088a7b",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"grep -r \\\"404\\\\|401\\\\|403\\\\|500\\\" app/Http/Controllers/Api/V1/PostLikeController.php\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259146,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 4522,
+      "completion_tokens": 242,
+      "prompt_tokens": 4280,
+      "prompt_tokens_details": {
+        "cached_tokens": 2688
+      }
+    }
+  }
+}

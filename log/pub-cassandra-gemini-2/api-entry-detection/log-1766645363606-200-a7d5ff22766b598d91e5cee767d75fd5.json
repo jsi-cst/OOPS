@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766645363606,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the RESTEasy framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/com/datastax/mgmtapi/NettyJaxrsIPCServer.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/NettyJaxrsIPCServer.java`:\n\n```\n/**\n * Copyright DataStax, Inc.\n *\n * Please see the included license file for details.\n */\npackage com.datastax.mgmtapi;\n\n\nimport java.io.File;\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.concurrent.atomic.AtomicReference;\n\nimport com.datastax.mgmtapi.ipc.IPCController;\nimport io.netty.channel.Channel;\nimport io.netty.channel.ChannelHandler;\nimport io.netty.channel.ChannelInitializer;\nimport io.netty.channel.ChannelOption;\nimport io.netty.channel.ChannelPipeline;\nimport io.netty.channel.EventLoopGroup;\nimport io.netty.handler.codec.http.HttpObjectAggregator;\nimport io.netty.handler.codec.http.HttpRequestDecoder;\nimport io.netty.handler.codec.http.HttpResponseEncoder;\nimport io.netty.handler.timeout.IdleStateHandler;\nimport org.jboss.resteasy.plugins.server.netty.NettyJaxrsServer;\nimport org.jboss.resteasy.plugins.server.netty.RequestDispatcher;\nimport org.jboss.resteasy.plugins.server.netty.RequestHandler;\nimport org.jboss.resteasy.plugins.server.netty.RestEasyHttpRequestDecoder;\nimport org.jboss.resteasy.plugins.server.netty.RestEasyHttpResponseEncoder;\nimport org.jboss.resteasy.util.EmbeddedServerHelper;\n\npublic class NettyJaxrsIPCServer extends NettyJaxrsServer\n{\n    private final AtomicReference<IPCController> activeServerRef = new AtomicReference<>();\n\n    private final EventLoopGroup eventLoopGroup;\n    private final File socketFile;\n    private Map<ChannelOption, Object> channelOptions = Collections.emptyMap();\n    private List<ChannelHandler> httpChannelHandlers = Collections.emptyList();\n\n    private final int maxRequestSize = 1024 * 1024 * 10;\n    private final int maxInitialLineLength = 4096;\n    private final int maxHeaderSize = 8192;\n    private final int maxChunkSize = 8192;\n    private final int idleTimeout = 60;\n    // From the internals of Resteasy\n    private final EmbeddedServerHelper serverHelper = new EmbeddedServerHelper();\n\n    public NettyJaxrsIPCServer(EventLoopGroup eventLoopGroup, File socketFile)\n    {\n        this.eventLoopGroup = eventLoopGroup;\n        this.socketFile = socketFile;\n    }\n\n    @Override\n    public NettyJaxrsServer setChannelOptions(final Map<ChannelOption, Object> channelOptions) {\n        this.channelOptions = channelOptions == null ? Collections.<ChannelOption, Object>emptyMap() : channelOptions;\n        return this;\n    }\n\n    @Override\n    public NettyJaxrsServer setHttpChannelHandlers(final List<ChannelHandler> httpChannelHandlers) {\n        this.httpChannelHandlers = httpChannelHandlers == null ? Collections.<ChannelHandler>emptyList() : httpChannelHandlers;\n        return this;\n    }\n\n    @Override\n    public NettyJaxrsServer start()\n    {\n        synchronized (activeServerRef)\n        {\n            IPCController activeServer = activeServerRef.get();\n            if (activeServer != null && activeServer.isActive())\n                return this;\n\n            if (activeServer != null)\n            {\n                activeServer.start();\n            }\n            else\n            {\n                serverHelper.checkDeployment(deployment);\n\n                // dynamically set the root path (the user can rewrite it by calling setRootResourcePath)\n                String appPath = serverHelper.checkAppDeployment(deployment);\n                if (appPath != null && (root == null || \"\".equals(root))) {\n                  setRootResourcePath(appPath);\n                }\n\n                activeServer = IPCController.newServer()\n                        .withEventLoop(eventLoopGroup)\n                        .withSocketFile(socketFile)\n                        .withChannelOptions(channelOptions)\n                        .withChannelHandler(new ChannelInitializer<Channel>() {\n                            @Override\n                            protected void initChannel(Channel ch) throws Exception\n                            {\n                                setupHandlers(ch, createRequestDispatcher(), RestEasyHttpRequestDecoder.Protocol.HTTP);\n                            }\n                        }).build();\n\n                activeServer.start();\n                boolean b = activeServerRef.compareAndSet(null, activeServer);\n                assert b : \"Already active\";\n            }\n        }\n        return this;\n    }\n\n    @Override\n    public void stop()\n    {\n         synchronized (activeServerRef)\n         {\n             IPCController activeServer = activeServerRef.get();\n             if (activeServer != null)\n                 activeServer.stop();\n         }\n    }\n\n    protected void setupHandlers(Channel ch, RequestDispatcher dispatcher, RestEasyHttpRequestDecoder.Protocol protocol) {\n        ChannelPipeline channelPipeline = ch.pipeline();\n\n        channelPipeline.addLast(new HttpRequestDecoder(maxInitialLineLength, maxHeaderSize, maxChunkSize));\n        channelPipeline.addLast(new HttpResponseEncoder());\n        channelPipeline.addLast(new HttpObjectAggregator(maxRequestSize));\n        channelPipeline.addLast(httpChannelHandlers.toArray(new ChannelHandler[httpChannelHandlers.size()]));\n        channelPipeline.addLast(new RestEasyHttpRequestDecoder(dispatcher.getDispatcher(), root, protocol));\n        channelPipeline.addLast(new RestEasyHttpResponseEncoder());\n\n        if (idleTimeout > 0)\n        {\n            channelPipeline.addLast(\"idleStateHandler\", new IdleStateHandler(0, 0, idleTimeout));\n        }\n\n        channelPipeline.addLast(new RequestHandler(dispatcher));\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-20251225144752918449812N3WIHleQ",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766645276,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "```json\n[\n  {\n    \"path\": null,\n    \"handler\": \"NettyJaxrsIPCServer\",\n    \"implementationPresent\": true,\n    \"pathIsPrefix\": false,\n    \"pathFromLiteral\": false,\n    \"pathFromConvention\": false,\n    \"isRestApi\": false,\n    \"isTestApi\": false\n  }\n]\n```\n\n**Explanation:**\n\nThe code provided defines a class `NettyJaxrsIPCServer` which extends `NettyJaxrsServer`. This class is responsible for setting up and managing a Netty-based server for handling HTTP requests using the RESTEasy framework.\n\nThe analysis reveals only one API entry:\n\n*   **`NettyJaxrsIPCServer`**: This is the class itself. It doesn't define any specific API endpoints with paths in this file. The class is responsible for setting up the server and handling requests, but the actual routing and handling of specific requests are likely delegated to other components within the RESTEasy framework, which are not defined in this file. The `setRootResourcePath` method is called, which suggests that the root path is set dynamically. However, the specific path is not defined in this file.\n\nTherefore, the output reflects the class itself as a potential handler, but without any specific path information extracted from literals or conventions within this file.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1782,
+      "completion_tokens": 288,
+      "total_tokens": 2070,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 1782,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

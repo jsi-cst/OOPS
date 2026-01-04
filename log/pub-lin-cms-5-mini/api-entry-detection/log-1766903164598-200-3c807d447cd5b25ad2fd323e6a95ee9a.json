@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766903164598,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/api/cms/log.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/api/cms/log.py`:\n\n```\nimport math\n\nfrom flask import Blueprint, g\nfrom sqlalchemy import text\n\nfrom app.api import AuthorizationBearerSecurity, api\nfrom app.api.cms.schema.log import LogPageSchema, LogQuerySearchSchema, UsernameListSchema\nfrom app.lin import DocResponse, Log, db, group_required, permission_meta\n\nlog_api = Blueprint(\"log\", __name__)\n\n\n@log_api.route(\"\")\n@permission_meta(name=\"查询日志\", module=\"日志\")\n@group_required\n@api.validate(\n    resp=DocResponse(r=LogPageSchema),\n    before=LogQuerySearchSchema.offset_handler,\n    security=[AuthorizationBearerSecurity],\n    tags=[\"日志\"],\n)\ndef get_logs(query: LogQuerySearchSchema):\n    \"\"\"\n    日志浏览查询（人员，时间, 关键字），分页展示\n    \"\"\"\n    logs = Log.query.filter()\n    total = logs.count()\n    items = logs.order_by(text(\"create_time desc\")).offset(g.offset).limit(g.count).all()\n    total_page = math.ceil(total / g.count)\n\n    return LogPageSchema(\n        page=g.page,\n        count=g.count,\n        total=total,\n        items=items,\n        total_page=total_page,\n    )\n\n\n@log_api.route(\"/search\")\n@permission_meta(name=\"搜索日志\", module=\"日志\")\n@group_required\n@api.validate(\n    resp=DocResponse(r=LogPageSchema),\n    security=[AuthorizationBearerSecurity],\n    before=LogQuerySearchSchema.offset_handler,\n    tags=[\"日志\"],\n)\ndef search_logs(query: LogQuerySearchSchema):\n    \"\"\"\n    日志搜索（人员，时间, 关键字），分页展示\n    \"\"\"\n    if g.keyword:\n        logs = Log.query.filter(Log.message.like(f\"%{g.keyword}%\"))\n    else:\n        logs = Log.query.filter()\n    if g.name:\n        logs = logs.filter(Log.username == g.name)\n    if g.start and g.end:\n        logs = logs.filter(Log.create_time.between(g.start, g.end))\n\n    total = logs.count()\n    items = logs.order_by(text(\"create_time desc\")).offset(g.offset).limit(g.count).all()\n    total_page = math.ceil(total / g.count)\n\n    return LogPageSchema(\n        page=g.page,\n        count=g.count,\n        total=total,\n        items=items,\n        total_page=total_page,\n    )\n\n\n@log_api.route(\"/users\")\n@permission_meta(name=\"查询日志记录的用户\", module=\"日志\")\n@group_required\n@api.validate(\n    resp=DocResponse(r=UsernameListSchema),\n    security=[AuthorizationBearerSecurity],\n    tags=[\"日志\"],\n)\ndef get_users_for_log():\n    \"\"\"\n    获取所有记录行为日志的用户名\n    \"\"\"\n    usernames = (\n        db.session.query(Log.username)\n        .filter_by(soft=False)\n        .group_by(text(\"username\"))\n        .having(text(\"count(username) > 0\"))\n        .all()\n    )\n    return UsernameListSchema(items=[u.username for u in usernames])\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": null,\n    \"handler\": \"get_logs\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/search\",\n    \"handler\": \"search_logs\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/users\",\n    \"handler\": \"get_users_for_log\",\n    \"implementation_present\": true,\n    \"path_is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_restful\": true,\n    \"is_test\": false\n  }\n]\n\nExplanation:\n\n- Three route-decorated endpoints are present in app/api/cms/log.py, each registered on the Blueprint instance log_api using @log_api.route(...).\n- For get_logs the decorator uses an empty string literal (\"\") as the route. Because the HTTP path must begin with a forward slash and the blueprint prefix (the full URL prefix) is declared elsewhere, the exact request path cannot be determined from this file alone; therefore path is set to null. The route string is a literal in the source, so path_is_literal is true. The handler function get_logs is defined in this file (implementation_present = true). The entry appears to be a regular RESTful endpoint (not a test), and the path is not derived from a naming convention.\n- For search_logs and get_users_for_log the decorators contain literal strings \"/search\" and \"/users\" respectively. These strings begin with a slash and are extracted directly from the source file, so path is set to those literal values and path_is_literal = true. As with get_logs, the handler functions are implemented in this file (implementation_present = true). These endpoints are standard RESTful API routes and not test endpoints. The paths are full route rules as provided to the Blueprint; the absolute path when the app is running may include a blueprint prefix defined elsewhere, but that prefix is not present in this file and thus was not inferred.\n- No handlers in this file are anonymous or imported from other modules; all three handler functions are implemented locally. None of the paths are derived from a framework naming convention in this file — they come from explicit route decorator literals.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766903152,
+    "id": "chatcmpl-CreVso1fYNzi4Ay2H1AjN3lswL3uJ",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1960,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1408,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1066,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3026
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766643996140,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `src/main/java/com/datastax/mgmtapi/resources/AuthResources.java`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/AuthResources.java`:\n\n```\n/**\n * Copyright DataStax, Inc.\n *\n * Please see the included license file for details.\n */\npackage com.datastax.mgmtapi.resources;\n\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.QueryParam;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\n\nimport org.apache.commons.lang3.StringUtils;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\n\nimport static com.datastax.mgmtapi.resources.NodeOpsResources.handle;\nimport javax.ws.rs.Produces;\n\n@Path(\"/api/v0/ops/auth\")\npublic class AuthResources\n{\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public AuthResources(ManagementApplication application)\n    {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/role/\")\n    @Operation(summary = \"Creates a new user role\", operationId = \"createRole\")\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Role created\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"400\", description = \"Username and/or password is empty\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            examples = @ExampleObject(\n                value = \"Username is empty\"\n            )\n        )\n    )\n    public Response createRole(\n            @QueryParam(value = \"username\")String name,\n            @QueryParam(value = \"is_superuser\") Boolean isSuperUser,\n            @QueryParam(value = \"can_login\") Boolean canLogin,\n            @QueryParam(value = \"password\") String password)\n    {\n        return handle(() -> {\n\n            if (StringUtils.isBlank(name))\n                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), \"Username is empty\").build();\n\n            if (StringUtils.isBlank(password))\n                return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), \"Password is empty\").build();\n\n            cqlService.executePreparedStatement(app.dbUnixSocketFile, \"CALL NodeOps.createRole(?,?,?,?)\", name, isSuperUser, canLogin, password);\n\n            return Response.ok(\"OK\").build();\n        });\n    }\n\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": \"/api/v0/ops/auth/role/\",\n    \"handler\": \"AuthResources.createRole\",\n    \"implementation_in_file\": true,\n    \"path_is_prefix\": false,\n    \"path_from_literal\": true,\n    \"path_from_naming_convention\": false,\n    \"is_rest\": true,\n    \"is_test\": false\n  }\n]\n\nExplanation:\n- The class has a @Path(\"/api/v0/ops/auth\") annotation and the method createRole has @POST and @Path(\"/role/\"). Combining these literal annotation strings yields the full route \"/api/v0/ops/auth/role/\".\n- The handler is the class method AuthResources.createRole, and its implementation (the method body) is present in the same source file.\n- The path values are taken from literal strings in the source annotations; they are not derived from any naming convention. The route corresponds to a REST endpoint (JAX-RS) and is not a test endpoint.\n- No other methods in this file define @Path or HTTP method annotations, so only this single API entry is present.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766643989,
+    "id": "chatcmpl-CqZ5pSeKPj0pZ8BoZI2mtgbywbH4u",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 749,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 512,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1031,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 1780
+    }
+  }
+}

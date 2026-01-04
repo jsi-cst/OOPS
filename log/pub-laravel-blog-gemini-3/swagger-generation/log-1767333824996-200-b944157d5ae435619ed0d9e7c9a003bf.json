@@ -1,0 +1,67 @@
+{
+  "timestamp": 1767333824996,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/v1/users/{user}` with method PUT, and here is the relevant information I found:\n\n1. In `app/Rules/AlphaName.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController@update` is implemented to process HTTP requests to `/v1/users/{user}` with HTTP method PUT.\n\n2. In `app/Http/Resources/Role.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController@update` is implemented to process HTTP requests to `/v1/users/{user}` with HTTP method PUT.\n\n3. In `app/Http/Resources/User.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController@update` is implemented to process HTTP requests to `/v1/users/{user}` with HTTP method PUT.\n\n4. In `app/Http/Requests/UsersRequest.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController@update` is implemented to process HTTP requests to `/v1/users/{user}` with HTTP method PUT.\n\n5. In `app/Policies/UserPolicy.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController@update` is implemented to process HTTP requests to `/v1/users/{user}` with HTTP method PUT.\n\n6. In `app/Http/Controllers/Api/V1/UserController.php`, `App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController@update` is implemented to process HTTP requests to `/v1/users/{user}` with HTTP method PUT.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Rules/AlphaName.php`:\n\n```\n<?php\n\nnamespace App\\Rules;\n\nuse Illuminate\\Contracts\\Validation\\Rule;\n\nclass AlphaName implements Rule\n{\n    /**\n     * Validates for one or more groups of one or more letters or numbers (or\n     * letter component marks), each separated by a single separator (space\n     * equivalent in any script, apostrophe, underscore or dash).\n     */\n    public function passes($attribute, $value)\n    {\n        if (!is_string($value) && !is_numeric($value)) {\n            return false;\n        }\n\n        return preg_match('/^(?:[\\pL\\pN\\pM]+[\\pZ\\'_-])*[\\pL\\pN\\pM]+$/u', $value) > 0;\n    }\n\n    /**\n     * Get the validation error message.\n     */\n    public function message(): string\n    {\n        return trans('validation.alpha_name');\n    }\n}\n```\n\nContents of file `app/Http/Resources/Role.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Resources;\n\nuse Illuminate\\Http\\Resources\\Json\\JsonResource;\n\nclass Role extends JsonResource\n{\n    /**\n     * Transform the resource into an array.\n     */\n    public function toArray($request): array\n    {\n        return [\n            'id' => $this->id,\n            'name' => $this->name\n        ];\n    }\n}\n```\n\nContents of file `app/Http/Resources/User.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Resources;\n\nuse Illuminate\\Http\\Resources\\Json\\JsonResource;\n\nclass User extends JsonResource\n{\n    /**\n     * Transform the resource into an array.\n     */\n    public function toArray($request): array\n    {\n        return [\n            'id' => $this->id,\n            'name' => $this->name,\n            'email' => $this->email,\n            'provider' => $this->provider,\n            'provider_id' => $this->provider_id,\n            'registered_at' => $this->registered_at->toIso8601String(),\n            'comments_count' => $this->comments_count ?? $this->comments()->count(),\n            'posts_count' => $this->posts_count ?? $this->posts()->count(),\n            'roles' => Role::collection($this->roles),\n        ];\n    }\n}\n```\n\nContents of file `app/Http/Requests/UsersRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests;\n\nuse App\\Rules\\AlphaName;\nuse Illuminate\\Foundation\\Http\\FormRequest;\n\nclass UsersRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'name' => ['required', 'string', 'max:255', new AlphaName],\n            'email' => 'required|email|unique:users,email,' . auth()->user()->id,\n        ];\n    }\n}\n```\n\nContents of file `app/Policies/UserPolicy.php`:\n\n```\n<?php\n\nnamespace App\\Policies;\n\nuse App\\Models\\User;\nuse Illuminate\\Auth\\Access\\HandlesAuthorization;\n\nclass UserPolicy\n{\n    use HandlesAuthorization;\n\n    /**\n     * Determine whether the user is admin for all authorization.\n     */\n    public function before(User $user)\n    {\n        if ($user->isAdmin()) {\n            return true;\n        }\n    }\n\n    /**\n     * Determine whether the user can update the user.\n     */\n    public function update(User $current_user, User $user): bool\n    {\n        return $current_user->id === $user->id;\n    }\n}\n```\n\nContents of file `app/Http/Controllers/Api/V1/UserController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\UsersRequest;\nuse App\\Http\\Resources\\User as UserResource;\nuse App\\Models\\User;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Support\\Facades\\Hash;\n\nclass UserController extends Controller\n{\n    /**\n     * Return the users.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return UserResource::collection(\n            User::withCount(['comments', 'posts'])->with('roles')->latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(User $user): UserResource\n    {\n        return new UserResource($user);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(UsersRequest $request, User $user): UserResource\n    {\n        $this->authorize('update', $user);\n\n        if ($request->filled('password')) {\n            $request->merge([\n                'password' => Hash::make($request->input('password'))\n            ]);\n        }\n\n        $user->update(array_filter($request->only(['name', 'email', 'password'])));\n\n        return new UserResource($user);\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-00e547ee15b24e3f85b1435ea1ac7eb0",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767333824,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "The analysis of the provided source code for the `PUT /v1/users/{user}` endpoint (implemented in `UserController@update`) reveals the following response scenarios:\n\n1.  **200 OK**: This is the successful response. The controller returns a `UserResource`, which Laravel automatically wraps in a `data` key.\n    *   The `UserResource` includes fields: `id` (integer), `name` (string), `email` (string), `provider` (string), `provider_id` (string), `registered_at` (ISO 8601 string), `comments_count` (integer), `posts_count` (integer), and `roles` (an array of Role resources).\n    *   Each `Role` resource includes `id` (integer) and `name` (string).\n\n2.  **403 Forbidden**: Triggered by `$this->authorize('update', $user)`. The `UserPolicy` restricts updates to the users themselves or an admin. If authorization fails, Laravel returns a 403 error.\n\n3.  **404 Not Found**: Triggered by Laravel's implicit model binding if the `{user}` identifier provided in the URL does not exist in the database.\n\n4.  **422 Unprocessable Entity**: Triggered by the `UsersRequest` validation rules. If the input data (e.g., `name` or `email`) fails validation, Laravel returns this status code along with an error object.\n\nthe final generated result begins\n\n```json\n{\n  \"200\": {\n    \"description\": \"User updated successfully.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"data\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"id\": {\n              \"type\": \"integer\"\n            },\n            \"name\": {\n              \"type\": \"string\"\n            },\n            \"email\": {\n              \"type\": \"string\"\n            },\n            \"provider\": {\n              \"type\": \"string\"\n            },\n            \"provider_id\": {\n              \"type\": \"string\"\n            },\n            \"registered_at\": {\n              \"type\": \"string\",\n              \"format\": \"date-time\"\n            },\n            \"comments_count\": {\n              \"type\": \"integer\"\n            },\n            \"posts_count\": {\n              \"type\": \"integer\"\n            },\n            \"roles\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"id\": {\n                    \"type\": \"integer\"\n                  },\n                  \"name\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  },\n  \"403\": {\n    \"description\": \"This action is unauthorized.\"\n  },\n  \"404\": {\n    \"description\": \"User not found.\"\n  },\n  \"422\": {\n    \"description\": \"Validation error.\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\"\n        },\n        \"errors\": {\n          \"type\": \"object\",\n          \"additionalProperties\": {\n            \"type\": \"array\",\n            \"items\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1878,
+      "completion_tokens": 4157,
+      "total_tokens": 6035,
+      "completion_tokens_details": {
+        "reasoning_tokens": 3361
+      }
+    }
+  }
+}

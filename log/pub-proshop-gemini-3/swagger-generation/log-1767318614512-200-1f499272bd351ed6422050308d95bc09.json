@@ -1,0 +1,98 @@
+{
+  "timestamp": 1767318614512,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/upload` with method POST, and here is the relevant information I found:\n\n1. In `routes/uploadRoutes.js`, `anonymous` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n2. In `routes/uploadRoutes.js`, `uploadRoutes` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n3. In `routes/uploadRoutes.js`, `anonymous` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n4. In `routes/uploadRoutes.js`, `uploadRoutes` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/uploadRoutes.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport multer from 'multer';\n\nconst router = express.Router();\n\nconst storage = multer.diskStorage({\n  destination(req, file, cb) {\n    cb(null, 'uploads/');\n  },\n  filename(req, file, cb) {\n    cb(\n      null,\n      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`\n    );\n  },\n});\n\nfunction fileFilter(req, file, cb) {\n  const filetypes = /jpe?g|png|webp/;\n  const mimetypes = /image\\/jpe?g|image\\/png|image\\/webp/;\n\n  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());\n  const mimetype = mimetypes.test(file.mimetype);\n\n  if (extname && mimetype) {\n    cb(null, true);\n  } else {\n    cb(new Error('Images only!'), false);\n  }\n}\n\nconst upload = multer({ storage, fileFilter });\nconst uploadSingleImage = upload.single('image');\n\nrouter.post('/', (req, res) => {\n  uploadSingleImage(req, res, function (err) {\n    if (err) {\n      return res.status(400).send({ message: err.message });\n    }\n\n    res.status(200).send({\n      message: 'Image uploaded successfully',\n      image: `/${req.file.path}`,\n    });\n  });\n});\n\nexport default router;\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_626fcbf35ff74256bac5a0a6b92b9bba",
+            "function": {
+              "arguments": "{\"command\":\"ls -R\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '.:\\nconfig\\ncontrollers\\ndata\\nmiddleware\\nmodels\\nroutes\\nseeder.js\\nserver.js\\nutils\\n\\n./config:\\ndb.js\\n\\n./controllers:\\norderController.js\\nproductController.js\\nuserController.js\\n\\n./data:\\nproducts.js\\nusers.js\\n\\n./middleware:\\nasyncHandler.js\\nauthMiddleware.js\\ncheckObjectId.js\\nerrorMiddleware.js\\n\\n./models:\\norderModel.js\\nproductModel.js\\nuserModel.js\\n\\n./routes:\\norderRoutes.js\\nproductRoutes.js\\nuploadRoutes.js\\nuserRoutes.js\\n\\n./utils:\\ncalcPrices.js\\ngenerateToken.js\\npaypal.js\\n', 'stderr': ''}",
+        "tool_call_id": "call_626fcbf35ff74256bac5a0a6b92b9bba"
+      }
+    ],
+    "model": "gemini-3-flash-preview",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-eb323495605b459bac2ac9b3f18bae1a",
+    "model": "gemini-3-flash-preview",
+    "object": "chat.completion",
+    "created": 1767318614,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "",
+          "tool_calls": [
+            {
+              "id": "call_0d9a4620f9414eb9ac42272308bb9944",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\":\"cat server.js\"}"
+              },
+              "index": 0
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1025,
+      "completion_tokens": 618,
+      "total_tokens": 1643,
+      "completion_tokens_details": {
+        "reasoning_tokens": 599
+      }
+    }
+  }
+}

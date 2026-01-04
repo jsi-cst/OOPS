@@ -1,0 +1,145 @@
+{
+  "timestamp": 1767005265569,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/printshops/{printShopId}/reviews/{reviewId}` with method PUT, and here is the relevant information I found:\n\n1. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java`, `io.github.proxyprint.kitchen.controllers.printshops.ReviewController.editPrintShopReview` is implemented to process HTTP requests to `/printshops/{printShopId}/reviews/{reviewId}` with HTTP method PUT.\n\n2. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java`, `io.github.proxyprint.kitchen.controllers.printshops.ReviewController.deletePrintShopReview` is implemented to process HTTP requests to `/printshops/{printShopId}/reviews/{reviewId}` with HTTP method PUT.\n\n3. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java`, `editPrintShopReview` is implemented to process HTTP requests to `/printshops/{printShopId}/reviews/{reviewId}` with HTTP method PUT.\n\n4. In `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java`, `deletePrintShopReview` is implemented to process HTTP requests to `/printshops/{printShopId}/reviews/{reviewId}` with HTTP method PUT.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java`:\n\n```\n/*\n * Copyright 2016 Pivotal Software, Inc..\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.github.proxyprint.kitchen.controllers.printshops;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonArray;\nimport com.google.gson.JsonObject;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.printshops.PrintShop;\nimport io.github.proxyprint.kitchen.models.printshops.Review;\nimport io.github.proxyprint.kitchen.models.repositories.ConsumerDAO;\nimport io.github.proxyprint.kitchen.models.repositories.PrintShopDAO;\nimport io.github.proxyprint.kitchen.models.repositories.ReviewDAO;\nimport io.swagger.annotations.ApiOperation;\nimport java.security.Principal;\nimport java.util.Map;\nimport java.util.Set;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.transaction.annotation.Transactional;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestBody;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\nimport org.springframework.web.context.request.WebRequest;\n\n/**\n *\n * @author jose\n */\n@RestController \n@Transactional\npublic class ReviewController {\n\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private PrintShopDAO printshops;\n    @Autowired\n    private ReviewDAO reviews;\n    @Autowired\n    private Gson GSON;\n\n    @ApiOperation(value = \"Returns all printshop reviews\", notes = \"404 if the printshop doesn't exist.\")\n    @Secured({\"ROLE_MANAGER\", \"ROLE_EMPLOYEE\", \"ROLE_USER\"})\n    @RequestMapping(value = \"/printshops/{id}/reviews\", method = RequestMethod.GET)\n    public ResponseEntity<String> getPrintShopReviews(@PathVariable(\"id\") long id) {\n        PrintShop pShop = this.printshops.findOne(id);\n        if (pShop == null) {\n            return new ResponseEntity(HttpStatus.NOT_FOUND);\n        } else {\n            Set<Review> reviews = pShop.getReviews();\n            JsonObject review;\n            JsonArray obj = new JsonArray();\n            for (Review r : reviews){\n                review =  new JsonObject();\n                review.addProperty(\"id\", r.getId());\n                review.addProperty(\"description\", r.getDescription());\n                review.addProperty(\"rating\", r.getRating());\n                review.addProperty(\"username\", r.getConsumer().getName());\n                obj.add(review);\n            }\n            return new ResponseEntity(this.GSON.toJson(obj), HttpStatus.OK);\n        }\n    }\n\n    @ApiOperation(value = \"Add a review to a printshop with the given ID\", notes = \"404 if the printshop doesn't exist.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/printshops/{id}/reviews\", method = RequestMethod.POST)\n    public ResponseEntity<String> addPrintShopReview(@PathVariable(\"id\") long id, Principal principal, @RequestBody Map<String, String> params) {\n        PrintShop pShop = this.printshops.findOne(id);\n        if (pShop == null) {\n           return new ResponseEntity(HttpStatus.NOT_FOUND);\n        }\n        Consumer consumer = this.consumers.findByUsername(principal.getName());\n        String reviewText = params.get(\"review\");\n        int rating = Integer.parseInt(params.get(\"rating\"));\n        Review review = reviews.save(new Review(reviewText, rating, consumer));\n        pShop.addReview(review);\n        pShop.updatePrintShopRating();\n        this.printshops.save(pShop);\n        return new ResponseEntity(this.GSON.toJson(review), HttpStatus.OK);\n    }\n\n    @ApiOperation(value = \"Edit an existing printshop review\", notes = \"404 if the printshop or the review doesn't exist.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/printshops/{printShopId}/reviews/{reviewId}\", method = RequestMethod.PUT)\n    public ResponseEntity<String> editPrintShopReview(@PathVariable(\"printShopId\") long printShopId, @PathVariable(\"reviewId\") long reviewId, Principal principal, WebRequest request) {\n        PrintShop pShop = this.printshops.findOne(printShopId);\n        if (pShop == null) {\n            return new ResponseEntity(HttpStatus.NOT_FOUND);\n        }\n\n        Review review = this.reviews.findOne(reviewId);\n        if (review == null) {\n            return new ResponseEntity(HttpStatus.NOT_FOUND);\n        } else if (!review.getConsumer().getUsername().equals(principal.getName())) {\n            return new ResponseEntity(HttpStatus.UNAUTHORIZED);\n        }\n\n        pShop.removeReview(review);\n\n        String reviewText = request.getParameter(\"review\");\n        int rating = Integer.parseInt(request.getParameter(\"rating\"));\n\n        review.setDescription(reviewText);\n        review.setRating(rating);\n\n        pShop.addReview(review);\n        pShop.updatePrintShopRating();\n\n        this.printshops.save(pShop);\n        return new ResponseEntity(this.GSON.toJson(review), HttpStatus.OK);\n    }\n\n    @ApiOperation(value = \"Delete an existing printshop review\", notes = \"404 if the printshop or the review doesn't exist.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/printshops/{printShopId}/reviews/{reviewId}\", method = RequestMethod.DELETE)\n    public ResponseEntity<String> deletePrintShopReview(@PathVariable(\"printShopId\") long printShopId, @PathVariable(\"reviewId\") long reviewId, Principal principal, WebRequest request) {\n        PrintShop pShop = this.printshops.findOne(printShopId);\n        if (pShop == null) {\n            return new ResponseEntity(HttpStatus.NOT_FOUND);\n        }\n\n        Review review = this.reviews.findOne(reviewId);\n        if (review == null) {\n            return new ResponseEntity(HttpStatus.NOT_FOUND);\n        } else if (!review.getConsumer().getUsername().equals(principal.getName())) {\n            return new ResponseEntity(HttpStatus.UNAUTHORIZED);\n        }\n\n        pShop.removeReview(review);\n        this.printshops.save(pShop);\n        return new ResponseEntity(this.GSON.toJson(review), HttpStatus.OK);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_xrQKmAqMfAyFE6wZfWswW3Ut",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' src/main/java/io/github/proxyprint/kitchen/models/printshops/Review.java\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/*\\n * Copyright 2016 Pivotal Software, Inc..\\n *\\n * Licensed under the Apache License, Version 2.0 (the \"License\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *      http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \"AS IS\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\npackage io.github.proxyprint.kitchen.models.printshops;\\n\\nimport com.fasterxml.jackson.annotation.JsonIgnore;\\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\\nimport io.github.proxyprint.kitchen.utils.gson.Exclude;\\nimport java.io.Serializable;\\nimport javax.persistence.Column;\\nimport javax.persistence.Entity;\\nimport javax.persistence.GeneratedValue;\\nimport javax.persistence.GenerationType;\\nimport javax.persistence.Id;\\nimport javax.persistence.ManyToOne;\\nimport javax.persistence.Table;\\n\\n/**\\n *\\n * @author jose\\n */\\n@Entity\\n@Table(name = \"reviews\")\\npublic class Review implements Serializable {\\n\\n    @Id\\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\\n    private long id;\\n\\n    @Column(name = \"description\", nullable = false)\\n    private String description;\\n\\n    @Column(name = \"rating\", nullable = false)\\n    private int rating;\\n\\n    @JsonIgnore\\n    @Exclude\\n    @ManyToOne\\n    private Consumer consumer;\\n\\n    public Review() {\\n\\n    }\\n\\n    public Review(String text, int rating, Consumer consumer) {\\n        this.description = text;\\n        this.rating = rating;\\n        this.consumer = consumer;\\n    }\\n\\n    public long getId() {\\n        return id;\\n    }\\n\\n    public String getDescription() {\\n        return description;\\n    }\\n\\n    public void setDescription(String description) {\\n        this.description = description;\\n    }\\n\\n    public Consumer getConsumer() {\\n        return consumer;\\n    }\\n\\n    public void setConsumer(Consumer consumer) {\\n        this.consumer = consumer;\\n    }\\n\\n    public int getRating() {\\n        return rating;\\n    }\\n\\n    public void setRating(int rating) {\\n        this.rating = rating;\\n    }\\n\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_xrQKmAqMfAyFE6wZfWswW3Ut"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_5kWACGhKeB9BscIaCkPRdUvw",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' src/main/java/io/github/proxyprint/kitchen/utils/gson/Exclude.java\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/*\\n * Copyright 2016 Pivotal Software, Inc..\\n *\\n * Licensed under the Apache License, Version 2.0 (the \"License\");\\n * you may not use this file except in compliance with the License.\\n * You may obtain a copy of the License at\\n *\\n *      http://www.apache.org/licenses/LICENSE-2.0\\n *\\n * Unless required by applicable law or agreed to in writing, software\\n * distributed under the License is distributed on an \"AS IS\" BASIS,\\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\\n * See the License for the specific language governing permissions and\\n * limitations under the License.\\n */\\npackage io.github.proxyprint.kitchen.utils.gson;\\n\\nimport java.lang.annotation.ElementType;\\nimport java.lang.annotation.Retention;\\nimport java.lang.annotation.RetentionPolicy;\\nimport java.lang.annotation.Target;\\n\\n/**\\n *\\n * @author josesousa\\n */\\n@Retention(RetentionPolicy.RUNTIME)\\n@Target(ElementType.FIELD)\\npublic @interface Exclude {\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_5kWACGhKeB9BscIaCkPRdUvw"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_ymOgrtGZagwbWyUYJJyuzoBR",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"Gson\\\" -n src | sed -n '1,200p'\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'src/main/java/io/github/proxyprint/kitchen/WebAppConfig.java:19:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/WebAppConfig.java:20:import com.google.gson.GsonBuilder;\\nsrc/main/java/io/github/proxyprint/kitchen/WebAppConfig.java:96:    public Gson gson() {\\nsrc/main/java/io/github/proxyprint/kitchen/WebAppConfig.java:97:        return new GsonBuilder().setExclusionStrategies(new AnnotationExclusionStrategy()).create();\\nsrc/main/java/io/github/proxyprint/kitchen/utils/PayPalWrapper.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/utils/PayPalWrapper.java:29:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/ManagerController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/ManagerController.java:45:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/RegisterRequestController.java:18:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/RegisterRequestController.java:53:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/PrintShopController.java:18:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/PrintShopController.java:86:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/EmployeeController.java:41:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java:18:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/ReviewController.java:58:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/printshops/PriceTableController.java:31:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/admin/AdminController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/admin/AdminController.java:52:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java:18:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/notifications/NotificationsController.java:52:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintRequestController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintRequestController.java:66:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintRequestController.java:83:        Map prequest = new Gson().fromJson(requestJSON, Map.class);\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintRequestController.java:208:        Map mrequest = new Gson().fromJson(requestJSON, Map.class);\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PayPalController.java:46:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/ConsumerController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/ConsumerController.java:65:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java:3:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java:34:    private Gson GSON;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/DefaultController.java:19:import com.google.gson.Gson;\\nsrc/main/java/io/github/proxyprint/kitchen/controllers/DefaultController.java:65:    private Gson GSON;\\nsrc/test/java/controllers/ManagerTests.java:3:import com.google.gson.Gson;\\nsrc/test/java/controllers/ManagerTests.java:62:    private Gson GSON;\\nsrc/test/java/controllers/RegisterRequestTests.java:4:import com.google.gson.Gson;\\nsrc/test/java/controllers/RegisterRequestTests.java:56:    private Gson GSON;\\nsrc/test/java/controllers/ConsumerTests.java:3:import com.google.gson.Gson;\\nsrc/test/java/controllers/ConsumerTests.java:34:    private Gson GSON;\\n', 'stderr': ''}",
+        "tool_call_id": "call_ymOgrtGZagwbWyUYJJyuzoBR"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,240p' src/main/java/io/github/proxyprint/kitchen/WebAppConfig.java\"}",
+                "name": "run_command"
+              },
+              "id": "call_QNck2rOsdco4bcEy68VWMGVS",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1767005264,
+    "id": "chatcmpl-Cs54q9vSoLLTwUouDB9xqJhdwIGmE",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 40,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 4054,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4094
+    }
+  }
+}

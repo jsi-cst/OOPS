@@ -1,0 +1,97 @@
+{
+  "timestamp": 1767098241882,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the JAX-RS (RESTEasy) with Netty as HTTP transport framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v1/ops/keyspace/cleanup` with method POST, and here is the relevant information I found:\n\n1. In `src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java`, `com.datastax.mgmtapi.resources.v1.KeyspaceOpsResources.cleanup` is implemented to process HTTP requests to `/api/v1/ops/keyspace/cleanup` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate an Operation object (the value of paths.[endpoint].[method]) in OpenAPI 3.1.0 format. You need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the Operation Object in JSON format. Do not include fields not mentioned above."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/com/datastax/mgmtapi/resources/v1/KeyspaceOpsResources.java`:\n\n```\npackage com.datastax.mgmtapi.resources.v1;\n\nimport com.datastax.mgmtapi.CqlService;\nimport com.datastax.mgmtapi.ManagementApplication;\nimport com.datastax.mgmtapi.resources.NodeOpsResources;\nimport com.datastax.mgmtapi.resources.helpers.ResponseTools;\nimport com.datastax.mgmtapi.resources.models.KeyspaceRequest;\nimport io.swagger.v3.oas.annotations.Operation;\nimport io.swagger.v3.oas.annotations.media.Content;\nimport io.swagger.v3.oas.annotations.media.ExampleObject;\nimport io.swagger.v3.oas.annotations.media.Schema;\nimport io.swagger.v3.oas.annotations.responses.ApiResponse;\nimport org.apache.commons.collections4.CollectionUtils;\nimport org.apache.commons.lang3.StringUtils;\n\nimport javax.ws.rs.Consumes;\nimport javax.ws.rs.POST;\nimport javax.ws.rs.Path;\nimport javax.ws.rs.Produces;\nimport javax.ws.rs.core.MediaType;\nimport javax.ws.rs.core.Response;\nimport java.util.ArrayList;\nimport java.util.List;\n\n@Path(\"/api/v1/ops/keyspace\")\npublic class KeyspaceOpsResources {\n\n    private final ManagementApplication app;\n    private final CqlService cqlService;\n\n    public KeyspaceOpsResources(ManagementApplication application) {\n        this.app = application;\n        this.cqlService = application.cqlService;\n    }\n\n    @POST\n    @Path(\"/cleanup\")\n    @Consumes(MediaType.APPLICATION_JSON)\n    @Produces(MediaType.TEXT_PLAIN)\n    @ApiResponse(responseCode = \"200\", description = \"Cleanup not needed for tables 'system' or 'system_schema'\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"OK\"\n            )\n        )\n    )\n    @ApiResponse(responseCode = \"202\", description = \"Job ID for keyspace cleanup process\",\n        content = @Content(\n            mediaType = MediaType.TEXT_PLAIN,\n            schema = @Schema(\n                implementation = String.class\n            ),\n            examples = @ExampleObject(\n                value = \"d69d1d95-9348-4460-95d2-ae342870fade\"\n            )\n        )\n    )\n    @Operation(summary = \"Triggers the immediate cleanup of keys no longer belonging to a node. By default, clean all keyspaces. This operation is asynchronous and returns immediately\",\n            operationId = \"cleanup_v1\")\n    public Response cleanup(KeyspaceRequest keyspaceRequest)\n    {\n        return NodeOpsResources.handle(() ->\n        {\n            List<String> tables = keyspaceRequest.tables;\n            if (CollectionUtils.isEmpty(tables)) {\n                tables = new ArrayList<>();\n            }\n\n            String keyspaceName = keyspaceRequest.keyspaceName;\n            if (StringUtils.isBlank(keyspaceName))\n            {\n                keyspaceName = \"NON_LOCAL_STRATEGY\";\n            }\n\n            if (StringUtils.equalsAnyIgnoreCase(keyspaceName, \"system\", \"system_schema\"))\n            {\n                return Response.ok(\"OK\").build();\n            }\n\n            return Response.accepted(ResponseTools.getSingleRowStringResponse(app.dbUnixSocketFile, cqlService, \"CALL NodeOps.forceKeyspaceCleanup(?, ?, ?, ?)\",\n                    keyspaceRequest.jobs, keyspaceName, tables, true)).build();\n        });\n    }\n\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_eUwZTYh4s0ujaEVDUB80j4Jk",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,200p' src/main/java/com/datastax/mgmtapi/resources/models/KeyspaceRequest.java\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '/**\\n * Copyright DataStax, Inc.\\n *\\n * Please see the included license file for details.\\n */\\npackage com.datastax.mgmtapi.resources.models;\\n\\nimport java.io.Serializable;\\nimport java.util.List;\\nimport java.util.Objects;\\n\\nimport com.fasterxml.jackson.annotation.JsonCreator;\\nimport com.fasterxml.jackson.annotation.JsonProperty;\\n\\npublic class KeyspaceRequest implements Serializable\\n{\\n    @JsonProperty(value = \"jobs\", required = true)\\n    public final int jobs;\\n\\n    @JsonProperty(value = \"keyspace_name\", required = true)\\n    public final String keyspaceName;\\n\\n    @JsonProperty(value = \"tables\", required = true)\\n    public final List<String> tables;\\n\\n    @JsonCreator\\n    public KeyspaceRequest(@JsonProperty(\"jobs\") int jobs, @JsonProperty(\"keyspace_name\") String keyspaceName, @JsonProperty(\"tables\") List<String> tables)\\n    {\\n        this.jobs = jobs == 0 ? 1 : jobs;\\n        this.keyspaceName = keyspaceName;\\n        this.tables = tables;\\n    }\\n\\n    @Override\\n    public boolean equals(Object o)\\n    {\\n        if (this == o)\\n        {\\n            return true;\\n        }\\n        if (o == null || getClass() != o.getClass())\\n        {\\n            return false;\\n        }\\n        KeyspaceRequest that = (KeyspaceRequest) o;\\n        return jobs == that.jobs &&\\n                Objects.equals(keyspaceName, that.keyspaceName) &&\\n                Objects.equals(tables, that.tables);\\n    }\\n\\n    @Override\\n    public int hashCode()\\n    {\\n        return Objects.hash(jobs, keyspaceName, tables);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_eUwZTYh4s0ujaEVDUB80j4Jk"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-CsTGBT0ceVMviyN8VqcpV9y310var",
+    "object": "chat.completion",
+    "created": 1767098223,
+    "model": "gpt-5-mini-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Explanation of how I built the Operation object:\n\n- I inspected KeyspaceOpsResources.cleanup() to obtain operation-level metadata:\n  - @Operation gives summary and operationId (\"cleanup_v1\").\n  - @Consumes(MediaType.APPLICATION_JSON) means the request body uses application/json.\n  - @Produces(MediaType.TEXT_PLAIN) and the two @ApiResponse entries indicate response content is text/plain for both 200 and 202 responses.\n  - The two ApiResponse annotations provide descriptions and example text values for 200 (\"OK\") and 202 (a UUID string).\n\n- I inspected KeyspaceRequest to construct the request body schema:\n  - The class has three JSON properties (via @JsonProperty): \"jobs\" (int), \"keyspace_name\" (string), and \"tables\" (array of strings).\n  - Each field is annotated required = true in the class, so the schema marks them as required.\n  - I used \"integer\" with format \"int32\" for jobs, \"string\" for keyspace_name, and \"array\" of \"string\" for tables.\n\n- Responses:\n  - 200: description from annotation and content type text/plain, schema string, example \"OK\".\n  - 202: description from annotation and content type text/plain, schema string, example \"d69d1d95-9348-4460-95d2-ae342870fade\".\n\n- The resulting Operation object includes only the fields derived from the source annotations: summary, operationId, requestBody (with application/json schema), and responses for 200 and 202 (with text/plain content and examples).\n\nthe final generated result begins\n{\n  \"summary\": \"Triggers the immediate cleanup of keys no longer belonging to a node. By default, clean all keyspaces. This operation is asynchronous and returns immediately\",\n  \"operationId\": \"cleanup_v1\",\n  \"requestBody\": {\n    \"required\": true,\n    \"content\": {\n      \"application/json\": {\n        \"schema\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"jobs\": {\n              \"type\": \"integer\",\n              \"format\": \"int32\"\n            },\n            \"keyspace_name\": {\n              \"type\": \"string\"\n            },\n            \"tables\": {\n              \"type\": \"array\",\n              \"items\": {\n                \"type\": \"string\"\n              }\n            }\n          },\n          \"required\": [\n            \"jobs\",\n            \"keyspace_name\",\n            \"tables\"\n          ]\n        }\n      }\n    }\n  },\n  \"responses\": {\n    \"200\": {\n      \"description\": \"Cleanup not needed for tables 'system' or 'system_schema'\",\n      \"content\": {\n        \"text/plain\": {\n          \"schema\": {\n            \"type\": \"string\"\n          },\n          \"examples\": {\n            \"ok\": {\n              \"value\": \"OK\"\n            }\n          }\n        }\n      }\n    },\n    \"202\": {\n      \"description\": \"Job ID for keyspace cleanup process\",\n      \"content\": {\n        \"text/plain\": {\n          \"schema\": {\n            \"type\": \"string\"\n          },\n          \"examples\": {\n            \"jobId\": {\n              \"value\": \"d69d1d95-9348-4460-95d2-ae342870fade\"\n            }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1582,
+      "completion_tokens": 1853,
+      "total_tokens": 3435,
+      "prompt_tokens_details": {
+        "cached_tokens": 1024,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1152,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

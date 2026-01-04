@@ -1,0 +1,218 @@
+{
+  "timestamp": 1767259110494,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/posts/{post}/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/PostCommentController.php`, `App\\Http\\Controllers\\PostCommentController::index` is implemented to process HTTP requests to `/posts/{post}/comments` with HTTP method GET.\n\n2. In `app/Http/Controllers/PostCommentController.php`, `App\\Http\\Controllers\\PostCommentController::index` is implemented to process HTTP requests to `/posts/{post}/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/PostCommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers;\n\nuse App\\Models\\Post;\nuse Illuminate\\View\\View;\n\nclass PostCommentController extends Controller\n{\n    /**\n     * Show the post's comments.\n     */\n    public function index(Post $post): View\n    {\n        return view('comments.index', [\n            'comments' => $post->comments()->with('author')->latest()->get()\n        ]);\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the endpoint `/posts/{post}/comments` with method GET to generate the appropriate response objects. Let me first understand the structure of the data being returned by examining the models and relationships.\n\nFrom the controller code, I can see that:\n1. The method returns a view with comments data\n2. The comments are loaded with their author relationship\n3. Comments are ordered by latest\n\nLet me check the Post model and Comment model to understand the relationships and data structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_c9e82889a975419a91eb304b",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Post.php\\\" -type f -exec grep -l \\\"comment\\\" {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Http/Resources/Post.php\\n./app/Models/Post.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_c9e82889a975419a91eb304b"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the Post model to understand the relationship:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_7180617cc11045cf9bdc52ff",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Models/Post.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse App\\\\Scopes\\\\PostedScope;\\nuse DateTimeInterface;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Support\\\\Str;\\n\\nclass Post extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        \\'author_id\\',\\n        \\'title\\',\\n        \\'content\\',\\n        \\'posted_at\\',\\n        \\'slug\\',\\n        \\'thumbnail_id\\',\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        \\'posted_at\\' => \\'datetime\\'\\n    ];\\n\\n    /**\\n     * The \"booting\" method of the model.\\n     */\\n    protected static function boot(): void\\n    {\\n        parent::boot();\\n        static::addGlobalScope(new PostedScope);\\n    }\\n\\n    /**\\n     * Prepare a date for array / JSON serialization.\\n     */\\n    protected function serializeDate(DateTimeInterface $date): string\\n    {\\n        return $date->format(\\'Y-m-d H:i:s\\');\\n    }\\n\\n    /**\\n     * Get the route key for the model.\\n     */\\n    public function getRouteKeyName(): string\\n    {\\n        if (request()->expectsJson()) {\\n            return \\'id\\';\\n        }\\n\\n        return \\'slug\\';\\n    }\\n\\n    /**\\n     * Scope a query to search posts\\n     */\\n    public function scopeSearch(Builder $query, ?string $search)\\n    {\\n        if ($search) {\\n            return $query->where(\\'title\\', \\'LIKE\\', \"%{$search}%\");\\n        }\\n    }\\n\\n    /**\\n     * Scope a query to order posts by latest posted\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy(\\'posted_at\\', \\'desc\\');\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last month.\\n     */\\n    public function scopeLastMonth(Builder $query, int $limit = 5): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 month ago\\'), now()])\\n            ->latest()\\n            ->limit($limit);\\n    }\\n\\n    /**\\n     * Scope a query to only include posts posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween(\\'posted_at\\', [carbon(\\'1 week ago\\'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Return the post\\'s author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, \\'author_id\\');\\n    }\\n\\n    /**\\n     * Return the post\\'s thumbnail\\n     */\\n    public function thumbnail(): BelongsTo\\n    {\\n        return $this->belongsTo(Media::class);\\n    }\\n\\n    /**\\n     * Return the post\\'s comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class);\\n    }\\n\\n    /**\\n     * return the excerpt of the post content\\n     */\\n    public function excerpt(int $length = 50): string\\n    {\\n        return Str::limit($this->content, $length);\\n    }\\n\\n    /**\\n     * return true if the post has a thumbnail\\n     */\\n    public function hasThumbnail(): bool\\n    {\\n        return filled($this->thumbnail_id);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_7180617cc11045cf9bdc52ff"
+      },
+      {
+        "role": "assistant",
+        "content": "Now let me check the Comment model to understand its structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_3ae0d97200194f69b35dbc57",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Comment.php\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Http/Resources/Comment.php\\n./app/Models/Comment.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_3ae0d97200194f69b35dbc57"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the Comment model:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_97e31e4f95b74f1b8a3fde88",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_97e31e4f95b74f1b8a3fde88"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check the User model to understand the author relationship:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_0bb57d8691f445a29dddc03b",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"User.php\\\" -path \\\"*/Models/*\\\" -type f\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': './app/Models/User.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_0bb57d8691f445a29dddc03b"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the User model:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_d6ae9c6538584593a2310740",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Models/User.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\belongsToMany;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\HasMany;\\nuse Illuminate\\\\Foundation\\\\Auth\\\\User as Authenticatable;\\nuse Illuminate\\\\Notifications\\\\Notifiable;\\nuse Illuminate\\\\Support\\\\Str;\\nuse Laravel\\\\Sanctum\\\\HasApiTokens;\\n\\nclass User extends Authenticatable\\n{\\n    use HasApiTokens, HasFactory, Notifiable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'name', 'email', 'password', 'provider', 'provider_id', 'registered_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'registered_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * The attributes that should be hidden for arrays.\\n     *\\n     * @var array\\n     */\\n    protected $hidden = [\\n        'password', 'remember_token',\\n    ];\\n\\n    /**\\n     * Get the user's fullname titleized.\\n     */\\n    public function getFullnameAttribute(): string\\n    {\\n        return Str::title($this->name);\\n    }\\n\\n    /**\\n     * Scope a query to only include users registered last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('registered_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order users by latest registered.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('registered_at', 'desc');\\n    }\\n\\n    /**\\n     * Scope a query to filter available author users.\\n     */\\n    public function scopeAuthors(Builder $query): Builder\\n    {\\n        return $query->whereHas('roles', function ($query) {\\n            $query->where('roles.name', Role::ROLE_ADMIN)\\n                ->orWhere('roles.name', Role::ROLE_EDITOR);\\n        });\\n    }\\n\\n    /**\\n     * Check if the user can be an author\\n     */\\n    public function canBeAuthor(): bool\\n    {\\n        return $this->isAdmin() || $this->isEditor();\\n    }\\n\\n    /**\\n     * Check if the user has a role\\n     */\\n    public function hasRole(string $role): bool\\n    {\\n        return $this->roles->where('name', $role)->isNotEmpty();\\n    }\\n\\n    /**\\n     * Check if the user has role admin\\n     */\\n    public function isAdmin(): bool\\n    {\\n        return $this->hasRole(Role::ROLE_ADMIN);\\n    }\\n\\n    /**\\n     * Check if the user has role editor\\n     */\\n    public function isEditor(): bool\\n    {\\n        return $this->hasRole(Role::ROLE_EDITOR);\\n    }\\n\\n    /**\\n     * Return the user's posts\\n     */\\n    public function posts(): HasMany\\n    {\\n        return $this->hasMany(Post::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the user's comments\\n     */\\n    public function comments(): HasMany\\n    {\\n        return $this->hasMany(Comment::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the user's likes\\n     */\\n    public function likes(): HasMany\\n    {\\n        return $this->hasMany(Like::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the user's roles\\n     */\\n    public function roles(): belongsToMany\\n    {\\n        return $this->belongsToMany(Role::class)->withTimestamps();\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_d6ae9c6538584593a2310740"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check if there are any API resources defined for Comment that might give me more information about the JSON structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_e55f4bc4e6654397af1f0d1b",
+            "function": {
+              "arguments": "{\"command\": \"cat ./app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_e55f4bc4e6654397af1f0d1b"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-c78e1136-415b-918a-add5-6d62ce33dd2f",
+    "choices": [
+      {
+        "message": {
+          "content": "Now I need to check if there are any routes defined for this endpoint to understand if it's an API route or web route. Let me check the routes:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_773b618799884fe68d54a6f4",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"grep -r \\\"posts.*comments\\\" routes/\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259108,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 3916,
+      "completion_tokens": 62,
+      "prompt_tokens": 3854,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

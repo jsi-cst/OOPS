@@ -1,0 +1,135 @@
+{
+  "timestamp": 1766912216214,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/comments` with method DELETE, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/admin/comments` with HTTP method DELETE.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\CommentsRequest;\nuse App\\Models\\Comment;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\View\\View;\n\nclass CommentController extends Controller\n{\n    /**\n     * Show the application comments index.\n     */\n    public function index(): View\n    {\n        return view('admin.comments.index', [\n            'comments' => Comment::with('post', 'author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Comment $comment): View\n    {\n        return view('admin.comments.edit', [\n            'comment' => $comment,\n            'users' => User::pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(CommentsRequest $request, Comment $comment): RedirectResponse\n    {\n        $comment->update($request->validated());\n\n        return redirect()->route('admin.comments.edit', $comment)->withSuccess(__('comments.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): RedirectResponse\n    {\n        $comment->delete();\n\n        return redirect()->route('admin.comments.index')->withSuccess(__('comments.deleted'));\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_BGMHrsSUTr6BwVDedbOv0G00",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"Route::.*comments\\\" -n routes || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/admin.php:15:Route::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\\nroutes/web.php:25:Route::resource('posts.comments', PostCommentController::class)->only('index');\\nroutes/auth.php:54:    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\\nroutes/api.php:28:        Route::apiResource('comments', CommentController::class)->only('destroy');\\nroutes/api.php:29:        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\\nroutes/api.php:46:    Route::apiResource('posts.comments', PostCommentController::class)->only('index');\\nroutes/api.php:47:    Route::apiResource('users.comments', UserCommentController::class)->only('index');\\nroutes/api.php:48:    Route::apiResource('comments', CommentController::class)->only(['index', 'show']);\\n\", 'stderr': ''}",
+        "tool_call_id": "call_BGMHrsSUTr6BwVDedbOv0G00"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_KQ9rh4ahxWxhUCaOHwum0GVS",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/admin.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\MediaLibraryController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\PostThumbnailController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\ShowDashboard;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\nRoute::get('dashboard', ShowDashboard::class)->name('dashboard');\\nRoute::resource('posts', PostController::class);\\nRoute::delete('/posts/{post}/thumbnail', [PostThumbnailController::class, 'destroy'])->name('posts_thumbnail.destroy');\\nRoute::resource('users', UserController::class)->only(['index', 'edit', 'update']);\\nRoute::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\\nRoute::resource('media', MediaLibraryController::class)->only(['index', 'show', 'create', 'store', 'destroy']);\\n\", 'stderr': ''}",
+        "tool_call_id": "call_KQ9rh4ahxWxhUCaOHwum0GVS"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_iyrhCWmz5RLziE2zl66D8ae1",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' routes/api.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_iyrhCWmz5RLziE2zl66D8ae1"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Explanation:\n\n- The provided controller (app/Http/Controllers/Admin/CommentController.php) implements destroy(Comment $comment) which:\n  - Calls $comment->delete();\n  - Returns redirect()->route('admin.comments.index')->withSuccess(__('comments.deleted'));\n- The route registration in routes/admin.php uses Route::resource('comments', CommentController::class)->only(..., 'destroy'), so the controller destroy action is bound to a DELETE request on the resource route (in practice DELETE /admin/comments/{comment} under the admin route group).\n- The controller returns a RedirectResponse on success (Laravel's redirect()->route(...) produces a 302 Found redirect by default and sets a flash session value).\n- Possible runtime outcomes to reflect in responses:\n  - 302 Found: successful deletion — redirect to the comments index. The Location header carries the redirect URL.\n  - 401 Unauthorized / unauthenticated: guest access (middleware may redirect to login; for APIs it could be 401).\n  - 403 Forbidden: authenticated user lacks permission to delete the comment.\n  - 404 Not Found: route-model binding fails because the Comment does not exist.\n  - 419 Page Expired: CSRF token mismatch on form submission (web routes).\n  - 500 Internal Server Error: unexpected server error.\n- The Response Objects below follow Swagger 2.0 Response Object shape: keys are status codes and each has a description; for the 302 redirect a Location header is declared (inline, not using $ref).\n\nthe final generated result begins\n{\n  \"302\": {\n    \"description\": \"Redirect after successful deletion. Returns a 302 Found response redirecting to the comments index (admin.comments.index) and sets a session flash success message.\",\n    \"headers\": {\n      \"Location\": {\n        \"description\": \"URL of the redirect destination (the comments index route).\",\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"401\": {\n    \"description\": \"Unauthenticated. The request was made by a guest and authentication is required (web middleware typically redirects to a login page).\"\n  },\n  \"403\": {\n    \"description\": \"Forbidden. The authenticated user does not have permission to delete this comment.\"\n  },\n  \"404\": {\n    \"description\": \"Not Found. The requested Comment was not found (route-model binding failed).\"\n  },\n  \"419\": {\n    \"description\": \"Page Expired / CSRF token mismatch. Missing or invalid CSRF token on the form submission.\"\n  },\n  \"500\": {\n    \"description\": \"Internal Server Error. An unexpected server error occurred while attempting to delete the comment.\"\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766912201,
+    "id": "chatcmpl-CrgrpRbNN7Hfl3k6hgJqg7UveucS8",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2027,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1472,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1980,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4007
+    }
+  }
+}

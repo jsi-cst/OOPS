@@ -1,0 +1,123 @@
+{
+  "timestamp": 1766915075232,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/v1/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Api/V1/CommentController.php`, `App\\Http\\Controllers\\Api\\V1\\CommentController@index` is implemented to process HTTP requests to `/api/v1/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Api/V1/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Api\\V1;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Resources\\Comment as CommentResource;\nuse App\\Models\\Comment;\nuse Illuminate\\Http\\Request;\nuse Illuminate\\Http\\Resources\\Json\\ResourceCollection;\nuse Illuminate\\Http\\Response;\n\nclass CommentController extends Controller\n{\n    /**\n     * Return the comments.\n     */\n    public function index(Request $request): ResourceCollection\n    {\n        return CommentResource::collection(\n            Comment::latest()->paginate($request->input('limit', 20))\n        );\n    }\n\n    /**\n     * Return the specified resource.\n     */\n    public function show(Comment $comment): CommentResource\n    {\n        return new CommentResource($comment);\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): Response\n    {\n        $this->authorize('delete', $comment);\n\n        $comment->delete();\n\n        return response()->noContent();\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_3DtGfPJfjt7Lbs8Kpy2FoYKw",
+            "function": {
+              "arguments": "{\"command\": \"ls -la app/Http/Resources\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_4OeKHvESatc12pEmErwvOZkx",
+            "function": {
+              "arguments": "{\"command\": \"sed -n '1,200p' app/Http/Resources/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_OZ4XJqaymy48DY7xeiYVqAmK",
+            "function": {
+              "arguments": "{\"command\": \"sed -n '1,200p' app/Models/Comment.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'total 28\\ndrwxr-xr-x 2 user user 4096 Jan  1  1970 .\\ndrwxr-xr-x 6 user user 4096 Jan  1  1970 ..\\n-rw-r--r-- 1 user user  847 Jan  1  1970 Comment.php\\n-rw-r--r-- 1 user user  436 Jan  1  1970 Media.php\\n-rw-r--r-- 1 user user  840 Jan  1  1970 Post.php\\n-rw-r--r-- 1 user user  335 Jan  1  1970 Role.php\\n-rw-r--r-- 1 user user  753 Jan  1  1970 User.php\\n', 'stderr': ''}",
+        "tool_call_id": "call_3DtGfPJfjt7Lbs8Kpy2FoYKw"
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_4OeKHvESatc12pEmErwvOZkx"
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_OZ4XJqaymy48DY7xeiYVqAmK"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Here's my reasoning and the resulting OpenAPI 2.0 Response Object for the GET /api/v1/comments endpoint:\n\n- The index method in App\\Http\\Controllers\\Api\\V1\\CommentController returns a paginated collection of CommentResource items. This means the API response will be a paginated JSON structure containing:\n  - data: an array of comment resource objects\n  - links: a set of pagination links (first, last, prev, next)\n  - meta: pagination metadata (current_page, from, last_page, path, per_page, to, total)\n\n- The fields of each CommentResource item are defined in app/Http/Resources/Comment.php:\n  - id\n  - content\n  - posted_at (ISO8601 string)\n  - humanized_posted_at (string)\n  - author_id\n  - post_id\n  - author_name\n  - author_url\n  - can_delete (boolean)\n\n- The types for these fields are inferred from PHP types and typical JSON conversions:\n  - id, author_id, post_id, current_page, from, last_page, per_page, to, total are integers\n  - content, posted_at, humanized_posted_at, author_name, author_url are strings\n  - can_delete is boolean\n  - posted_at uses date-time format\n\n- The final response structure does not include any references ($ref) and is self-contained, inline with Swagger 2.0 expectations for a paginated collection.\n\nthe final generated result begins\n{\n  \"200\": {\n    \"description\": \"A paginated collection of comments\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"data\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"id\": { \"type\": \"integer\" },\n              \"content\": { \"type\": \"string\" },\n              \"posted_at\": { \"type\": \"string\", \"format\": \"date-time\" },\n              \"humanized_posted_at\": { \"type\": \"string\" },\n              \"author_id\": { \"type\": \"integer\" },\n              \"post_id\": { \"type\": \"integer\" },\n              \"author_name\": { \"type\": \"string\" },\n              \"author_url\": { \"type\": \"string\" },\n              \"can_delete\": { \"type\": \"boolean\" }\n            },\n            \"required\": [\n              \"id\",\n              \"content\",\n              \"posted_at\",\n              \"humanized_posted_at\",\n              \"author_id\",\n              \"post_id\",\n              \"author_name\",\n              \"author_url\",\n              \"can_delete\"\n            ]\n          }\n        },\n        \"links\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"first\": { \"type\": \"string\" },\n            \"last\": { \"type\": \"string\" },\n            \"prev\": { \"type\": \"string\" },\n            \"next\": { \"type\": \"string\" }\n          }\n        },\n        \"meta\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"current_page\": { \"type\": \"integer\" },\n            \"from\": { \"type\": \"integer\" },\n            \"last_page\": { \"type\": \"integer\" },\n            \"path\": { \"type\": \"string\" },\n            \"per_page\": { \"type\": \"integer\" },\n            \"to\": { \"type\": \"integer\" },\n            \"total\": { \"type\": \"integer\" }\n          }\n        }\n      }\n    }\n  }\n}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766915058,
+    "id": "chatcmpl-CrhbuXXBO33MZW0aMdQ591y4etuIA",
+    "model": "gpt-5-nano-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2607,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1856,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1712,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 4319
+    }
+  }
+}

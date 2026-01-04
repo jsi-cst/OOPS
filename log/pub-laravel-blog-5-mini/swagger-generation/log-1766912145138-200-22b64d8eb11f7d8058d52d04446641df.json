@@ -1,0 +1,183 @@
+{
+  "timestamp": 1766912145138,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/comments` with method GET, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/admin/comments` with HTTP method GET.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a list of Parameter Objects (the value of paths.[endpoint].[method].parameters) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the list of Parameter Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\CommentsRequest;\nuse App\\Models\\Comment;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\View\\View;\n\nclass CommentController extends Controller\n{\n    /**\n     * Show the application comments index.\n     */\n    public function index(): View\n    {\n        return view('admin.comments.index', [\n            'comments' => Comment::with('post', 'author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Comment $comment): View\n    {\n        return view('admin.comments.edit', [\n            'comment' => $comment,\n            'users' => User::pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(CommentsRequest $request, Comment $comment): RedirectResponse\n    {\n        $comment->update($request->validated());\n\n        return redirect()->route('admin.comments.edit', $comment)->withSuccess(__('comments.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): RedirectResponse\n    {\n        $comment->delete();\n\n        return redirect()->route('admin.comments.index')->withSuccess(__('comments.deleted'));\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_DUZZj06JDLZ13IB2sc908Ax7",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"admin.comments\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'tests/Feature/Admin/CommentTest.php:22:            ->get(\\'/admin/comments\\')\\ntests/Feature/Admin/CommentTest.php:38:            ->get(\"/admin/comments/{$comment->id}/edit\")\\ntests/Feature/Admin/CommentTest.php:60:            ->patch(\"/admin/comments/{$comment->id}\", $params)\\ntests/Feature/Admin/CommentTest.php:61:            ->assertRedirect(\"/admin/comments/{$comment->id}/edit\");\\ntests/Feature/Admin/CommentTest.php:77:            ->patch(\"/admin/comments/{$comment->id}\", $params)\\ntests/Feature/Admin/CommentTest.php:89:            ->delete(\"/admin/comments/{$comment->id}\")\\napp/Http/Controllers/Admin/CommentController.php:19:        return view(\\'admin.comments.index\\', [\\napp/Http/Controllers/Admin/CommentController.php:29:        return view(\\'admin.comments.edit\\', [\\napp/Http/Controllers/Admin/CommentController.php:42:        return redirect()->route(\\'admin.comments.edit\\', $comment)->withSuccess(__(\\'comments.updated\\'));\\napp/Http/Controllers/Admin/CommentController.php:52:        return redirect()->route(\\'admin.comments.index\\')->withSuccess(__(\\'comments.deleted\\'));\\nresources/views/admin/dashboard/_comments.blade.php:12:        <a href=\"{{ route(\\'admin.comments.index\\') }}\" class=\"d-flex justify-content-between text-light\">\\nresources/views/admin/comments/_form.blade.php:1:<form action=\"{{ route(\\'admin.comments.update\\', $comment) }}\" method=\"POST\">\\nresources/views/admin/comments/_form.blade.php:64:        <a href=\"{{ route(\\'admin.comments.index\\') }}\" class=\"btn btn-light\">\\nresources/views/admin/comments/edit.blade.php:11:    @include(\\'admin/comments/_form\\')\\nresources/views/admin/comments/index.blade.php:8:    @include (\\'admin/comments/_list\\')\\nresources/views/admin/comments/_list.blade.php:16:                    <a href=\"{{ route(\\'admin.comments.edit\\', $comment) }}\">\\nresources/views/admin/comments/_list.blade.php:32:                    <a href=\"{{ route(\\'admin.comments.edit\\', $comment) }}\" class=\"btn btn-primary btn-sm\">\\nresources/views/admin/comments/_list.blade.php:36:                    <form action=\"{{ route(\\'admin.comments.destroy\\', $comment) }}\" method=\"POST\" class=\"form-inline\" data-confirm=\"@lang(\\'forms.comments.delete\\')\">\\nresources/views/admin/shared/sidebar.blade.php:17:        <a @class([\\'nav-link\\', \\'active\\' => request()->route()->named(\\'admin.comments.*\\')]) href=\"{{ route(\\'admin.comments.index\\') }}\">\\n', 'stderr': ''}",
+        "tool_call_id": "call_DUZZj06JDLZ13IB2sc908Ax7"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_JIo9yK9Vtcnp9fMZ160ydu7x",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' resources/views/admin/comments/index.blade.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '@extends(\\'admin.layouts.app\\')\\n\\n@section(\\'content\\')\\n    <div class=\"page-header\">\\n      <h1>@lang(\\'dashboard.comments\\')</h1>\\n    </div>\\n\\n    @include (\\'admin/comments/_list\\')\\n@endsection\\n', 'stderr': ''}",
+        "tool_call_id": "call_JIo9yK9Vtcnp9fMZ160ydu7x"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_pYeHTUSYeZGLhAo4rryomKvO",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' resources/views/admin/comments/_list.blade.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<table class=\"table table-striped table-sm table-responsive-md\">\\n    <caption>{{ trans_choice(\\'comments.count\\', $comments->total()) }}</caption>\\n    <thead>\\n        <tr>\\n            <th>@lang(\\'comments.attributes.content\\')</th>\\n            <th>@lang(\\'comments.attributes.post\\')</th>\\n            <th>@lang(\\'comments.attributes.author\\')</th>\\n            <th>@lang(\\'comments.attributes.posted_at\\')</th>\\n            <th></th>\\n        </tr>\\n    </thead>\\n    <tbody>\\n        @foreach($comments as $comment)\\n            <tr>\\n                <td>\\n                    <a href=\"{{ route(\\'admin.comments.edit\\', $comment) }}\">\\n                        {{ Str::limit($comment->content, 50) }}\\n                    </a>\\n                </td>\\n                <td>\\n                    <a href=\"{{ route(\\'admin.posts.edit\\', $comment->post) }}\">\\n                        {{ $comment->post->title }}\\n                    </a>\\n                </td>\\n                <td>\\n                    <a href=\"{{ route(\\'admin.users.edit\\', $comment->author) }}\">\\n                        {{ $comment->author->fullname }}\\n                    </a>\\n                </td>\\n                <td>@humanize_date($comment->posted_at, \\'d/m/Y H:i:s\\')</td>\\n                <td>\\n                    <a href=\"{{ route(\\'admin.comments.edit\\', $comment) }}\" class=\"btn btn-primary btn-sm\">\\n                        <x-icon name=\"edit\" />\\n                    </a>\\n\\n                    <form action=\"{{ route(\\'admin.comments.destroy\\', $comment) }}\" method=\"POST\" class=\"form-inline\" data-confirm=\"@lang(\\'forms.comments.delete\\')\">\\n                        @method(\\'DELETE\\')\\n                        @csrf\\n\\n                        <button type=\"submit\" name=\"submit\" class=\"btn btn-outline-danger btn-sm\">\\n                            <x-icon name=\"trash\" />\\n                        </button>\\n                    </form>\\n                </td>\\n            </tr>\\n        @endforeach\\n    </tbody>\\n</table>\\n\\n<div class=\"d-flex justify-content-center\">\\n    {{ $comments->links() }}\\n</div>\\n', 'stderr': ''}",
+        "tool_call_id": "call_pYeHTUSYeZGLhAo4rryomKvO"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_Scw1EDeTmm3iXNEMfElGw0OD",
+            "function": {
+              "arguments": "{\"command\":\"sed -n '1,240p' tests/Feature/Admin/CommentTest.php\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nnamespace Tests\\\\Feature\\\\Admin;\\n\\nuse App\\\\Models\\\\Comment;\\nuse App\\\\Models\\\\Post;\\nuse App\\\\Models\\\\User;\\nuse Illuminate\\\\Foundation\\\\Testing\\\\RefreshDatabase;\\nuse Illuminate\\\\Support\\\\Str;\\nuse Tests\\\\TestCase;\\n\\nclass CommentTest extends TestCase\\n{\\n    use RefreshDatabase;\\n\\n    public function testIndex()\\n    {\\n        $anakin = User::factory()->anakin()->create();\\n        $comment = Comment::factory()->create([\\'author_id\\' => $anakin->id]);\\n\\n        $this->actingAsAdmin()\\n            ->get(\\'/admin/comments\\')\\n            ->assertOk()\\n            ->assertSee(\\'1 comment\\')\\n            ->assertSee(\\'Anakin\\')\\n            ->assertSee(\\'Content\\')\\n            ->assertSee(\\'Author\\')\\n            ->assertSee(\\'Posted at\\')\\n            ->assertSee(Str::limit($comment->content, 50));\\n    }\\n\\n    public function testEdit()\\n    {\\n        $anakin = User::factory()->anakin()->create();\\n        $comment = Comment::factory()->create([\\'author_id\\' => $anakin->id]);\\n\\n        $this->actingAsAdmin()\\n            ->get(\"/admin/comments/{$comment->id}/edit\")\\n            ->assertOk()\\n            ->assertSee(\\'Anakin\\')\\n            ->assertSee(\\'Show post :\\')\\n            ->assertSee(route(\\'posts.show\\', $comment->post))\\n            ->assertSee(\\'Content\\')\\n            ->assertSee($comment->content)\\n            ->assertSee(\\'Posted at\\')\\n            ->assertSee(humanize_date($comment->posted_at, \\'Y-m-d\\\\TH:i\\'))\\n            ->assertSee(\\'Update\\');\\n    }\\n\\n    public function testUpdate()\\n    {\\n        $post = Post::factory()->create();\\n        $comment = Comment::factory()->create([\\'post_id\\' => $post->id]);\\n        $params = $this->validParams([\\n            \\'post_id\\' => $post->id,\\n            \\'posted_at\\' => $post->posted_at->addDay()->format(\\'Y-m-d\\\\TH:i\\')\\n        ]);\\n\\n        $this->actingAsAdmin()\\n            ->patch(\"/admin/comments/{$comment->id}\", $params)\\n            ->assertRedirect(\"/admin/comments/{$comment->id}/edit\");\\n\\n        $this->assertDatabaseHas(\\'comments\\', $params);\\n        $this->assertEquals($params[\\'content\\'], $comment->refresh()->content);\\n    }\\n\\n    public function testUpdateFail()\\n    {\\n        $post = Post::factory()->create();\\n        $comment = Comment::factory()->create([\\'post_id\\' => $post->id]);\\n        $params = $this->validParams([\\n            \\'post_id\\' => $post->id,\\n            \\'posted_at\\' => $post->posted_at->subDay()->format(\\'Y-m-d\\\\TH:i\\')\\n        ]);\\n\\n        $this->actingAsAdmin()\\n            ->patch(\"/admin/comments/{$comment->id}\", $params)\\n            ->assertStatus(302)\\n            ->assertSessionHas(\\'errors\\');\\n\\n        $this->assertDatabaseMissing(\\'comments\\', $params);\\n    }\\n\\n    public function testDelete()\\n    {\\n        $comment = Comment::factory()->create();\\n\\n        $this->actingAsAdmin()\\n            ->delete(\"/admin/comments/{$comment->id}\")\\n            ->assertStatus(302);\\n\\n        $this->assertDatabaseMissing(\\'comments\\', $comment->toArray());\\n        $this->assertTrue(Comment::all()->isEmpty());\\n    }\\n\\n    /**\\n     * Valid params for updating or creating a resource\\n     */\\n    private function validParams(array $overrides = []): array\\n    {\\n        $post = Post::factory()->create();\\n\\n        return array_merge([\\n            \\'content\\' => \\'Great article ! Thanks for sharing it with us.\\',\\n            \\'posted_at\\' => $post->posted_at->addDay()->format(\\'Y-m-d\\\\TH:i\\'),\\n            \\'post_id\\' => $post->id,\\n            \\'author_id\\' => User::factory()->create()->id,\\n        ], $overrides);\\n    }\\n}\\n', 'stderr': ''}",
+        "tool_call_id": "call_Scw1EDeTmm3iXNEMfElGw0OD"
+      },
+      {
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_7NDUx3ZQs40sLyQRf86JAAKE",
+            "function": {
+              "arguments": "{\"command\":\"grep -R \\\"Route::.*comments\\\" -n || true\"}",
+              "name": "run_command"
+            },
+            "type": "function"
+          }
+        ],
+        "content": ""
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"routes/admin.php:15:Route::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\\nroutes/web.php:25:Route::resource('posts.comments', PostCommentController::class)->only('index');\\nroutes/auth.php:54:    Route::resource('comments', CommentController::class)->only(['store', 'destroy']);\\nroutes/api.php:28:        Route::apiResource('comments', CommentController::class)->only('destroy');\\nroutes/api.php:29:        Route::apiResource('posts.comments', PostCommentController::class)->only('store');\\nroutes/api.php:46:    Route::apiResource('posts.comments', PostCommentController::class)->only('index');\\nroutes/api.php:47:    Route::apiResource('users.comments', UserCommentController::class)->only('index');\\nroutes/api.php:48:    Route::apiResource('comments', CommentController::class)->only(['index', 'show']);\\n\", 'stderr': ''}",
+        "tool_call_id": "call_7NDUx3ZQs40sLyQRf86JAAKE"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"command\":\"sed -n '1,240p' routes/admin.php\"}",
+                "name": "run_command"
+              },
+              "id": "call_4xLVEk3iP0GQy2GvyCQiPX3p",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1766912144,
+    "id": "chatcmpl-CrgquyKWJ3I7iNIHpKRMsrYHr1rp8",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 29,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 3306,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 3335
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "timestamp": 1767256805853,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/orders` with method POST, and here is the relevant information I found:\n\n1. In `controllers/orderController.js`, `addOrderItems` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n2. In `controllers/orderController.js`, `getOrders` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n3. In `routes/orderRoutes.js`, `orderRoutes` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n4. In `controllers/orderController.js`, `orderRoutes` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n5. In `controllers/orderController.js`, `addOrderItems` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n6. In `controllers/orderController.js`, `getOrders` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n7. In `controllers/orderController.js`, `addOrderItems` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n8. In `controllers/orderController.js`, `getOrders` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n9. In `routes/orderRoutes.js`, `orderRoutes` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n10. In `controllers/orderController.js`, `orderRoutes` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n11. In `controllers/orderController.js`, `addOrderItems` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\n12. In `controllers/orderController.js`, `getOrders` is implemented to process HTTP requests to `/api/orders` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `controllers/orderController.js`:\n\n```\nimport asyncHandler from '../middleware/asyncHandler.js';\nimport Order from '../models/orderModel.js';\nimport Product from '../models/productModel.js';\nimport { calcPrices } from '../utils/calcPrices.js';\nimport { verifyPayPalPayment, checkIfNewTransaction } from '../utils/paypal.js';\n\n// @desc    Create new order\n// @route   POST /api/orders\n// @access  Private\nconst addOrderItems = asyncHandler(async (req, res) => {\n  const { orderItems, shippingAddress, paymentMethod } = req.body;\n\n  if (orderItems && orderItems.length === 0) {\n    res.status(400);\n    throw new Error('No order items');\n  } else {\n    // NOTE: here we must assume that the prices from our client are incorrect.\n    // We must only trust the price of the item as it exists in\n    // our DB. This prevents a user paying whatever they want by hacking our client\n    // side code - https://gist.github.com/bushblade/725780e6043eaf59415fbaf6ca7376ff\n\n    // get the ordered items from our database\n    const itemsFromDB = await Product.find({\n      _id: { $in: orderItems.map((x) => x._id) },\n    });\n\n    // map over the order items and use the price from our items from database\n    const dbOrderItems = orderItems.map((itemFromClient) => {\n      const matchingItemFromDB = itemsFromDB.find(\n        (itemFromDB) => itemFromDB._id.toString() === itemFromClient._id\n      );\n      return {\n        ...itemFromClient,\n        product: itemFromClient._id,\n        price: matchingItemFromDB.price,\n        _id: undefined,\n      };\n    });\n\n    // calculate prices\n    const { itemsPrice, taxPrice, shippingPrice, totalPrice } =\n      calcPrices(dbOrderItems);\n\n    const order = new Order({\n      orderItems: dbOrderItems,\n      user: req.user._id,\n      shippingAddress,\n      paymentMethod,\n      itemsPrice,\n      taxPrice,\n      shippingPrice,\n      totalPrice,\n    });\n\n    const createdOrder = await order.save();\n\n    res.status(201).json(createdOrder);\n  }\n});\n\n// @desc    Get logged in user orders\n// @route   GET /api/orders/myorders\n// @access  Private\nconst getMyOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({ user: req.user._id });\n  res.json(orders);\n});\n\n// @desc    Get order by ID\n// @route   GET /api/orders/:id\n// @access  Private\nconst getOrderById = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id).populate(\n    'user',\n    'name email'\n  );\n\n  if (order) {\n    res.json(order);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to paid\n// @route   PUT /api/orders/:id/pay\n// @access  Private\nconst updateOrderToPaid = asyncHandler(async (req, res) => {\n  // NOTE: here we need to verify the payment was made to PayPal before marking\n  // the order as paid\n  const { verified, value } = await verifyPayPalPayment(req.body.id);\n  if (!verified) throw new Error('Payment not verified');\n\n  // check if this transaction has been used before\n  const isNewTransaction = await checkIfNewTransaction(Order, req.body.id);\n  if (!isNewTransaction) throw new Error('Transaction has been used before');\n\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    // check the correct amount was paid\n    const paidCorrectAmount = order.totalPrice.toString() === value;\n    if (!paidCorrectAmount) throw new Error('Incorrect amount paid');\n\n    order.isPaid = true;\n    order.paidAt = Date.now();\n    order.paymentResult = {\n      id: req.body.id,\n      status: req.body.status,\n      update_time: req.body.update_time,\n      email_address: req.body.payer.email_address,\n    };\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Update order to delivered\n// @route   GET /api/orders/:id/deliver\n// @access  Private/Admin\nconst updateOrderToDelivered = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n\n  if (order) {\n    order.isDelivered = true;\n    order.deliveredAt = Date.now();\n\n    const updatedOrder = await order.save();\n\n    res.json(updatedOrder);\n  } else {\n    res.status(404);\n    throw new Error('Order not found');\n  }\n});\n\n// @desc    Get all orders\n// @route   GET /api/orders\n// @access  Private/Admin\nconst getOrders = asyncHandler(async (req, res) => {\n  const orders = await Order.find({}).populate('user', 'id name');\n  res.json(orders);\n});\n\nexport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n};\n```\n\nContents of file `routes/orderRoutes.js`:\n\n```\nimport express from 'express';\nconst router = express.Router();\nimport {\n  addOrderItems,\n  getMyOrders,\n  getOrderById,\n  updateOrderToPaid,\n  updateOrderToDelivered,\n  getOrders,\n} from '../controllers/orderController.js';\nimport { protect, admin } from '../middleware/authMiddleware.js';\n\nrouter.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);\nrouter.route('/mine').get(protect, getMyOrders);\nrouter.route('/:id').get(protect, getOrderById);\nrouter.route('/:id/pay').put(protect, updateOrderToPaid);\nrouter.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);\n\nexport default router;\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the endpoint `/api/orders` with HTTP method POST. Let me examine the relevant code to understand what this endpoint does and what responses it can return.\n\nFrom the provided files, I can see:\n\n1. In `orderRoutes.js`, the route `/api/orders` with POST method is handled by `addOrderItems` function\n2. The `addOrderItems` function in `orderController.js` processes the POST request to `/api/orders`\n\nLet me analyze the `addOrderItems` function to understand the possible responses:\n\n1. It expects `orderItems`, `shippingAddress`, and `paymentMethod` in the request body\n2. If `orderItems` is empty, it returns a 400 status with an error message\n3. If everything is valid, it creates a new order and returns a 201 status with the created order data\n4. There's also error handling with asyncHandler middleware which would catch any errors and return appropriate status codes\n\nLet me also check if there are any other possible responses by looking at the route definition more carefully.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_e3f93a451da648b99f10adfc",
+            "function": {
+              "arguments": "{\"command\": \"grep -A 10 -B 10 \\\"POST /api/orders\\\" routes/orderRoutes.js\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_e3f93a451da648b99f10adfc"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me look at the route definition again to understand the exact mapping:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_a68a5f4f19c64de1aee7df4d",
+            "function": {
+              "arguments": "{\"command\": \"grep -n -A 5 -B 5 \\\"router.route('/')\\\" routes/orderRoutes.js\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"8-  updateOrderToDelivered,\\n9-  getOrders,\\n10-} from '../controllers/orderController.js';\\n11-import { protect, admin } from '../middleware/authMiddleware.js';\\n12-\\n13:router.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);\\n14-router.route('/mine').get(protect, getMyOrders);\\n15-router.route('/:id').get(protect, getOrderById);\\n16-router.route('/:id/pay').put(protect, updateOrderToPaid);\\n17-router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);\\n18-\\n\", 'stderr': ''}",
+        "tool_call_id": "call_a68a5f4f19c64de1aee7df4d"
+      },
+      {
+        "role": "assistant",
+        "content": "Perfect! Now I can see that the route `/` (which maps to `/api/orders`) has both POST and GET methods:\n- POST `/api/orders` → `addOrderItems` \n- GET `/api/orders` → `getOrders`\n\nI need to focus on the POST method which calls `addOrderItems`. Let me analyze the `addOrderItems` function in detail to identify all possible responses:\n\n1. Success case: Creates an order and returns 201 status with the created order\n2. Error case: If orderItems is empty, returns 400 status with error message\n3. Error handling: The asyncHandler middleware will catch any other errors and return appropriate status codes\n\nLet me also check the models and utils to better understand the data structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_169aa5f828674cb5991ed1ac",
+            "function": {
+              "arguments": "{\"command\": \"ls -la models/\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': 'total 20\\ndrwxr-xr-x 2 user user 4096 Jan  1  2000 .\\ndrwxr-xr-x 9 user user 4096 Jan  1  2000 ..\\n-rw-r--r-- 1 user user 1727 Jan  1  2000 orderModel.js\\n-rw-r--r-- 1 user user 1305 Jan  1  2000 productModel.js\\n-rw-r--r-- 1 user user  948 Jan  1  2000 userModel.js\\n', 'stderr': ''}",
+        "tool_call_id": "call_169aa5f828674cb5991ed1ac"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me check the order model to understand the structure of the order object that gets returned:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_70845b351a364d1397997cf4",
+            "function": {
+              "arguments": "{\"command\": \"cat models/orderModel.js\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"import mongoose from 'mongoose';\\n\\nconst orderSchema = mongoose.Schema(\\n  {\\n    user: {\\n      type: mongoose.Schema.Types.ObjectId,\\n      required: true,\\n      ref: 'User',\\n    },\\n    orderItems: [\\n      {\\n        name: { type: String, required: true },\\n        qty: { type: Number, required: true },\\n        image: { type: String, required: true },\\n        price: { type: Number, required: true },\\n        product: {\\n          type: mongoose.Schema.Types.ObjectId,\\n          required: true,\\n          ref: 'Product',\\n        },\\n      },\\n    ],\\n    shippingAddress: {\\n      address: { type: String, required: true },\\n      city: { type: String, required: true },\\n      postalCode: { type: String, required: true },\\n      country: { type: String, required: true },\\n    },\\n    paymentMethod: {\\n      type: String,\\n      required: true,\\n    },\\n    paymentResult: {\\n      id: { type: String },\\n      status: { type: String },\\n      update_time: { type: String },\\n      email_address: { type: String },\\n    },\\n    itemsPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    taxPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    shippingPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    totalPrice: {\\n      type: Number,\\n      required: true,\\n      default: 0.0,\\n    },\\n    isPaid: {\\n      type: Boolean,\\n      required: true,\\n      default: false,\\n    },\\n    paidAt: {\\n      type: Date,\\n    },\\n    isDelivered: {\\n      type: Boolean,\\n      required: true,\\n      default: false,\\n    },\\n    deliveredAt: {\\n      type: Date,\\n    },\\n  },\\n  {\\n    timestamps: true,\\n  }\\n);\\n\\nconst Order = mongoose.model('Order', orderSchema);\\n\\nexport default Order;\\n\", 'stderr': ''}",
+        "tool_call_id": "call_70845b351a364d1397997cf4"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-1a98430b-5b98-9dde-9269-cf0be96ac8e5",
+    "choices": [
+      {
+        "message": {
+          "content": "Now I have a clear understanding of the POST `/api/orders` endpoint. Let me analyze the possible responses:\n\n1. **Success Response (201)**: When order is successfully created, it returns the created order object with status 201\n2. **Error Response (400)**: When no order items are provided, it returns an error with status 400\n3. **Error Response (401)**: Since the route has `protect` middleware, if authentication fails, it returns 401\n4. **Other Error Responses**: The asyncHandler middleware can catch other errors (like database errors) and return appropriate status codes\n\nLet me also check the middleware to understand the authentication responses:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_314ec17643424a76a665fc5c",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"cat middleware/authMiddleware.js\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767256801,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 3845,
+      "completion_tokens": 176,
+      "prompt_tokens": 3669,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "timestamp": 1767259102573,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel 11.x (laravel/framework ^11.28) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/admin/comments` with method PATCH, and here is the relevant information I found:\n\n1. In `app/Http/Controllers/Admin/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/admin/comments` with HTTP method PATCH.\n\n2. In `app/Http/Controllers/Admin/CommentController.php`, `CommentController` is implemented to process HTTP requests to `/admin/comments` with HTTP method PATCH.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\", followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Controllers/Admin/CommentController.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Controllers\\Admin;\n\nuse App\\Http\\Controllers\\Controller;\nuse App\\Http\\Requests\\Admin\\CommentsRequest;\nuse App\\Models\\Comment;\nuse App\\Models\\User;\nuse Illuminate\\Http\\RedirectResponse;\nuse Illuminate\\View\\View;\n\nclass CommentController extends Controller\n{\n    /**\n     * Show the application comments index.\n     */\n    public function index(): View\n    {\n        return view('admin.comments.index', [\n            'comments' => Comment::with('post', 'author')->latest()->paginate(50)\n        ]);\n    }\n\n    /**\n     * Display the specified resource edit form.\n     */\n    public function edit(Comment $comment): View\n    {\n        return view('admin.comments.edit', [\n            'comment' => $comment,\n            'users' => User::pluck('name', 'id')\n        ]);\n    }\n\n    /**\n     * Update the specified resource in storage.\n     */\n    public function update(CommentsRequest $request, Comment $comment): RedirectResponse\n    {\n        $comment->update($request->validated());\n\n        return redirect()->route('admin.comments.edit', $comment)->withSuccess(__('comments.updated'));\n    }\n\n    /**\n     * Remove the specified resource from storage.\n     */\n    public function destroy(Comment $comment): RedirectResponse\n    {\n        $comment->delete();\n\n        return redirect()->route('admin.comments.index')->withSuccess(__('comments.deleted'));\n    }\n}\n```"
+      },
+      {
+        "role": "assistant",
+        "content": "I need to analyze the PATCH endpoint for `/admin/comments`. Looking at the controller, I can see that the `update` method handles updating a comment, which would correspond to the PATCH method. However, I notice that the route definition is not in the provided file. Let me check the routes file to confirm the PATCH route and understand the exact endpoint structure.\n\n",
+        "tool_calls": [
+          {
+            "id": "call_33729dae6476487389ccd1e6",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"*.php\\\" -path \\\"./routes/*\\\" -exec cat {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\MediaLibraryController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\PostThumbnailController;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\ShowDashboard;\\nuse App\\\\Http\\\\Controllers\\\\Admin\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\nRoute::get(\\'dashboard\\', ShowDashboard::class)->name(\\'dashboard\\');\\nRoute::resource(\\'posts\\', PostController::class);\\nRoute::delete(\\'/posts/{post}/thumbnail\\', [PostThumbnailController::class, \\'destroy\\'])->name(\\'posts_thumbnail.destroy\\');\\nRoute::resource(\\'users\\', UserController::class)->only([\\'index\\', \\'edit\\', \\'update\\']);\\nRoute::resource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'edit\\', \\'update\\', \\'destroy\\']);\\nRoute::resource(\\'media\\', MediaLibraryController::class)->only([\\'index\\', \\'show\\', \\'create\\', \\'store\\', \\'destroy\\']);\\n<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\PostFeedController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Web Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register web routes for your application. These\\n| routes are loaded by the RouteServiceProvider and all of them will\\n| be assigned to the \"web\" middleware group. Make something great!\\n|\\n*/\\n\\nRoute::get(\\'/\\', [PostController::class, \\'index\\'])->name(\\'home\\');\\nRoute::get(\\'/posts/feed\\', [PostFeedController::class, \\'index\\'])->name(\\'posts.feed\\');\\nRoute::resource(\\'posts\\', PostController::class)->only(\\'show\\');\\nRoute::resource(\\'users\\', UserController::class)->only(\\'show\\');\\nRoute::resource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n\\nRoute::get(\\'newsletter-subscriptions/unsubscribe\\', [NewsletterSubscriptionController::class, \\'unsubscribe\\'])->name(\\'newsletter-subscriptions.unsubscribe\\');\\n<?php\\n\\nuse Illuminate\\\\Foundation\\\\Inspiring;\\nuse Illuminate\\\\Support\\\\Facades\\\\Artisan;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Console Routes\\n|--------------------------------------------------------------------------\\n|\\n| This file is where you may define all of your Closure based console\\n| commands. Each Closure is bound to a command instance allowing a\\n| simple approach to interacting with each command\\'s IO methods.\\n|\\n*/\\n\\nArtisan::command(\\'inspire\\', function () {\\n    $this->comment(Inspiring::quote());\\n})->purpose(\\'Display an inspiring quote\\');\\n<?php\\n\\nuse App\\\\Broadcasting\\\\PostChannel;\\nuse Illuminate\\\\Support\\\\Facades\\\\Broadcast;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| Broadcast Channels\\n|--------------------------------------------------------------------------\\n|\\n| Here you may register all of the event broadcasting channels that your\\n| application supports. The given channel authorization callbacks are\\n| used to check if an authenticated user can listen to the channel.\\n|\\n*/\\n\\nBroadcast::channel(\\'App.Models.User.{id}\\', fn ($user, $id) => (int) $user->id === (int) $id);\\n\\nBroadcast::channel(\\'post.{post}\\', PostChannel::class);\\n<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\AuthenticatedSessionController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\EmailVerificationNotificationController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\EmailVerificationPromptController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\NewPasswordController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\PasswordController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\PasswordResetLinkController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\RegisteredUserController;\\nuse App\\\\Http\\\\Controllers\\\\Auth\\\\VerifyEmailController;\\nuse App\\\\Http\\\\Controllers\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\NewsletterSubscriptionController;\\nuse App\\\\Http\\\\Controllers\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\UserPasswordController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\nRoute::redirect(\\'/.well-known/change-password\\', \\'/settings/password\\');\\n\\nRoute::middleware(\\'guest\\')->group(function () {\\n    Route::get(\\'register\\', [RegisteredUserController::class, \\'create\\'])->name(\\'register\\');\\n    Route::post(\\'register\\', [RegisteredUserController::class, \\'store\\']);\\n    Route::get(\\'login\\', [AuthenticatedSessionController::class, \\'create\\'])->name(\\'login\\');\\n    Route::post(\\'login\\', [AuthenticatedSessionController::class, \\'store\\']);\\n    Route::get(\\'forgot-password\\', [PasswordResetLinkController::class, \\'create\\'])->name(\\'password.request\\');\\n    Route::post(\\'forgot-password\\', [PasswordResetLinkController::class, \\'store\\'])->name(\\'password.email\\');\\n    Route::get(\\'reset-password/{token}\\', [NewPasswordController::class, \\'create\\'])->name(\\'password.reset\\');\\n    Route::post(\\'reset-password\\', [NewPasswordController::class, \\'store\\'])->name(\\'password.store\\');\\n});\\n\\nRoute::middleware(\\'auth\\')->group(function () {\\n    Route::get(\\'verify-email\\', EmailVerificationPromptController::class)->name(\\'verification.notice\\');\\n    Route::get(\\'verify-email/{id}/{hash}\\', VerifyEmailController::class)\\n        ->middleware([\\'signed\\', \\'throttle:6,1\\'])\\n        ->name(\\'verification.verify\\');\\n\\n    Route::post(\\'email/verification-notification\\', [EmailVerificationNotificationController::class, \\'store\\'])\\n        ->middleware(\\'throttle:6,1\\')\\n        ->name(\\'verification.send\\');\\n\\n    Route::put(\\'password\\', [PasswordController::class, \\'update\\'])->name(\\'password.update\\');\\n    Route::post(\\'logout\\', [AuthenticatedSessionController::class, \\'destroy\\'])->name(\\'logout\\');\\n});\\n\\nRoute::middleware([\\'auth\\', \\'verified\\'])->group(function () {\\n    Route::prefix(\\'settings\\')->group(function () {\\n        Route::get(\\'account\\', [UserController::class, \\'edit\\'])->name(\\'users.edit\\');\\n        Route::match([\\'put\\', \\'patch\\'], \\'account\\', [UserController::class, \\'update\\'])->name(\\'users.update\\');\\n\\n        Route::get(\\'password\\', [UserPasswordController::class, \\'edit\\'])->name(\\'users.password\\');\\n        Route::match([\\'put\\', \\'patch\\'], \\'password\\', [UserPasswordController::class, \\'update\\'])->name(\\'users.password.update\\');\\n    });\\n\\n    Route::resource(\\'comments\\', CommentController::class)->only([\\'store\\', \\'destroy\\']);\\n    Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n    Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n    Route::resource(\\'newsletter-subscriptions\\', NewsletterSubscriptionController::class)->only(\\'store\\');\\n});\\n<?php\\n\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\Auth\\\\AuthenticateController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\CommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\MediaController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\PostLikeController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserCommentController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserController;\\nuse App\\\\Http\\\\Controllers\\\\Api\\\\V1\\\\UserPostController;\\nuse Illuminate\\\\Support\\\\Facades\\\\Route;\\n\\n/*\\n|--------------------------------------------------------------------------\\n| API Routes\\n|--------------------------------------------------------------------------\\n|\\n| Here is where you can register API routes for your application. These\\n| routes are loaded by the RouteServiceProvider within a group which\\n| is assigned the \"api\" middleware group. Enjoy building your API!\\n|\\n*/\\n\\nRoute::prefix(\\'v1\\')->name(\\'api\\')->group(function () {\\n    Route::middleware([\\'auth:sanctum\\', \\'verified\\'])->group(function () {\\n        // Comments\\n        Route::apiResource(\\'comments\\', CommentController::class)->only(\\'destroy\\');\\n        Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'store\\');\\n\\n        // Posts\\n        Route::apiResource(\\'posts\\', PostController::class)->only([\\'update\\', \\'store\\', \\'destroy\\']);\\n        Route::post(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'store\\'])->name(\\'posts.likes.store\\');\\n        Route::delete(\\'/posts/{post}/likes\\', [PostLikeController::class, \\'destroy\\'])->name(\\'posts.likes.destroy\\');\\n\\n        // Users\\n        Route::apiResource(\\'users\\', UserController::class)->only(\\'update\\');\\n\\n        // Media\\n        Route::apiResource(\\'media\\', MediaController::class)->only([\\'store\\', \\'destroy\\']);\\n    });\\n\\n    Route::post(\\'/authenticate\\', [AuthenticateController::class, \\'authenticate\\'])->name(\\'authenticate\\');\\n\\n    // Comments\\n    Route::apiResource(\\'posts.comments\\', PostCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'users.comments\\', UserCommentController::class)->only(\\'index\\');\\n    Route::apiResource(\\'comments\\', CommentController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Posts\\n    Route::apiResource(\\'posts\\', PostController::class)->only([\\'index\\', \\'show\\']);\\n    Route::apiResource(\\'users.posts\\', UserPostController::class)->only(\\'index\\');\\n\\n    // Users\\n    Route::apiResource(\\'users\\', UserController::class)->only([\\'index\\', \\'show\\']);\\n\\n    // Media\\n    Route::apiResource(\\'media\\', MediaController::class)->only(\\'index\\');\\n});\\n', 'stderr': ''}",
+        "tool_call_id": "call_33729dae6476487389ccd1e6"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I can see the route definitions. Looking at the admin routes in the first routes file, I can see:\n\n```php\nRoute::resource('comments', CommentController::class)->only(['index', 'edit', 'update', 'destroy']);\n```\n\nThis means that the `update` method in the CommentController corresponds to the PATCH/PUT method for the route `/admin/comments/{comment}` (not `/admin/comments` as initially stated). The resource route would create:\n- `PUT/PATCH /admin/comments/{comment}` for the update method\n\nLet me check the request validation class to understand what parameters are expected:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_f59e9a9b65414acc994077e7",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"CommentsRequest.php\\\" -exec cat {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Requests;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required',\\n            'post_id' => 'required|exists:posts,id'\\n        ];\\n    }\\n}\\n<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Admin;\\n\\nuse Carbon\\\\Carbon;\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Prepare the data for validation.\\n     */\\n    protected function prepareForValidation(): void\\n    {\\n        $this->merge([\\n            'posted_at' => Carbon::parse($this->input('posted_at'))\\n        ]);\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required',\\n            'posted_at' => 'required|after_or_equal:' . $this->comment->post->posted_at,\\n            'author_id' => 'required|exists:users,id'\\n        ];\\n    }\\n}\\n<?php\\n\\nnamespace App\\\\Http\\\\Requests\\\\Api;\\n\\nuse Illuminate\\\\Foundation\\\\Http\\\\FormRequest;\\n\\nclass CommentsRequest extends FormRequest\\n{\\n    /**\\n     * Determine if the user is authorized to make this request.\\n     */\\n    public function authorize(): bool\\n    {\\n        return true;\\n    }\\n\\n    /**\\n     * Get the validation rules that apply to the request.\\n     */\\n    public function rules(): array\\n    {\\n        return [\\n            'content' => 'required'\\n        ];\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_f59e9a9b65414acc994077e7"
+      },
+      {
+        "role": "assistant",
+        "content": "Now I need to check the Comment model to understand its structure:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_319649ae807f48f1b59742ec",
+            "function": {
+              "arguments": "{\"command\": \"find . -name \\\"Comment.php\\\" -exec cat {} \\\\;\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': \"<?php\\n\\nnamespace App\\\\Http\\\\Resources;\\n\\nuse Illuminate\\\\Http\\\\Resources\\\\Json\\\\JsonResource;\\nuse Illuminate\\\\Support\\\\Facades\\\\Auth;\\n\\nclass Comment extends JsonResource\\n{\\n    /**\\n     * Transform the resource into an array.\\n     */\\n    public function toArray($request): array\\n    {\\n        $user = Auth::guard('sanctum')->user();\\n\\n        return [\\n            'id' => $this->id,\\n            'content' => $this->content,\\n            'posted_at' => $this->posted_at->toIso8601String(),\\n            'humanized_posted_at' => humanize_date($this->posted_at),\\n            'author_id' => $this->author_id,\\n            'post_id' => $this->post_id,\\n            'author_name' => $this->author->name,\\n            'author_url' => route('users.show', $this->author),\\n            'can_delete' => $user ? $user->can('delete', $this->resource) : false\\n        ];\\n    }\\n}\\n<?php\\n\\nnamespace App\\\\Models;\\n\\nuse App\\\\Concern\\\\Likeable;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Builder;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Factories\\\\HasFactory;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Model;\\nuse Illuminate\\\\Database\\\\Eloquent\\\\Relations\\\\BelongsTo;\\n\\nclass Comment extends Model\\n{\\n    use HasFactory, Likeable;\\n\\n    /**\\n     * The attributes that are mass assignable.\\n     *\\n     * @var array\\n     */\\n    protected $fillable = [\\n        'author_id',\\n        'post_id',\\n        'content',\\n        'posted_at'\\n    ];\\n\\n    /**\\n     * The attributes that should be mutated to dates.\\n     *\\n     * @var array\\n     */\\n    protected $casts = [\\n        'posted_at' => 'datetime'\\n    ];\\n\\n    /**\\n     * Scope a query to only include comments posted last week.\\n     */\\n    public function scopeLastWeek(Builder $query): Builder\\n    {\\n        return $query->whereBetween('posted_at', [carbon('1 week ago'), now()])\\n            ->latest();\\n    }\\n\\n    /**\\n     * Scope a query to order comments by latest posted.\\n     */\\n    public function scopeLatest(Builder $query): Builder\\n    {\\n        return $query->orderBy('posted_at', 'desc');\\n    }\\n\\n    /**\\n     * Return the comment's author\\n     */\\n    public function author(): BelongsTo\\n    {\\n        return $this->belongsTo(User::class, 'author_id');\\n    }\\n\\n    /**\\n     * Return the comment's post\\n     */\\n    public function post(): BelongsTo\\n    {\\n        return $this->belongsTo(Post::class);\\n    }\\n}\\n\", 'stderr': ''}",
+        "tool_call_id": "call_319649ae807f48f1b59742ec"
+      },
+      {
+        "role": "assistant",
+        "content": "Let me also check how the admin routes are structured by looking for the admin route prefix:\n\n",
+        "tool_calls": [
+          {
+            "id": "call_b09e79e17e074e889d06bc98",
+            "function": {
+              "arguments": "{\"command\": \"grep -r \\\"admin\\\" routes/ --include=\\\"*.php\\\"\"}",
+              "name": "run_command"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": "{'stdout': '', 'stderr': ''}",
+        "tool_call_id": "call_b09e79e17e074e889d06bc98"
+      }
+    ],
+    "model": "qwen3-coder-plus",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "model": "qwen3-coder-plus",
+    "id": "chatcmpl-600be5c8-fd87-957b-b64f-1f9d1a70a610",
+    "choices": [
+      {
+        "message": {
+          "content": "Let me check the RouteServiceProvider to understand how admin routes are organized:\n\n",
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_b797c3ba0bf440ba9eebea81",
+              "type": "function",
+              "function": {
+                "name": "run_command",
+                "arguments": "{\"command\": \"cat app/Providers/RouteServiceProvider.php\"}"
+              }
+            }
+          ],
+          "role": "assistant"
+        },
+        "index": 0,
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "created": 1767259101,
+    "object": "chat.completion",
+    "usage": {
+      "total_tokens": 4911,
+      "completion_tokens": 42,
+      "prompt_tokens": 4869,
+      "prompt_tokens_details": {
+        "cached_tokens": 3840
+      }
+    }
+  }
+}

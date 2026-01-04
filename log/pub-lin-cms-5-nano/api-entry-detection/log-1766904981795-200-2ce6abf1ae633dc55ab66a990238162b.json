@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766904981795,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Python and the Flask framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/lin/lin.py`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/lin/lin.py`:\n\n```\n\"\"\"core module of Lin.\n ~~~~~~~~~\n:copyright: © 2020 by the Lin team.\n:license: MIT, see LICENSE for more details.\n\"\"\"\n\nfrom typing import Any, Callable, Dict, List, Optional, Type, Union\n\nfrom flask import Blueprint, Flask\nfrom sqlalchemy.exc import DatabaseError\n\nfrom .apidoc import schema_response\nfrom .db import db\nfrom .encoder import JSONEncoder, auto_response\nfrom .exception import APIException, HTTPException, InternalServerError\nfrom .jwt import jwt\nfrom .manager import Manager\nfrom .syslogger import SysLogger\nfrom .utils import permission_meta_infos\n\n\nclass Lin(object):\n    def __init__(\n        self,\n        app: Optional[Flask] = None,  # flask app , default None\n        group_model: Optional[Any] = None,  # group model, default None\n        user_model: Optional[Any] = None,  # user model, default None\n        identity_model: Optional[Any] = None,  # user identity model,default None\n        permission_model: Optional[Any] = None,  # permission model, default None\n        group_permission_model: Optional[Any] = None,  # group permission 多对多关联模型\n        user_group_model: Optional[Any] = None,  # user group 多对多关联模型\n        jsonencoder: Optional[Type[JSONEncoder]] = None,  # 序列化器\n        sync_permissions: bool = True,  # create db table if not exist and sync permissions, default True\n        mount: bool = True,  # 是否挂载默认的蓝图, default True\n        handle: bool = True,  # 是否使用全局异常处理, default True\n        syslogger: bool = True,  # 是否使用自定义系统运行日志，default True\n        **kwargs: Any,  # 保留配置项\n    ):\n        self.app: Optional[Flask] = app\n        if app is not None:\n            self.init_app(\n                app,\n                group_model,\n                user_model,\n                identity_model,\n                permission_model,\n                group_permission_model,\n                user_group_model,\n                jsonencoder,\n                sync_permissions,\n                mount,\n                handle,\n                syslogger,\n            )\n\n    def init_app(\n        self,\n        app: Flask,\n        group_model: Optional[Any] = None,\n        user_model: Optional[Any] = None,\n        identity_model: Optional[Any] = None,\n        permission_model: Optional[Any] = None,\n        group_permission_model: Optional[Any] = None,\n        user_group_model: Optional[Any] = None,\n        jsonencoder: Optional[Type[JSONEncoder]] = None,\n        sync_permissions: bool = True,\n        mount: bool = True,\n        handle: bool = True,\n        syslogger: bool = True,\n    ) -> None:\n        # load default lin db model if None\n        if not group_model:\n            from .model import Group\n\n            group_model = Group\n        if not user_model:\n            from .model import User\n\n            self.user_model = User\n        if not permission_model:\n            from .model import Permission\n\n            permission_model = Permission\n        if not group_permission_model:\n            from .model import GroupPermission\n\n            group_permission_model = GroupPermission\n        if not user_group_model:\n            from .model import UserGroup\n\n            user_group_model = UserGroup\n        if not identity_model:\n            from .model import UserIdentity\n\n            identity_model = UserIdentity\n        # 默认蓝图的前缀\n        app.config.setdefault(\"BP_URL_PREFIX\", \"/plugin\")\n        # 文件上传配置未指定时的默认值\n        app.config.setdefault(\n            \"FILE\",\n            {\n                \"STORE_DIR\": \"assets\",\n                \"SINGLE_LIMIT\": 1024 * 1024 * 2,\n                \"TOTAL_LIMIT\": 1024 * 1024 * 20,\n                \"NUMS\": 10,\n                \"INCLUDE\": set([\"jpg\", \"png\", \"jpeg\"]),\n                \"EXCLUDE\": set([]),\n            },\n        )\n        self.jsonencoder = jsonencoder\n        self.enable_auto_jsonify(app)\n        self.app = app\n        # 初始化 manager\n        self.manager: Manager = Manager(\n            app.config.get(\"PLUGIN_PATH\", dict()),\n            group_model=group_model,\n            user_model=user_model,\n            identity_model=identity_model,\n            permission_model=permission_model,\n            group_permission_model=group_permission_model,\n            user_group_model=user_group_model,\n        )\n        self.app.extensions[\"manager\"] = self.manager\n        db.init_app(app)\n        jwt.init_app(app)\n        mount and self.mount(app)\n        sync_permissions and self.sync_permissions(app)\n        handle and self.handle_error(app)\n        syslogger and SysLogger(app)\n\n    def sync_permissions(self, app: Flask) -> None:\n        # 挂载后才能获取代码中的权限\n        # 多进程/线程下可能同时写入相同数据，由权限表联合唯一约束限制\n        try:\n            with app.app_context():\n                self.manager.sync_permissions()\n        except DatabaseError:\n            pass\n\n    def mount(self, app: Flask) -> None:\n        # 加载默认插件路由\n        bp = Blueprint(\"plugin\", __name__)\n        # 加载插件的路由\n        for plugin in self.manager.plugins.values():\n            if len(plugin.controllers.values()) > 1:\n                for controller in plugin.controllers.values():\n                    controller.register(bp, url_prefix=\"/\" + plugin.name)\n            else:\n                for controller in plugin.controllers.values():\n                    controller.register(bp)\n        app.register_blueprint(bp, url_prefix=app.config.get(\"BP_URL_PREFIX\"))\n        for ep, func in app.view_functions.items():\n            info = permission_meta_infos.get(func.__name__ + str(func.__hash__()), None)\n            if info:\n                self.manager.ep_meta.setdefault(ep, info)\n\n    def handle_error(self, app: Flask) -> None:\n        @app.errorhandler(Exception)\n        def handler(e: Exception) -> Any:\n            if isinstance(e, APIException):\n                return e\n            if isinstance(e, HTTPException):\n                code = e.code\n                message = e.description\n                message_code = 20000\n                return APIException(message_code, message).set_code(code)\n            else:\n                if not app.config[\"DEBUG\"]:\n                    import traceback\n\n                    app.logger.error(traceback.format_exc())\n                    return InternalServerError()\n                else:\n                    raise e\n\n    def enable_auto_jsonify(self, app: Flask) -> None:\n        # app.json_encoder = self.jsonencoder or JSONEncoder\n        app.json = self.jsonencoder(app) if self.jsonencoder else JSONEncoder(app)\n        app.make_response = auto_response(app.make_response)\n        schema_response(app)\n```"
+      }
+    ],
+    "model": "gpt-5-nano",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CrezH8cL7KuLR4Hb4wVQ7wPnG5r9W",
+    "object": "chat.completion",
+    "created": 1766904975,
+    "model": "gpt-5-nano-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Result: []\n\nExplanation:\n- The provided file defines the Lin class and methods to initialize and mount plugins/routes, but it does not contain any explicit HTTP route declarations (no path strings, no decorators like @app.route, and no literal path mappings).\n- Routes are registered dynamically by controllers from plugins (controller.register) within the mount method, which references other parts of the codebase not present in this file.\n- Since API entries require explicit path strings extracted from this source file (or from naming conventions supported by the framework), none can be determined here. Therefore, no API entries can be listed from app/lin/lin.py.",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1863,
+      "completion_tokens": 1226,
+      "total_tokens": 3089,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 1088,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

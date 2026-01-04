@@ -1,0 +1,2141 @@
+[
+    [
+        {
+            "method": "GET",
+            "apiurl": "/invoices/count",
+            "feat": "/invoices/count"
+        },
+        {
+            "req": [
+                {
+                    "name": "searchQuery",
+                    "in": "query",
+                    "description": "Creator identifier or search term used to filter invoices for counting (from req.query.searchQuery).",
+                    "required": false,
+                    "type": "string"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response returning the total count of invoices for the given creator (searchQuery).",
+                    "schema": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "404": {
+                    "description": "Error retrieving the total count; returns an object with an error message.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "message"
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "DELETE",
+            "apiurl": "/invoices/{id}",
+            "feat": "/invoices/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Invoice id (MongoDB ObjectId) to delete",
+                    "required": true,
+                    "type": "string"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Invoice deleted successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Invoice deleted successfully"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "No invoice with that id (returned when the provided id is not a valid MongoDB ObjectId)",
+                    "schema": {
+                        "type": "string",
+                        "example": "No invoice with that id"
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/invoices/{id}",
+            "feat": "/invoices/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Invoice identifier (MongoDB ObjectId)",
+                    "required": true,
+                    "type": "string",
+                    "pattern": "^[a-fA-F0-9]{24}$"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response - returns the invoice object",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "dueDate": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "itemName": {
+                                            "type": "string"
+                                        },
+                                        "unitPrice": {
+                                            "type": "string"
+                                        },
+                                        "quantity": {
+                                            "type": "string"
+                                        },
+                                        "discount": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "rates": {
+                                "type": "string"
+                            },
+                            "vat": {
+                                "type": "number"
+                            },
+                            "total": {
+                                "type": "number"
+                            },
+                            "subTotal": {
+                                "type": "number"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "invoiceNumber": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "creator": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "totalAmountReceived": {
+                                "type": "number"
+                            },
+                            "client": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "paymentRecords": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amountPaid": {
+                                            "type": "number"
+                                        },
+                                        "datePaid": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "note": {
+                                            "type": "string"
+                                        },
+                                        "paidBy": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Conflict - error retrieving invoice",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "PATCH",
+            "apiurl": "/invoices/{id}",
+            "feat": "/invoices/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Invoice id (MongoDB ObjectId)",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "invoice",
+                    "in": "body",
+                    "description": "Invoice object with fields to update",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "dueDate": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "itemName": {
+                                            "type": "string"
+                                        },
+                                        "unitPrice": {
+                                            "type": "string"
+                                        },
+                                        "quantity": {
+                                            "type": "string"
+                                        },
+                                        "discount": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "rates": {
+                                "type": "string"
+                            },
+                            "vat": {
+                                "type": "number"
+                            },
+                            "total": {
+                                "type": "number"
+                            },
+                            "subTotal": {
+                                "type": "number"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "invoiceNumber": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "creator": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "totalAmountReceived": {
+                                "type": "number"
+                            },
+                            "client": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "paymentRecords": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amountPaid": {
+                                            "type": "number"
+                                        },
+                                        "datePaid": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "note": {
+                                            "type": "string"
+                                        },
+                                        "paidBy": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Invoice updated successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "dueDate": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "itemName": {
+                                            "type": "string"
+                                        },
+                                        "unitPrice": {
+                                            "type": "string"
+                                        },
+                                        "quantity": {
+                                            "type": "string"
+                                        },
+                                        "discount": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "rates": {
+                                "type": "string"
+                            },
+                            "vat": {
+                                "type": "number"
+                            },
+                            "total": {
+                                "type": "number"
+                            },
+                            "subTotal": {
+                                "type": "number"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "invoiceNumber": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "creator": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "totalAmountReceived": {
+                                "type": "number"
+                            },
+                            "client": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "paymentRecords": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amountPaid": {
+                                            "type": "number"
+                                        },
+                                        "datePaid": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "note": {
+                                            "type": "string"
+                                        },
+                                        "paidBy": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "No invoice with that id",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                "500": {
+                    "description": "Internal server error",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/clients",
+            "feat": "/clients"
+        },
+        {
+            "req": [
+                {
+                    "name": "client",
+                    "in": "body",
+                    "description": "Client object to create",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "phone": {
+                                "type": "string"
+                            },
+                            "address": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "201": {
+                    "description": "Client created successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "phone": {
+                                "type": "string"
+                            },
+                            "address": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Conflict - could not create client",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/clients",
+            "feat": "/clients"
+        },
+        {
+            "req": [
+                {
+                    "name": "page",
+                    "in": "query",
+                    "description": "1-based page number used for pagination",
+                    "required": true,
+                    "type": "integer",
+                    "format": "int32"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful retrieval of paginated clients list",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "data": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string"
+                                        },
+                                        "phone": {
+                                            "type": "string"
+                                        },
+                                        "address": {
+                                            "type": "string"
+                                        },
+                                        "userId": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    }
+                                }
+                            },
+                            "currentPage": {
+                                "type": "integer"
+                            },
+                            "numberOfPages": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Clients not found or error occurred",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/users/signin",
+            "feat": "/users/signin"
+        },
+        {
+            "req": [
+                {
+                    "name": "body",
+                    "in": "body",
+                    "description": "Credentials for user sign-in",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "email": {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "password": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "email",
+                            "password"
+                        ]
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful signin - returns the authenticated user, their profile (if any), and an auth token.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "result": {
+                                "type": "object",
+                                "properties": {
+                                    "_id": {
+                                        "type": "string",
+                                        "description": "User unique identifier"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Hashed password"
+                                    },
+                                    "resetToken": {
+                                        "type": "string"
+                                    },
+                                    "expireToken": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    }
+                                }
+                            },
+                            "userProfile": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phoneNumber": {
+                                        "type": "string"
+                                    },
+                                    "businessName": {
+                                        "type": "string"
+                                    },
+                                    "contactAddress": {
+                                        "type": "string"
+                                    },
+                                    "paymentDetails": {
+                                        "type": "string"
+                                    },
+                                    "logo": {
+                                        "type": "string"
+                                    },
+                                    "website": {
+                                        "type": "string"
+                                    },
+                                    "userId": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "token": {
+                                "type": "string",
+                                "description": "JWT authentication token"
+                            }
+                        }
+                    }
+                },
+                "400": {
+                    "description": "Invalid credentials - password check failed.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "User not found.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "500": {
+                    "description": "Internal server error.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/profiles",
+            "feat": "/profiles"
+        },
+        {
+            "req": [
+                {
+                    "name": "profile",
+                    "in": "body",
+                    "description": "Profile object to create",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "required": [
+                            "email"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "phoneNumber": {
+                                "type": "string"
+                            },
+                            "businessName": {
+                                "type": "string"
+                            },
+                            "contactAddress": {
+                                "type": "string"
+                            },
+                            "logo": {
+                                "type": "string"
+                            },
+                            "website": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "201": {
+                    "description": "Profile created successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string",
+                                "description": "Unique identifier generated by the database (ObjectId as string)"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            "phoneNumber": {
+                                "type": "string"
+                            },
+                            "businessName": {
+                                "type": "string"
+                            },
+                            "contactAddress": {
+                                "type": "string"
+                            },
+                            "logo": {
+                                "type": "string",
+                                "description": "URL or identifier for the logo"
+                            },
+                            "website": {
+                                "type": "string",
+                                "description": "Website URL"
+                            },
+                            "userId": {
+                                "type": "string",
+                                "description": "Identifier of the user who owns this profile"
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "ISO timestamp when the profile was created"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Profile already exists (controller uses 404 in this case)",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Profile already exist"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Conflict or other error occurred while creating the profile",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/profiles",
+            "feat": "/profiles"
+        },
+        {
+            "req": [
+                {
+                    "name": "searchQuery",
+                    "in": "query",
+                    "description": "User identifier used to find a profile by its userId (mapped to req.query.searchQuery).",
+                    "required": false,
+                    "type": "string"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response with profile data",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "data": {
+                                "type": "object",
+                                "properties": {
+                                    "_id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phoneNumber": {
+                                        "type": "string"
+                                    },
+                                    "businessName": {
+                                        "type": "string"
+                                    },
+                                    "contactAddress": {
+                                        "type": "string"
+                                    },
+                                    "paymentDetails": {
+                                        "type": "string"
+                                    },
+                                    "logo": {
+                                        "type": "string"
+                                    },
+                                    "website": {
+                                        "type": "string"
+                                    },
+                                    "userId": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Not Found or error",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/users/signup",
+            "feat": "/users/signup"
+        },
+        {
+            "req": [
+                {
+                    "name": "body",
+                    "in": "body",
+                    "description": "User signup payload",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "required": [
+                            "email",
+                            "password",
+                            "confirmPassword",
+                            "firstName",
+                            "lastName"
+                        ],
+                        "properties": {
+                            "email": {
+                                "type": "string",
+                                "format": "email",
+                                "description": "User email address"
+                            },
+                            "password": {
+                                "type": "string",
+                                "format": "password",
+                                "description": "User password"
+                            },
+                            "confirmPassword": {
+                                "type": "string",
+                                "format": "password",
+                                "description": "Password confirmation (must match password)"
+                            },
+                            "firstName": {
+                                "type": "string",
+                                "description": "User first name"
+                            },
+                            "lastName": {
+                                "type": "string",
+                                "description": "User last name"
+                            },
+                            "bio": {
+                                "type": "string",
+                                "description": "Optional user bio"
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful signup. Returns created user (result), an associated userProfile (if any), and an authentication token.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "result": {
+                                "type": "object",
+                                "properties": {
+                                    "_id": {
+                                        "type": "string",
+                                        "description": "MongoDB generated identifier for the user"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "Full name of the user"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "User's email address"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Hashed password"
+                                    },
+                                    "resetToken": {
+                                        "type": "string",
+                                        "description": "Password reset token (if set)"
+                                    },
+                                    "expireToken": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "description": "Expiry date/time of the reset token (if set)"
+                                    }
+                                }
+                            },
+                            "userProfile": {
+                                "type": "object",
+                                "description": "Profile document associated with the user, if any. May be absent/null in some cases.",
+                                "properties": {
+                                    "_id": {
+                                        "type": "string",
+                                        "description": "MongoDB identifier for the profile"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phoneNumber": {
+                                        "type": "string"
+                                    },
+                                    "businessName": {
+                                        "type": "string"
+                                    },
+                                    "contactAddress": {
+                                        "type": "string"
+                                    },
+                                    "paymentDetails": {
+                                        "type": "string"
+                                    },
+                                    "logo": {
+                                        "type": "string"
+                                    },
+                                    "website": {
+                                        "type": "string"
+                                    },
+                                    "userId": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "Array of user id strings as stored in the profile"
+                                    }
+                                }
+                            },
+                            "token": {
+                                "type": "string",
+                                "description": "JWT token issued for the newly created user"
+                            }
+                        }
+                    }
+                },
+                "400": {
+                    "description": "Bad Request — either the user already exists or the provided passwords do not match.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "description": "Human-readable error message, e.g. 'User already exist' or 'Password don't match'"
+                            }
+                        }
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error — an unexpected error occurred while processing the request.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "description": "Generic error message, e.g. 'Something went wrong'"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/users/forgot",
+            "feat": "/users/forgot"
+        },
+        {
+            "req": [
+                {
+                    "name": "body",
+                    "in": "body",
+                    "description": "Request body containing the email address for password reset",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "required": [
+                            "email"
+                        ],
+                        "properties": {
+                            "email": {
+                                "type": "string",
+                                "format": "email"
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Password reset request processed successfully; an email has been sent if the account exists.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "check your email"
+                            }
+                        },
+                        "required": [
+                            "message"
+                        ]
+                    }
+                },
+                "422": {
+                    "description": "User with the provided email does not exist in the database.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "error": {
+                                "type": "string",
+                                "example": "User does not exist in our database"
+                            }
+                        },
+                        "required": [
+                            "error"
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/users/reset",
+            "feat": "/users/reset"
+        },
+        {
+            "req": [
+                {
+                    "name": "resetRequest",
+                    "in": "body",
+                    "description": "Payload containing the new password and the reset token sent to the user's email",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "password": {
+                                "type": "string",
+                                "description": "The new password to set for the user"
+                            },
+                            "token": {
+                                "type": "string",
+                                "description": "The password reset token previously emailed to the user"
+                            }
+                        },
+                        "required": [
+                            "password",
+                            "token"
+                        ]
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Password updated successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "password updated success"
+                            }
+                        },
+                        "required": [
+                            "message"
+                        ]
+                    }
+                },
+                "422": {
+                    "description": "Invalid or expired reset token",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "error": {
+                                "type": "string",
+                                "example": "Try again session expired"
+                            }
+                        },
+                        "required": [
+                            "error"
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "DELETE",
+            "apiurl": "/profiles/{id}",
+            "feat": "/profiles/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Profile identifier (MongoDB ObjectId, 24 hex characters).",
+                    "required": true,
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{24}$"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Profile deleted successfully.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "No profile with the given id (invalid or not found).",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/profiles/{id}",
+            "feat": "/profiles/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "MongoDB ObjectId of the profile to retrieve",
+                    "required": true,
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{24}$"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response - profile document",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "phoneNumber": {
+                                "type": "string"
+                            },
+                            "businessName": {
+                                "type": "string"
+                            },
+                            "contactAddress": {
+                                "type": "string"
+                            },
+                            "paymentDetails": {
+                                "type": "string"
+                            },
+                            "logo": {
+                                "type": "string"
+                            },
+                            "website": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "404": {
+                    "description": "Not found or error - returns an error message",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "PATCH",
+            "apiurl": "/profiles/{id}",
+            "feat": "/profiles/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Profile id (MongoDB ObjectId) to identify the profile to update",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "profile",
+                    "in": "body",
+                    "description": "Profile object with fields to update. Partial updates are supported.",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "phoneNumber": {
+                                "type": "string"
+                            },
+                            "businessName": {
+                                "type": "string"
+                            },
+                            "contactAddress": {
+                                "type": "string"
+                            },
+                            "logo": {
+                                "type": "string"
+                            },
+                            "website": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Profile updated successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "phoneNumber": {
+                                "type": "string"
+                            },
+                            "businessName": {
+                                "type": "string"
+                            },
+                            "contactAddress": {
+                                "type": "string"
+                            },
+                            "paymentDetails": {
+                                "type": "string"
+                            },
+                            "logo": {
+                                "type": "string"
+                            },
+                            "website": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "required": [
+                            "email"
+                        ]
+                    }
+                },
+                "404": {
+                    "description": "Invalid profile id",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "POST",
+            "apiurl": "/invoices",
+            "feat": "/invoices"
+        },
+        {
+            "req": [
+                {
+                    "name": "invoice",
+                    "in": "body",
+                    "description": "Invoice object to create",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "dueDate": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "itemName": {
+                                            "type": "string"
+                                        },
+                                        "unitPrice": {
+                                            "type": "string"
+                                        },
+                                        "quantity": {
+                                            "type": "string"
+                                        },
+                                        "discount": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "rates": {
+                                "type": "string"
+                            },
+                            "vat": {
+                                "type": "number"
+                            },
+                            "total": {
+                                "type": "number"
+                            },
+                            "subTotal": {
+                                "type": "number"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "invoiceNumber": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "creator": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "totalAmountReceived": {
+                                "type": "number"
+                            },
+                            "client": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "paymentRecords": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amountPaid": {
+                                            "type": "number"
+                                        },
+                                        "datePaid": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "note": {
+                                            "type": "string"
+                                        },
+                                        "paidBy": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "201": {
+                    "description": "Invoice created",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "dueDate": {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            "currency": {
+                                "type": "string"
+                            },
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "itemName": {
+                                            "type": "string"
+                                        },
+                                        "unitPrice": {
+                                            "type": "string"
+                                        },
+                                        "quantity": {
+                                            "type": "string"
+                                        },
+                                        "discount": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "rates": {
+                                "type": "string"
+                            },
+                            "vat": {
+                                "type": "number"
+                            },
+                            "total": {
+                                "type": "number"
+                            },
+                            "subTotal": {
+                                "type": "number"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "invoiceNumber": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "creator": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "totalAmountReceived": {
+                                "type": "number"
+                            },
+                            "client": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "address": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "paymentRecords": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "amountPaid": {
+                                            "type": "number"
+                                        },
+                                        "datePaid": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "paymentMethod": {
+                                            "type": "string"
+                                        },
+                                        "note": {
+                                            "type": "string"
+                                        },
+                                        "paidBy": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Conflict - error saving invoice",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/invoices",
+            "feat": "/invoices"
+        },
+        {
+            "req": [
+                {
+                    "name": "searchQuery",
+                    "in": "query",
+                    "description": "Filter invoices by creator. Provide the creator identifier (e.g. user id or username) as a query string value.",
+                    "required": false,
+                    "type": "string"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response returning an array of invoice documents in the 'data' property.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "data": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "dueDate": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "currency": {
+                                            "type": "string"
+                                        },
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "itemName": {
+                                                        "type": "string"
+                                                    },
+                                                    "unitPrice": {
+                                                        "type": "string"
+                                                    },
+                                                    "quantity": {
+                                                        "type": "string"
+                                                    },
+                                                    "discount": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "rates": {
+                                            "type": "string"
+                                        },
+                                        "vat": {
+                                            "type": "number"
+                                        },
+                                        "total": {
+                                            "type": "number"
+                                        },
+                                        "subTotal": {
+                                            "type": "number"
+                                        },
+                                        "notes": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "invoiceNumber": {
+                                            "type": "string"
+                                        },
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "creator": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "totalAmountReceived": {
+                                            "type": "number"
+                                        },
+                                        "client": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "phone": {
+                                                    "type": "string"
+                                                },
+                                                "address": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "paymentRecords": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "amountPaid": {
+                                                        "type": "number"
+                                                    },
+                                                    "datePaid": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "paymentMethod": {
+                                                        "type": "string"
+                                                    },
+                                                    "note": {
+                                                        "type": "string"
+                                                    },
+                                                    "paidBy": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Invoices not found or an error occurred while fetching invoices.",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "GET",
+            "apiurl": "/clients/user",
+            "feat": "/clients/user"
+        },
+        {
+            "req": [
+                {
+                    "name": "searchQuery",
+                    "in": "query",
+                    "description": "User id to filter clients by (passed to the DB query as userId).",
+                    "required": true,
+                    "type": "string"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful response - list of clients for the given user",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "data": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "_id": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "email": {
+                                            "type": "string"
+                                        },
+                                        "phone": {
+                                            "type": "string"
+                                        },
+                                        "address": {
+                                            "type": "string"
+                                        },
+                                        "userId": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "__v": {
+                                            "type": "integer",
+                                            "format": "int32"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Not Found - error while fetching clients",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "DELETE",
+            "apiurl": "/clients/{id}",
+            "feat": "/clients/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "MongoDB ObjectId of the client to delete",
+                    "required": true,
+                    "type": "string",
+                    "format": "objectId"
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Client deleted successfully",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "message"
+                        ]
+                    },
+                    "examples": {
+                        "application/json": {
+                            "message": "Client deleted successfully"
+                        }
+                    }
+                },
+                "404": {
+                    "description": "No Client with that id (invalid id)",
+                    "schema": {
+                        "type": "string"
+                    },
+                    "examples": {
+                        "text/plain": "No Client with that id"
+                    }
+                }
+            }
+        }
+    ],
+    [
+        {
+            "method": "PATCH",
+            "apiurl": "/clients/{id}",
+            "feat": "/clients/{}"
+        },
+        {
+            "req": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Client id",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "name": "client",
+                    "in": "body",
+                    "description": "Client object with fields to update",
+                    "required": true,
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "phone": {
+                                "type": "string"
+                            },
+                            "address": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                }
+            ],
+            "res": {
+                "200": {
+                    "description": "Successful update: returns the updated client object",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "_id": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "phone": {
+                                "type": "string"
+                            },
+                            "address": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Invalid client id: returns a plain text error message",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    ]
+]

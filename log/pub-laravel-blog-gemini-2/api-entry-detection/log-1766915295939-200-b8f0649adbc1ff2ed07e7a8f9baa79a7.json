@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766915295939,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using PHP and the Laravel framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `app/Http/Requests/Admin/PostsRequest.php`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `app/Http/Requests/Admin/PostsRequest.php`:\n\n```\n<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse App\\Rules\\CanBeAuthor;\nuse Carbon\\Carbon;\nuse Illuminate\\Foundation\\Http\\FormRequest;\nuse Illuminate\\Support\\Str;\n\nclass PostsRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return true;\n    }\n\n    /**\n     * Prepare the data for validation.\n     */\n    protected function prepareForValidation(): void\n    {\n        $this->merge([\n            'slug' => Str::slug($this->input('title'))\n        ]);\n\n        $this->merge([\n            'posted_at' => Carbon::parse($this->input('posted_at'))\n        ]);\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     */\n    public function rules(): array\n    {\n        return [\n            'title' => 'required',\n            'content' => 'required',\n            'posted_at' => 'required|date',\n            'thumbnail_id' => 'nullable|exists:media,id',\n            'author_id' => ['required', 'exists:users,id', new CanBeAuthor],\n            'slug' => 'unique:posts,slug,' . (optional($this->post)->id ?: 'NULL'),\n        ];\n    }\n}\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-2025122817503378027994gJDf8kgj",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766915434,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Here's the analysis of the provided code, focusing on API entry extraction:\n\nBased on the provided code, `app/Http/Requests/Admin/PostsRequest.php`, there are no API entries. This file defines a FormRequest class, which is used for validating incoming HTTP requests. It does not contain any routing logic or path definitions. Therefore, no API entries can be extracted from this file.\n"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 790,
+      "completion_tokens": 84,
+      "total_tokens": 874,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 790,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

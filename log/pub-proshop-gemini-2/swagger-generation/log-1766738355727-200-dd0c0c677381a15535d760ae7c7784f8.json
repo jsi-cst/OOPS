@@ -1,0 +1,78 @@
+{
+  "timestamp": 1766738355727,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. I'm now focusing on endpoint `/api/upload` with method POST, and here is the relevant information I found:\n\n1. In `routes/uploadRoutes.js`, `anonymous` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n2. In `routes/uploadRoutes.js`, `anonymous` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\n3. In `routes/uploadRoutes.js`, `uploadRoutes` is implemented to process HTTP requests to `/api/upload` with HTTP method POST.\n\nI'll provide you with the contents of the files mentioned above, you have the option to execute additional Unix commands to gather more information if necessary, but you must not run the source code of the project, and your task is to generate a dict of Response Objects (the value of paths.[endpoint].[method].responses) in Swagger 2.0 format.\n\nYou need to think step by step and provide an explanation of your results first. Then, output exactly \"the final generated result begins\" (I will split your output and then do json parse, so you must output it and do not change it), followed by the dict of Response Objects in JSON format. Do not include fields not mentioned above, and do not use references ($ref) in your output (try to obtain the structure by executing additional Unix commands)."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/uploadRoutes.js`:\n\n```\nimport path from 'path';\nimport express from 'express';\nimport multer from 'multer';\n\nconst router = express.Router();\n\nconst storage = multer.diskStorage({\n  destination(req, file, cb) {\n    cb(null, 'uploads/');\n  },\n  filename(req, file, cb) {\n    cb(\n      null,\n      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`\n    );\n  },\n});\n\nfunction fileFilter(req, file, cb) {\n  const filetypes = /jpe?g|png|webp/;\n  const mimetypes = /image\\/jpe?g|image\\/png|image\\/webp/;\n\n  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());\n  const mimetype = mimetypes.test(file.mimetype);\n\n  if (extname && mimetype) {\n    cb(null, true);\n  } else {\n    cb(new Error('Images only!'), false);\n  }\n}\n\nconst upload = multer({ storage, fileFilter });\nconst uploadSingleImage = upload.single('image');\n\nrouter.post('/', (req, res) => {\n  uploadSingleImage(req, res, function (err) {\n    if (err) {\n      return res.status(400).send({ message: err.message });\n    }\n\n    res.status(200).send({\n      message: 'Image uploaded successfully',\n      image: `/${req.file.path}`,\n    });\n  });\n});\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gemini-2.0-flash-lite",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "run_command",
+          "description": "Run a Unix command and get outputs in the project directory. You must not run any source code of the project.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "(str) The Unix command to run."
+              }
+            },
+            "required": [
+              "command"
+            ]
+          },
+          "requires_confirmation": false,
+          "external_execution": false
+        }
+      }
+    ]
+  },
+  "res": {
+    "id": "chatcmpl-20251226163744211753363htnAdCRA",
+    "model": "gemini-2.0-flash-lite",
+    "object": "chat.completion",
+    "created": 1766738268,
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Okay, I will analyze the provided code to generate the OpenAPI specification for the `/api/upload` POST endpoint.\n\nHere's the breakdown:\n\n1.  **Endpoint:** `/api/upload`\n2.  **Method:** `POST`\n3.  **Request Body:** The endpoint expects a file upload, specifically an image, under the field name `image`. The code uses `multer` to handle the file upload.\n4.  **Responses:**\n    *   **200 OK:**  If the upload is successful, the server responds with a 200 status code and a JSON object containing a success message and the path to the uploaded image.\n    *   **400 Bad Request:** If there's an error during the upload (e.g., invalid file type), the server responds with a 400 status code and an error message.\n\nNow, I will generate the Response Objects in Swagger 2.0 format.\n\nthe final generated result begins\n```json\n{\n  \"200\": {\n    \"description\": \"Image uploaded successfully\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Image uploaded successfully\"\n        },\n        \"image\": {\n          \"type\": \"string\",\n          \"example\": \"/uploads/image-1678886400000.jpg\"\n        }\n      }\n    }\n  },\n  \"400\": {\n    \"description\": \"Bad Request\",\n    \"schema\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"message\": {\n          \"type\": \"string\",\n          \"example\": \"Images only!\"\n        }\n      }\n    }\n  }\n}\n```"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 744,
+      "completion_tokens": 407,
+      "total_tokens": 1151,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "text_tokens": 744,
+        "audio_tokens": 0,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "text_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "input_tokens_details": null
+    }
+  }
+}

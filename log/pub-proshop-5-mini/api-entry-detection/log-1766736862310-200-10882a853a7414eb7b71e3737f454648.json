@@ -1,0 +1,55 @@
+{
+  "timestamp": 1766736862310,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using JavaScript and the Express.js framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. To begin this process, I'll provide you with the contents of file `routes/productRoutes.js`, your task is to extract all instances of API entries from this file.\n\nAn API entry represents the routing functionality of the REST API framework. It refers to the structure that binds a partial or complete request path (called a \"path\") to a function, class, class method, or object (called a \"handler\") that processes requests matching that path, either by handling them directly or by dispatching them to other handlers based on the path.\n\nYou need to output a list of objects, each representing an API entry, including:\n\n- The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.\n- The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.\n- Whether the handler's implementation (i.e., processing requests and building responses) is present in the same source code file, rather than being imported.\n- Whether the path string is a prefix rather than a full path.\n- Whether the path string is extracted from a literal string defined in the source code.\n- Whether the path string is derived from a naming convention supported by the framework.\n- Whether the API entry is for a RESTful API, rather than other types of APIs.\n- Whether the API entry is intended for testing purposes, such as unit tests or functional tests.\n\nNote that all paths must be extracted from literal strings in the source code or from naming conventions explicitly supported by the REST API framework. Do not make guesses, if you find a function, class, class method, or object that looks a lot like an API implementation, but the path is not explicitly defined in this file (perhaps in another file), do not include it in your output. You also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `routes/productRoutes.js`:\n\n```\nimport express from 'express';\nconst router = express.Router();\nimport {\n  getProducts,\n  getProductById,\n  createProduct,\n  updateProduct,\n  deleteProduct,\n  createProductReview,\n  getTopProducts,\n} from '../controllers/productController.js';\nimport { protect, admin } from '../middleware/authMiddleware.js';\nimport checkObjectId from '../middleware/checkObjectId.js';\n\nrouter.route('/').get(getProducts).post(protect, admin, createProduct);\nrouter.route('/:id/reviews').post(protect, checkObjectId, createProductReview);\nrouter.get('/top', getTopProducts);\nrouter\n  .route('/:id')\n  .get(checkObjectId, getProductById)\n  .put(protect, admin, checkObjectId, updateProduct)\n  .delete(protect, admin, checkObjectId, deleteProduct);\n\nexport default router;\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"path\": \"/\",\n    \"handler\": \"getProducts\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/\",\n    \"handler\": \"createProduct\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/{id}/reviews\",\n    \"handler\": \"createProductReview\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/top\",\n    \"handler\": \"getTopProducts\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/{id}\",\n    \"handler\": \"getProductById\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/{id}\",\n    \"handler\": \"updateProduct\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  },\n  {\n    \"path\": \"/{id}\",\n    \"handler\": \"deleteProduct\",\n    \"implementationPresent\": false,\n    \"isPrefix\": false,\n    \"fromLiteral\": true,\n    \"fromConvention\": false,\n    \"isRESTful\": true,\n    \"isTest\": false\n  }\n]\n\nExplanation of results:\n- I extracted every express routing binding found in routes/productRoutes.js that uses a literal path string in this file. Each binding that pairs a path with a controller was turned into one API entry. For router.route(...) that defines multiple HTTP methods I emitted one entry per method/handler (e.g., GET / and POST /).\n- Express path parameters written as :id in the source were converted to the required OpenAPI-style {id} form in the output paths.\n- The listed handlers are the final controller functions invoked (getProducts, createProduct, createProductReview, getTopProducts, getProductById, updateProduct, deleteProduct). Middleware functions (protect, admin, checkObjectId) are present in the route chains in the source file but are not listed as the main handlers; their implementations are not in this file either.\n- For every entry:\n  - implementationPresent is false because all controller handlers are imported from ../controllers/productController.js, not implemented in this file.\n  - isPrefix is false because the literal strings in this router file represent concrete route paths relative to where the router is mounted; none are only a prefix used with sub-routing in this file.\n  - fromLiteral is true because the path strings are present as literal strings in this file.\n  - fromConvention is false because no paths are derived from implicit naming conventions (everything is explicitly defined).\n  - isRESTful is true because these routes correspond to standard RESTful resource operations on products.\n  - isTest is false because there is no indication these routes are for testing only.\n- I did not include any entries for handlers or routes not explicitly declared with literal paths in this file (no guessing about router mounting paths or other files).",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1766736843,
+    "id": "chatcmpl-CqxFTGPNowmHztUpzVCYCjcuyBkMg",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 2021,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 1216,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 631,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2652
+    }
+  }
+}

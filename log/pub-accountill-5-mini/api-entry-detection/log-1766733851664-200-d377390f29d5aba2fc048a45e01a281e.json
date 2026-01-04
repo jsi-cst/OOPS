@@ -1,0 +1,146 @@
+{
+  "timestamp": 1766733851664,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are tasked with creating a structured output from the provided user message."
+      },
+      {
+        "role": "user",
+        "content": "[\n  {\n    \"path\": \"/invoices\",\n    \"handler\": \"invoiceRoutes\",\n    \"implementation_present\": false,\n    \"is_prefix\": true,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/clients\",\n    \"handler\": \"clientRoutes\",\n    \"implementation_present\": false,\n    \"is_prefix\": true,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/users\",\n    \"handler\": \"userRoutes\",\n    \"implementation_present\": false,\n    \"is_prefix\": true,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/profiles\",\n    \"handler\": \"profile\",\n    \"implementation_present\": false,\n    \"is_prefix\": true,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": true,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/send-pdf\",\n    \"handler\": \"anonymous\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": false,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/create-pdf\",\n    \"handler\": \"anonymous\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": false,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/fetch-pdf\",\n    \"handler\": \"anonymous\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": false,\n    \"is_test\": false\n  },\n  {\n    \"path\": \"/\",\n    \"handler\": \"anonymous\",\n    \"implementation_present\": true,\n    \"is_prefix\": false,\n    \"path_is_literal\": true,\n    \"path_is_derived_from_naming_convention\": false,\n    \"is_rest_api\": false,\n    \"is_test\": false\n  }\n]\n\nExplanation:\n\n- I scanned index.js for express routing constructs (app.use, app.get, app.post). Each app.use('/path', router) was recorded as an API entry where the path literal is defined in this file. Those entries are marked as prefixes because express routers mounted with app.use act as path prefixes and the router (imported) contains the actual sub-path handlers. The handlers for these are the imported identifiers (invoiceRoutes, clientRoutes, userRoutes, profile) and their implementations are not in this file (implementation_present: false).\n- For app.post and app.get calls that include an inline callback (anonymous functions) I recorded the path literal and marked the handler as \"anonymous\" and implementation_present: true because the request processing is implemented directly in this file.\n- All path values were taken from literal strings present in index.js — none were computed or derived at runtime, so path_is_literal is true for all.\n- None of the paths here are derived from an Express naming convention (there is no automatic route-to-function binding in Express used), so path_is_derived_from_naming_convention is false for all.\n- I classified /invoices, /clients, /users, /profiles as RESTful (is_rest_api: true) because they are conventional resource route mounts (CRUD routers are expected under those prefixes). The PDF endpoints and the root health check are action/utility endpoints (send/create/fetch PDFs, health) so I marked those as not RESTful.\n- No routes in this file appear to be included solely for testing purposes, so is_test is false for all.\n- I did not include any routes whose path was not explicitly defined in this file (for example, individual endpoints inside the imported routers) because their literal paths are not present here per the instructions."
+      }
+    ],
+    "model": "gpt-5-nano",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "APIEntryDetectionResultList",
+        "schema": {
+          "$defs": {
+            "APIEntryDetectionResult": {
+              "properties": {
+                "path": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The HTTP request path, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}). Set this to null if it cannot be determined.",
+                  "title": "Path"
+                },
+                "handler": {
+                  "description": "The function, class, class method, or object that handles the HTTP request. Use exactly \"anonymous\" to denote an anonymous implementation.",
+                  "title": "Handler",
+                  "type": "string"
+                },
+                "handler_in_same_file": {
+                  "description": "Whether the handler's implementation is present in the same source code file, rather than being imported.",
+                  "title": "Handler In Same File",
+                  "type": "boolean"
+                },
+                "path_is_prefix": {
+                  "description": "Whether the path string is a prefix rather than a full path.",
+                  "title": "Path Is Prefix",
+                  "type": "boolean"
+                },
+                "path_from_string_literal": {
+                  "description": "Whether the path string is extracted from a literal string defined in the source code.",
+                  "title": "Path From String Literal",
+                  "type": "boolean"
+                },
+                "path_from_naming_convention": {
+                  "description": "Whether the path string is derived from a naming convention supported by the framework.",
+                  "title": "Path From Naming Convention",
+                  "type": "boolean"
+                },
+                "is_restful_api": {
+                  "description": "Whether the API entry is for a RESTful API, rather than other types of APIs.",
+                  "title": "Is Restful Api",
+                  "type": "boolean"
+                },
+                "is_testing_purposes": {
+                  "description": "Whether the API entry is intended for testing purposes, such as unit tests or functional tests.",
+                  "title": "Is Testing Purposes",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "path",
+                "handler",
+                "handler_in_same_file",
+                "path_is_prefix",
+                "path_from_string_literal",
+                "path_from_naming_convention",
+                "is_restful_api",
+                "is_testing_purposes"
+              ],
+              "title": "APIEntryDetectionResult",
+              "type": "object",
+              "additionalProperties": false
+            }
+          },
+          "properties": {
+            "entry": {
+              "description": "List of API entries you found.",
+              "items": {
+                "$ref": "#/$defs/APIEntryDetectionResult"
+              },
+              "title": "Entry",
+              "type": "array"
+            }
+          },
+          "required": [
+            "entry"
+          ],
+          "title": "APIEntryDetectionResultList",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "temperature": 0.0
+  },
+  "res": {
+    "id": "chatcmpl-CqwSwbLAUUqJABMEz1HFYmOfctMSY",
+    "object": "chat.completion",
+    "created": 1766733834,
+    "model": "gpt-5-nano-2025-08-07",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\n  \"entry\": [\n    {\n      \"handler\": \"invoiceRoutes\",\n      \"handler_in_same_file\": false,\n      \"is_restful_api\": true,\n      \"is_testing_purposes\": false,\n      \"path\": \"/invoices\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": true\n    },\n    {\n      \"handler\": \"clientRoutes\",\n      \"handler_in_same_file\": false,\n      \"is_restful_api\": true,\n      \"is_testing_purposes\": false,\n      \"path\": \"/clients\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": true\n    },\n    {\n      \"handler\": \"userRoutes\",\n      \"handler_in_same_file\": false,\n      \"is_restful_api\": true,\n      \"is_testing_purposes\": false,\n      \"path\": \"/users\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": true\n    },\n    {\n      \"handler\": \"profile\",\n      \"handler_in_same_file\": false,\n      \"is_restful_api\": true,\n      \"is_testing_purposes\": false,\n      \"path\": \"/profiles\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": true\n    },\n    {\n      \"handler\": \"anonymous\",\n      \"handler_in_same_file\": true,\n      \"is_restful_api\": false,\n      \"is_testing_purposes\": false,\n      \"path\": \"/send-pdf\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": false\n    },\n    {\n      \"handler\": \"anonymous\",\n      \"handler_in_same_file\": true,\n      \"is_restful_api\": false,\n      \"is_testing_purposes\": false,\n      \"path\": \"/create-pdf\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": false\n    },\n    {\n      \"handler\": \"anonymous\",\n      \"handler_in_same_file\": true,\n      \"is_restful_api\": false,\n      \"is_testing_purposes\": false,\n      \"path\": \"/fetch-pdf\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": false\n    },\n    {\n      \"handler\": \"anonymous\",\n      \"handler_in_same_file\": true,\n      \"is_restful_api\": false,\n      \"is_testing_purposes\": false,\n      \"path\": \"/\",\n      \"path_from_naming_convention\": false,\n      \"path_from_string_literal\": true,\n      \"path_is_prefix\": false\n    }\n  ]\n}",
+          "refusal": null,
+          "annotations": []
+        },
+        "logprobs": null,
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1345,
+      "completion_tokens": 3189,
+      "total_tokens": 4534,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 2560,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "system_fingerprint": null
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "timestamp": 1767003682590,
+  "url": "https://api.gpt.ge/v1/chat/completions",
+  "method": "POST",
+  "status": 200,
+  "req": {
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You are an AI assistant specialized in analyzing web projects developed using Java and the Spring Boot (Spring MVC / Spring ecosystem) framework. I need to generate an OpenAPI Specification for a web project based on its backend source code. In `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`, I found that `PrintingSchemaController#updatePrintingSchema` is implemented to process HTTP requests to the path `/consumer/{consumerID}/printingschemas/{printingSchemaID}`. To determine the full path with the correct prefix and the acceptable HTTP methods, I found the necessary information in other files.\n\nI'll provide you with the contents of all related files, and your task is to determine and output:\n\n- The full HTTP request path for the endpoint, which must begin with a forward slash (/) and have path parameters wrapped in curly braces ({}).\n- Whether all HTTP methods are acceptable, this will override the results for other HTTP methods.\n- Whether the HEAD method is acceptable, based on the code, not on experiential assumptions.\n- Whether the POST method is acceptable, based on the code, not on experiential assumptions.\n- Whether the OPTIONS method is acceptable, based on the code, not on experiential assumptions.\n- Whether the TRACE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the GET method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PUT method is acceptable, based on the code, not on experiential assumptions.\n- Whether the DELETE method is acceptable, based on the code, not on experiential assumptions.\n- Whether the PATCH method is acceptable, based on the code, not on experiential assumptions.\n\nYou also need to provide an explanation of your results."
+      },
+      {
+        "role": "user",
+        "content": "Contents of file `src/main/java/io/github/proxyprint/kitchen/controllers/consumer/PrintingSchemaController.java`:\n\n```\npackage io.github.proxyprint.kitchen.controllers.consumer;\n\nimport com.google.gson.Gson;\nimport com.google.gson.JsonObject;\nimport io.github.proxyprint.kitchen.models.consumer.Consumer;\nimport io.github.proxyprint.kitchen.models.consumer.PrintingSchema;\nimport io.github.proxyprint.kitchen.models.repositories.ConsumerDAO;\nimport io.github.proxyprint.kitchen.models.repositories.PrintingSchemaDAO;\nimport io.swagger.annotations.ApiOperation;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.security.access.annotation.Secured;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RequestMapping;\nimport org.springframework.web.bind.annotation.RequestMethod;\nimport org.springframework.web.bind.annotation.RestController;\n\nimport java.util.Set;\nimport org.springframework.transaction.annotation.Transactional;\nimport org.springframework.web.bind.annotation.RequestBody;\n\n/**\n * Created by daniel on 28-04-2016.\n */\n@RestController \n@Transactional\npublic class PrintingSchemaController {\n    @Autowired\n    private ConsumerDAO consumers;\n    @Autowired\n    private PrintingSchemaDAO printingSchemas;\n    @Autowired\n    private Gson GSON;\n\n    /**\n     * Get all the consumer's PrintingSchemas.\n     * @param id, the id of the consumer.\n     * @return set of the printing schemas belonging to the consumer matched by the id.\n     */\n    @ApiOperation(value = \"Returns a set of the printing schemas.\", notes = \"This method allows consumers to get his PrintingSchemas.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas\", method = RequestMethod.GET)\n    public String getConsumerPrintingSchemas(@PathVariable(value = \"consumerID\") long id) {\n        Set<PrintingSchema> consumerSchemas = consumers.findOne(id).getPrintingSchemas();\n        JsonObject response = new JsonObject();\n        if(consumerSchemas!=null) {\n            response.addProperty(\"success\", true);\n            response.add(\"pschemas\",GSON.toJsonTree(consumerSchemas));\n            return GSON.toJson(response);\n        } else {\n            response.addProperty(\"success\", false);\n            return GSON.toJson(response);\n        }\n    }\n\n    /**\n     * Add a new PrintingSchema to user's printing schemas collection.\n     * Test\n     * curl --data \"name=MyFancySchema&bindingSpecs=SPIRAL&coverSpecs=CRISTAL_ACETATE&paperSpecs=COLOR,A4,SIMPLEX\" -u joao:1234 localhost:8080/consumer/1001/printingschemas\n     * @param id, the id of the consumer.\n     * @param ps, the PrintingSchema created by the consumer.\n     * @return HttpStatus.OK if everything went well.\n     */\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to add a new printing schema to his printing schemas collection.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas\", method = RequestMethod.POST)\n    public String addNewConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long id, @RequestBody PrintingSchema ps) {\n        JsonObject obj = new JsonObject();\n        Consumer c = consumers.findOne(id);\n        PrintingSchema addedPS = printingSchemas.save(ps);\n        boolean res = c.addPrintingSchema(addedPS);\n        if(res) {\n            consumers.save(c);\n            obj.addProperty(\"success\", true);\n            obj.addProperty(\"id\", addedPS.getId());\n            return GSON.toJson(obj);\n        } else {\n            obj.addProperty(\"success\", false);\n            return GSON.toJson(obj);\n        }\n    }\n\n    /**\n     * Delete a PrintingSchema.\n     * Test\n     * curl -u joao:1234 -X DELETE localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\n     * @param cid, the id of the consumer.\n     * @param psid, the id of the printing schema to delete.\n     * @return HttpStatus.OK if everything went well.\n     */\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to delete a printing schema from his printing schemas collection.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.DELETE)\n    public String deleteConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid) {\n        JsonObject obj = new JsonObject();\n        PrintingSchema ps = printingSchemas.findOne(psid);\n        if(!ps.isDeleted()) {\n            ps.delete();\n            printingSchemas.save(ps);\n            obj.addProperty(\"success\", true);\n        } else {\n            obj.addProperty(\"false\", true);\n        }\n        return GSON.toJson(obj);\n    }\n\n    /**\n     * Edit an existing PrintingSchema.\n     * Test\n     * curl -X PUT --data \"name=MyFancyEditedSchema&bindingSpecs=STAPLING&paperSpecs=COLOR,A4,SIMPLEX\" -u joao:1234 localhost:8080/consumer/1001/printingschemas/{printingSchemaID}\n     * @param cid, the id of the consumer.\n     * @param psid, the PrintingSchema id.\n     * @return HttpStatus.OK if everything went well.\n     */\n    @ApiOperation(value = \"Returns success/insuccess.\", notes = \"This method allows consumers to edit a printing schema from his printing schemas collection.\")\n    @Secured({\"ROLE_USER\"})\n    @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.PUT)\n    public ResponseEntity<String> editConsumerPrintingSchema(@PathVariable(value = \"consumerID\") long cid, @PathVariable(value = \"printingSchemaID\") long psid, @RequestBody PrintingSchema pschema) {\n        PrintingSchema ps = printingSchemas.findOne(psid);\n        ps.setBindingSpecs(pschema.getBindingSpecs());\n        ps.setCoverSpecs(pschema.getCoverSpecs());\n        ps.setName(pschema.getName());\n        ps.setPaperSpecs(pschema.getPaperSpecs());\n\n        JsonObject obj = new JsonObject();\n\n        PrintingSchema res = printingSchemas.save(ps);\n        if(res!=null) {\n            obj.addProperty(\"success\", true);\n             return new ResponseEntity<>(GSON.toJson(obj), HttpStatus.OK);\n        } else {\n            obj.addProperty(\"success\", false);\n             return new ResponseEntity<>(GSON.toJson(obj), HttpStatus.INTERNAL_SERVER_ERROR);\n        }\n    }\n\n}\n```"
+      }
+    ],
+    "model": "gpt-5-mini",
+    "temperature": 0.0
+  },
+  "res": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Full request path:\n- /consumer/{consumerID}/printingschemas/{printingSchemaID}\n\nAllowed methods (based on the source code):\n- all HTTP methods (wildcard): false\n- HEAD: false\n- POST: false\n- OPTIONS: false\n- TRACE: false\n- GET: false\n- PUT: true\n- DELETE: true\n- PATCH: false\n\nExplanation:\n- The file contains two explicit @RequestMapping annotations that use the exact path \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\":\n  - @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.DELETE) — deleteConsumerPrintingSchema(...)\n  - @RequestMapping(value = \"/consumer/{consumerID}/printingschemas/{printingSchemaID}\", method = RequestMethod.PUT) — editConsumerPrintingSchema(...)\n  These two annotations make DELETE and PUT explicitly accepted for that path.\n- GET and POST in this controller are mapped to \"/consumer/{consumerID}/printingschemas\" (no printingSchemaID), so they do not apply to the path with {printingSchemaID}.\n- There is no class-level @RequestMapping that would change the prefix for these methods.\n- No mapping in the code explicitly allows HEAD, OPTIONS, TRACE, PATCH, or a wildcard (all methods). Per your instruction, I base the answer only on explicit mappings in the code (not on framework defaults like implicit HEAD/OPTIONS handling), so those methods are marked false.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1767003671,
+    "id": "chatcmpl-Cs4f97Lohu1AFzp7dzdSyuhv92AP7",
+    "model": "gpt-5-mini-2025-08-07",
+    "object": "chat.completion",
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 1147,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": 0,
+        "audio_tokens": 0,
+        "reasoning_tokens": 832,
+        "rejected_prediction_tokens": 0
+      },
+      "prompt_tokens": 1763,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cached_tokens": 0
+      },
+      "total_tokens": 2910
+    }
+  }
+}
